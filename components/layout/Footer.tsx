@@ -47,7 +47,7 @@ export default function Footer() {
           <div>
             <h5 className="font-mono text-[10px] uppercase tracking-[0.3em] text-caramel mb-6">Kontakt</h5>
             <ul className="space-y-3">
-              <li><a href="mailto:info@arbey.cz" className="text-sepia hover:text-caramel text-sm transition-colors">info@arbey.cz</a></li>
+              <li><a href="mailto:info@arbiq.cz" className="text-sepia hover:text-caramel text-sm transition-colors">info@arbiq.cz</a></li>
               <li><a href="tel:+420725932729" className="text-sepia hover:text-caramel text-sm transition-colors">+420 725 932 729</a></li>
               <li className="text-sepia text-sm">Praha 1</li>
             </ul>

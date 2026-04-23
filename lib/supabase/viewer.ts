@@ -9,7 +9,7 @@ export const PREVIEW_COOKIE = 'arbiq_preview';
 
 export const PREVIEW_USER = {
   id: '00000000-0000-0000-0000-000000001000',
-  email: 'preview@arbey.cz',
+  email: 'preview@arbiq.cz',
 } as const;
 
 export const PREVIEW_PROFILE = {

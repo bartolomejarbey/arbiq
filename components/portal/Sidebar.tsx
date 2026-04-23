@@ -16,6 +16,9 @@ import {
   FolderKanban,
   Trophy,
   LogOut,
+  Cookie,
+  Activity,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -42,6 +45,9 @@ const adminNav: NavItem[] = [
   { href: '/portal/admin/faktury',    label: 'Faktury',     icon: Receipt },
   { href: '/portal/admin/doporuceni', label: 'Doporučení',  icon: Sparkles },
   { href: '/portal/admin/statistiky', label: 'Statistiky',  icon: Trophy },
+  { href: '/portal/admin/analytics',  label: 'Analytics',   icon: Activity },
+  { href: '/portal/admin/chats',      label: 'Chaty',       icon: MessageSquare },
+  { href: '/portal/admin/consent-log', label: 'Cookie log', icon: Cookie },
 ];
 
 const settingsItem: NavItem = {

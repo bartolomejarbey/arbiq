@@ -35,11 +35,14 @@ export async function sendEmail(payload: EmailPayload) {
   const html = wrapInShell(inner);
   const text = htmlToPlainText(html);
 
+  // RESEND_BCC_ADMIN can be a single email or comma-separated list of emails.
+  const adminBccList = process.env.RESEND_BCC_ADMIN
+    ? process.env.RESEND_BCC_ADMIN.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+
   const bcc = [
     ...(payload.bcc ?? []),
-    ...(payload.bccAdmin && process.env.RESEND_BCC_ADMIN
-      ? [process.env.RESEND_BCC_ADMIN]
-      : []),
+    ...(payload.bccAdmin ? adminBccList : []),
   ];
 
   const result = await client().emails.send({

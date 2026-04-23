@@ -9,6 +9,7 @@ import DetectiveTag from "@/components/shared/DetectiveTag";
 import MarkerUnderline from "@/components/shared/MarkerUnderline";
 import WaxSeal from "@/components/shared/WaxSeal";
 import Honeypot from "@/components/shared/Honeypot";
+import { track } from "@/lib/track";
 import { Search, FileText, Phone, ChevronDown, ChevronUp, CheckCircle, ArrowDown } from "lucide-react";
 
 const findings = [
@@ -79,10 +80,11 @@ export default function RentgenPage() {
       });
       const payload = (await res.json().catch(() => ({}))) as { orderId?: string; error?: string };
       if (!res.ok) {
-        throw new Error(payload.error ?? "Něco se pokazilo. Zkuste znovu nebo napište na info@arbey.cz");
+        throw new Error(payload.error ?? "Něco se pokazilo. Zkuste znovu nebo napište na info@arbiq.cz");
       }
       setOrderId(payload.orderId ?? null);
       setSubmitted(true);
+      track('rentgen_submit', { orderId: payload.orderId ?? null });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Něco se pokazilo.");
     } finally {

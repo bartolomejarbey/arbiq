@@ -2,20 +2,24 @@
 
 import { useState, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight, ArrowLeft, Check } from "lucide-react";
 import Link from "next/link";
-import { kampanData, velikostOptions, type KampanKey } from "@/lib/kampan-data";
+import { kampanData, velikostOptions, WANTS_OPTIONS, BUDGET_OPTIONS, type KampanKey } from "@/lib/kampan-data";
+import { track } from "@/lib/track";
 
 type Answers = {
   obor: string;
   velikost: string;
-  step3: string;
+  wants: string[];
+  budget: string;
   name: string;
   email: string;
   phone: string;
   url: string;
   popis: string;
 };
+
+const TOTAL_STEPS = 6;
 
 export default function PripadPage({
   params,
@@ -29,7 +33,8 @@ export default function PripadPage({
   const [answers, setAnswers] = useState<Answers>({
     obor: "",
     velikost: "",
-    step3: "",
+    wants: [],
+    budget: "",
     name: "",
     email: "",
     phone: "",
@@ -52,12 +57,23 @@ export default function PripadPage({
     );
   }
 
-  const totalSteps = 5;
-  const progress = (step / totalSteps) * 100;
+  const progress = (step / TOTAL_STEPS) * 100;
 
   function selectCard(field: keyof Answers, value: string, nextStep: number) {
     setAnswers((prev) => ({ ...prev, [field]: value }));
-    setTimeout(() => setStep(nextStep), 300);
+    setTimeout(() => {
+      setStep(nextStep);
+      track('pripad_step', { step: nextStep, kampan });
+    }, 300);
+  }
+
+  function toggleWant(id: string) {
+    setAnswers((prev) => ({
+      ...prev,
+      wants: prev.wants.includes(id)
+        ? prev.wants.filter((w) => w !== id)
+        : [...prev.wants, id],
+    }));
   }
 
   async function handleSubmit() {
@@ -65,15 +81,27 @@ export default function PripadPage({
     setSubmitting(true);
     let num = "#" + String(Math.floor(Math.random() * 9000) + 1000);
     try {
+      const params = new URLSearchParams(window.location.search);
+      const hp = (document.getElementById("website_url_hp") as HTMLInputElement | null)?.value ?? "";
       const res = await fetch("/api/pripad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kampan,
-          ...answers,
-          utm_source: new URLSearchParams(window.location.search).get("utm_source") || "",
-          utm_medium: new URLSearchParams(window.location.search).get("utm_medium") || "",
-          utm_campaign: new URLSearchParams(window.location.search).get("utm_campaign") || "",
+          obor: answers.obor,
+          velikost: answers.velikost,
+          step3: answers.wants.join(", "), // Backward-compat: serialize wants do step3 textu
+          wants: answers.wants,
+          budget: answers.budget,
+          name: answers.name,
+          email: answers.email,
+          phone: answers.phone,
+          url: answers.url,
+          popis: answers.popis,
+          utm_source: params.get("utm_source") || "",
+          utm_medium: params.get("utm_medium") || "",
+          utm_campaign: params.get("utm_campaign") || "",
+          website_url_hp: hp,
         }),
       });
       if (res.ok) {
@@ -85,7 +113,7 @@ export default function PripadPage({
     }
     setCaseNumber(num);
     setSubmitting(false);
-    setStep(5);
+    setStep(6);
   }
 
   const slideVariants = {
@@ -96,12 +124,17 @@ export default function PripadPage({
 
   return (
     <div className="min-h-screen bg-espresso relative flex flex-col">
-      {/* Progress bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-espresso/90 backdrop-blur-sm px-6 py-4">
+      {/* Honeypot for spam bots */}
+      <div aria-hidden style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none" }}>
+        <input id="website_url_hp" type="text" name="website_url_hp" tabIndex={-1} autoComplete="off" defaultValue="" />
+      </div>
+
+      {/* Progress bar — z-[100] aby překrýval fixed nav (z-50) */}
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-espresso backdrop-blur-sm px-6 py-3 border-b border-caramel/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
         <div className="max-w-xl mx-auto">
           <div className="flex items-center justify-between mb-2">
             <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone">
-              Vyšetřování
+              Vyšetřování — krok {step} / {TOTAL_STEPS}
             </span>
             <span className="font-mono text-[10px] uppercase tracking-widest text-caramel">
               {Math.round(progress)} %
@@ -119,7 +152,7 @@ export default function PripadPage({
       </div>
 
       {/* Steps */}
-      <div className="flex-1 flex items-center justify-center px-6 pt-20 pb-12">
+      <div className="flex-1 flex items-center justify-center px-6 pt-24 pb-12">
         <div className="w-full max-w-2xl">
           <AnimatePresence mode="wait">
             {/* STEP 1: Intro */}
@@ -151,7 +184,7 @@ export default function PripadPage({
               </motion.div>
             )}
 
-            {/* STEP 2: Identifikace */}
+            {/* STEP 2: Identifikace (obor + velikost) */}
             {step === 2 && (
               <motion.div
                 key="step2"
@@ -218,7 +251,7 @@ export default function PripadPage({
               </motion.div>
             )}
 
-            {/* STEP 3: Předběžné vyšetřování */}
+            {/* STEP 3: Co všechno chcete? (multi-select 16 variant) */}
             {step === 3 && (
               <motion.div
                 key="step3"
@@ -227,31 +260,117 @@ export default function PripadPage({
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.4 }}
-                className="space-y-10"
+                className="space-y-8"
               >
                 <div className="text-center">
                   <span className="font-mono text-[10px] uppercase tracking-widest text-caramel block mb-4">
-                    PŘEDBĚŽNÉ VYŠETŘOVÁNÍ
+                    CO VŠECHNO ŘEŠÍME
                   </span>
-                  <h2 className="font-display font-black text-moonlight text-3xl md:text-5xl">
-                    {config.step3Question}
+                  <h2 className="font-display font-black text-moonlight text-3xl md:text-5xl mb-3">
+                    Co všechno chcete?
                   </h2>
+                  <p className="text-sepia/70 text-sm">
+                    Vyberte cokoli relevantního — i to, co Vám teď nepřijde nutné. Často spolu věci dávají smysl.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {config.step3Options.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => selectCard("step3", opt, 4)}
-                      className="bg-coffee border border-tobacco p-5 text-left text-moonlight hover:border-caramel hover:bg-caramel/5 transition-all font-medium"
-                    >
-                      {opt}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {WANTS_OPTIONS.map((opt) => {
+                    const selected = answers.wants.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => toggleWant(opt.id)}
+                        className={`p-4 text-left text-sm border transition-all flex items-center justify-between gap-3 ${
+                          selected
+                            ? "bg-caramel/10 border-caramel text-moonlight"
+                            : "bg-coffee border-tobacco text-sepia hover:border-caramel/40 hover:text-moonlight"
+                        }`}
+                      >
+                        <span className="font-medium">{opt.label}</span>
+                        <span
+                          className={`shrink-0 w-5 h-5 border flex items-center justify-center transition-colors ${
+                            selected ? "bg-caramel border-caramel" : "border-tobacco"
+                          }`}
+                        >
+                          {selected && <Check size={12} className="text-espresso" strokeWidth={3} />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between pt-4">
+                  <button
+                    onClick={() => setStep(2)}
+                    className="text-sandstone/60 font-mono text-[10px] uppercase tracking-widest hover:text-caramel transition-colors flex items-center gap-1"
+                  >
+                    <ArrowLeft size={10} /> Zpět
+                  </button>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone">
+                    Vybráno: <span className="text-caramel">{answers.wants.length}</span>
+                  </span>
+                  <button
+                    onClick={() => setStep(4)}
+                    disabled={answers.wants.length === 0}
+                    className="bg-caramel text-espresso px-6 py-3 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                  >
+                    Pokračovat <ArrowRight size={12} />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP 4: Budget */}
+            {step === 4 && (
+              <motion.div
+                key="step4"
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.4 }}
+                className="space-y-8"
+              >
+                <div className="text-center">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-caramel block mb-4">
+                    ROZSAH PŘÍPADU
+                  </span>
+                  <h2 className="font-display font-black text-moonlight text-3xl md:text-5xl mb-3">
+                    Jaký je rozpočet?
+                  </h2>
+                  <p className="text-sepia/70 text-sm max-w-md mx-auto">
+                    Pomáhá nám pochopit, jestli Vám můžeme dát smysluplný návrh. Žádný závazek — orientace.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  {BUDGET_OPTIONS.map((opt) => {
+                    const selected = answers.budget === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => selectCard("budget", opt.id, 5)}
+                        className={`w-full p-5 text-left border transition-all flex items-center justify-between gap-4 ${
+                          selected
+                            ? "bg-caramel/10 border-caramel"
+                            : "bg-coffee border-tobacco hover:border-caramel/40"
+                        }`}
+                      >
+                        <div>
+                          <div className="text-moonlight font-medium">{opt.label}</div>
+                          <div className="text-sandstone text-xs mt-1">{opt.hint}</div>
+                        </div>
+                        <ArrowRight size={14} className="text-caramel/60 shrink-0" />
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(3)}
                   className="text-sandstone/50 font-mono text-[10px] uppercase tracking-widest hover:text-caramel transition-colors flex items-center gap-1 mx-auto"
                 >
                   <ArrowLeft size={10} /> Zpět
@@ -259,10 +378,10 @@ export default function PripadPage({
               </motion.div>
             )}
 
-            {/* STEP 4: Důkazy (kontaktní údaje) */}
-            {step === 4 && (
+            {/* STEP 5: Důkazy (kontaktní údaje) */}
+            {step === 5 && (
               <motion.div
-                key="step4"
+                key="step5"
                 variants={slideVariants}
                 initial="enter"
                 animate="center"
@@ -346,7 +465,7 @@ export default function PripadPage({
                     {submitting ? "Otevíráme případ..." : "Odeslat případ"}
                   </button>
                   <button
-                    onClick={() => setStep(3)}
+                    onClick={() => setStep(4)}
                     className="text-sandstone/50 font-mono text-[10px] uppercase tracking-widest hover:text-caramel transition-colors flex items-center gap-1"
                   >
                     <ArrowLeft size={10} /> Zpět
@@ -355,10 +474,10 @@ export default function PripadPage({
               </motion.div>
             )}
 
-            {/* STEP 5: Případ přijat */}
-            {step === 5 && (
+            {/* STEP 6: Případ přijat */}
+            {step === 6 && (
               <motion.div
-                key="step5"
+                key="step6"
                 variants={slideVariants}
                 initial="enter"
                 animate="center"
@@ -366,7 +485,6 @@ export default function PripadPage({
                 transition={{ duration: 0.4 }}
                 className="text-center space-y-8"
               >
-                {/* Razítko */}
                 <motion.div
                   initial={{ scale: 3, opacity: 0, rotate: -20 }}
                   animate={{ scale: 1, opacity: 1, rotate: -6 }}

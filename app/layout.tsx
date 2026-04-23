@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Playfair_Display, Inter, IBM_Plex_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ChromeGate from "@/components/layout/ChromeGate";
 import CookieBanner from "@/components/layout/CookieBanner";
+import AnalyticsTracker from "@/components/layout/AnalyticsTracker";
+import ChatWidget from "@/components/chat/ChatWidget";
 import { IntroContextProvider } from "@/lib/intro-context";
 import { ModeProvider } from "@/lib/mode-context";
 
@@ -88,6 +91,8 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <ChromeGate><Footer /></ChromeGate>
             <ChromeGate><CookieBanner /></ChromeGate>
+            <Suspense fallback={null}><AnalyticsTracker /></Suspense>
+            <ChromeGate><ChatWidget /></ChromeGate>
           </IntroContextProvider>
         </ModeProvider>
       </body>

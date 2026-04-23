@@ -8,6 +8,7 @@ import Link from "next/link";
 import DetectiveTag from "@/components/shared/DetectiveTag";
 import Typewriter from "@/components/shared/Typewriter";
 import Honeypot from "@/components/shared/Honeypot";
+import { track } from "@/lib/track";
 import { Mail, Phone, MapPin, Building, Clock, CheckCircle, Search, Calendar, MessageSquare, ArrowRight } from "lucide-react";
 
 const contactSchema = z.object({
@@ -50,6 +51,7 @@ export default function KontaktPage() {
         throw new Error(payload.error ?? "Něco se pokazilo.");
       }
       setSubmitted(true);
+      track('kontakt_submit', { type: data.type });
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Něco se pokazilo.");
     } finally {
@@ -105,7 +107,7 @@ export default function KontaktPage() {
                   <Mail size={20} className="text-caramel mt-1 shrink-0" strokeWidth={1.5} />
                   <div>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone block mb-1">E-mail</span>
-                    <a href="mailto:info@arbey.cz" className="text-moonlight hover:text-caramel transition-colors">info@arbey.cz</a>
+                    <a href="mailto:info@arbiq.cz" className="text-moonlight hover:text-caramel transition-colors">info@arbiq.cz</a>
                   </div>
                 </div>
 

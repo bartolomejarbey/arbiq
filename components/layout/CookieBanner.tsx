@@ -31,7 +31,19 @@ function readConsent(): StoredConsent | null {
   }
 }
 
-function writeConsent(categories: Categories) {
+const ANON_ID_KEY = 'arbiq_anon_id';
+
+function getOrCreateAnonId(): string {
+  if (typeof window === 'undefined') return 'srv';
+  let id = window.localStorage.getItem(ANON_ID_KEY);
+  if (!id) {
+    id = 'a-' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+    window.localStorage.setItem(ANON_ID_KEY, id);
+  }
+  return id;
+}
+
+function writeConsent(categories: Categories, source: 'banner_accept_all' | 'banner_necessary' | 'banner_custom') {
   const stored: StoredConsent = {
     categories,
     decidedAt: new Date().toISOString(),
@@ -39,6 +51,20 @@ function writeConsent(categories: Categories) {
   };
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   window.dispatchEvent(new CustomEvent('arbiq-consent', { detail: stored }));
+
+  // Best-effort log to server (GDPR audit trail). Pokud selže, neblokujeme UX.
+  fetch('/api/consent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      anon_id: getOrCreateAnonId(),
+      necessary: categories.necessary,
+      analytics: categories.analytics,
+      marketing: categories.marketing,
+      source,
+    }),
+    keepalive: true,
+  }).catch(() => undefined);
 }
 
 export default function CookieBanner() {
@@ -55,15 +81,15 @@ export default function CookieBanner() {
   if (!show) return null;
 
   function acceptAll() {
-    writeConsent({ necessary: true, analytics: true, marketing: true });
+    writeConsent({ necessary: true, analytics: true, marketing: true }, 'banner_accept_all');
     setShow(false);
   }
   function acceptNecessary() {
-    writeConsent({ necessary: true, analytics: false, marketing: false });
+    writeConsent({ necessary: true, analytics: false, marketing: false }, 'banner_necessary');
     setShow(false);
   }
   function saveCustom() {
-    writeConsent({ necessary: true, analytics, marketing });
+    writeConsent({ necessary: true, analytics, marketing }, 'banner_custom');
     setShow(false);
   }
 

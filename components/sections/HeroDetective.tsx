@@ -9,6 +9,7 @@ import { useIntro } from "@/lib/intro-context";
 import DetectiveTag from "@/components/shared/DetectiveTag";
 import MarkerUnderline from "@/components/shared/MarkerUnderline";
 import Typewriter from "@/components/shared/Typewriter";
+import { track } from "@/lib/track";
 
 type StoryMode = null | "short" | "full";
 
@@ -81,7 +82,7 @@ export default function HeroDetective() {
           {/* Storytelling CTA */}
           <div className="flex flex-wrap gap-4 pt-4">
             <button
-              onClick={() => setStory(story === "short" ? null : "short")}
+              onClick={() => { setStory(story === "short" ? null : "short"); track('cta_hero_story', { variant: 'short' }); }}
               className={`px-8 py-4 font-body text-sm uppercase tracking-wider font-bold transition-all ${
                 story === "short"
                   ? "bg-caramel text-espresso"
@@ -91,7 +92,7 @@ export default function HeroDetective() {
               Chci krátký příběh
             </button>
             <button
-              onClick={() => setStory(story === "full" ? null : "full")}
+              onClick={() => { setStory(story === "full" ? null : "full"); track('cta_hero_story', { variant: 'full' }); }}
               className={`px-8 py-4 font-body text-sm uppercase tracking-wider transition-all ${
                 story === "full"
                   ? "bg-caramel text-espresso font-bold"

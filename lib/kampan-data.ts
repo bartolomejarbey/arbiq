@@ -110,3 +110,38 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
 export const velikostOptions = ["Sám/sama", "2–5 lidí", "6–20 lidí", "20+"];
 
 export const validKampane = Object.keys(kampanData) as KampanKey[];
+
+/**
+ * 16 variant „Co všechno chcete?" — sdílené napříč všemi kampaněmi.
+ * Multi-select checklist v 3. kroku onboardingu.
+ */
+export const WANTS_OPTIONS = [
+  { id: "web-novy",       label: "Profi web (nový)",            category: "web" },
+  { id: "web-redesign",   label: "Redesign existujícího webu",  category: "web" },
+  { id: "eshop",          label: "E-shop",                      category: "web" },
+  { id: "rezervace",      label: "Rezervační systém",           category: "system" },
+  { id: "clenska-sekce",  label: "Členská / klientská sekce",   category: "system" },
+  { id: "crm",            label: "CRM systém",                  category: "system" },
+  { id: "fakturace",      label: "Automatická fakturace",       category: "system" },
+  { id: "booking-msg",    label: "Booking přes Messenger / WhatsApp", category: "system" },
+  { id: "marketing",      label: "Marketingové reklamy (PPC, Meta)", category: "marketing" },
+  { id: "seo",            label: "SEO (organická návštěvnost)", category: "marketing" },
+  { id: "social",         label: "Sociální sítě & content",     category: "marketing" },
+  { id: "brand",          label: "Brand identita",              category: "design" },
+  { id: "logo",           label: "Logo & vizuál",               category: "design" },
+  { id: "video",          label: "Video produkce",              category: "design" },
+  { id: "automatizace",   label: "Automatizace procesů",        category: "system" },
+  { id: "aplikace",       label: "Aplikace na míru",            category: "system" },
+] as const;
+
+export type WantsOption = typeof WANTS_OPTIONS[number];
+
+export const BUDGET_OPTIONS = [
+  { id: "5-15",      label: "5 — 15 000 Kč",       hint: "Drobnost / starter" },
+  { id: "15-50",     label: "15 — 50 000 Kč",      hint: "Standardní web nebo eshop" },
+  { id: "50-150",    label: "50 — 150 000 Kč",     hint: "Komplexní řešení" },
+  { id: "150-plus",  label: "150 000 Kč +",        hint: "Plný stack / aplikace na míru" },
+  { id: "doporucte", label: "Nechci říct, doporučte", hint: "Zjistíme, co dává smysl" },
+] as const;
+
+export type BudgetOption = typeof BUDGET_OPTIONS[number];
