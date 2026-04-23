@@ -1,4 +1,7 @@
+'use client';
+
 import type { ReactNode } from 'react';
+import { motion } from 'framer-motion';
 
 export default function StatsCard({
   label,
@@ -18,7 +21,13 @@ export default function StatsCard({
     'text-moonlight';
 
   return (
-    <div className="bg-coffee p-6">
+    <motion.div
+      className="bg-coffee p-6 hover:bg-tobacco/30 transition-colors"
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+    >
       <div className="font-mono text-[10px] uppercase tracking-widest text-sandstone mb-3">
         {label}
       </div>
@@ -28,6 +37,6 @@ export default function StatsCard({
       {hint && (
         <div className="text-sandstone text-xs mt-3">{hint}</div>
       )}
-    </div>
+    </motion.div>
   );
 }

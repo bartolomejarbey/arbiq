@@ -44,6 +44,52 @@ type RecRow = {
 
 export default async function DashboardPage() {
   const viewer = await requireViewer();
+
+  // Demo data v preview módu
+  if (viewer.isPreview) {
+    const { PREVIEW_PROJECTS, PREVIEW_INVOICES, PREVIEW_RECOMMENDATIONS } = await import('@/lib/preview-data');
+    const projectCards = PREVIEW_PROJECTS as unknown as ProjectCardData[];
+    const upcoming = PREVIEW_INVOICES.find((i) => i.status === 'ceka');
+    const overdue = PREVIEW_INVOICES.filter((i) => i.status === 'po_splatnosti');
+    const overdueAmount = overdue.reduce((s, i) => s + Number(i.amount), 0);
+    const totalUnpaid = PREVIEW_INVOICES.filter((i) => i.status === 'ceka' || i.status === 'po_splatnosti').reduce((s, i) => s + Number(i.amount), 0);
+    return (
+      <div>
+        <PageHeader eyebrow="Klientská zóna · DEMO" title={<>Dobrý den, Sherlocku.</>} subtitle="Tady je stav Vašich případů. (Vše smyšlené — jen ukázka jak portál funguje.)" />
+        <div className="px-8 py-8 space-y-12">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatsCard label="Aktivní případy" value={projectCards.length} tone="accent" />
+            <StatsCard label="Nadcházející platba" value={upcoming ? formatMoney(upcoming.amount) : '—'} hint={upcoming ? renderDueHint(upcoming.due_date) : 'Vše vyrovnáno.'} />
+            <StatsCard label="Po splatnosti" value={overdue.length > 0 ? formatMoney(overdueAmount) : '—'} hint={overdue.length > 0 ? `${overdue.length} faktura/y` : 'Žádné prodlení.'} tone={overdue.length > 0 ? 'danger' : 'default'} />
+          </section>
+          <section>
+            <SectionHeader title="Vaše případy" link="" linkLabel={null} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {projectCards.map((p) => <ProjectCard key={p.id} project={p} />)}
+            </div>
+          </section>
+          <section>
+            <SectionHeader title="Faktury" link="/portal/faktury" linkLabel="Všechny faktury" />
+            <div className="bg-coffee p-6">
+              <div className="text-sandstone text-sm">
+                Celkem nezaplaceno: <span className="text-moonlight font-medium">{formatMoney(totalUnpaid)}</span>
+                {' '}({PREVIEW_INVOICES.filter((i) => i.status === 'ceka' || i.status === 'po_splatnosti').length} faktura/y)
+              </div>
+            </div>
+          </section>
+          <section>
+            <SectionHeader title="Doporučení od ARBIQ" link="/portal/doporuceni" linkLabel="Všechna doporučení" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {PREVIEW_RECOMMENDATIONS.map((r) => (
+                <RecommendationCard key={r.id} rec={r as RecommendationData} onInterested={async () => {}} onDismiss={async () => {}} />
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const user = viewer;
 

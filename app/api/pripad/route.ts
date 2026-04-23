@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/send';
 import { LeadConfirmEmail } from '@/lib/email/templates/lead-confirm';
 import { LeadInternalEmail } from '@/lib/email/templates/lead-internal';
+import { isLikelySpam, isEmailRateLimited, HONEYPOT_FIELD } from '@/lib/spam-protection';
 
 const PripadSchema = z.object({
   kampan: z.string().min(1).max(80),
@@ -21,15 +22,29 @@ const PripadSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const raw = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+  // Silently drop bot submissions — pretend success so they don't retry.
+  if (isLikelySpam(raw)) {
+    return NextResponse.json({ success: true, caseNumber: 'LEAD-2026-00000' });
+  }
+
   let parsed: z.infer<typeof PripadSchema>;
   try {
-    parsed = PripadSchema.parse(await request.json());
+    parsed = PripadSchema.parse(raw);
   } catch (err) {
     const issues = err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'invalid body';
     return NextResponse.json({ error: `Vyplňte povinná pole. (${issues})` }, { status: 400 });
   }
 
   const supabase = await createClient();
+
+  if (await isEmailRateLimited({ supabase, table: 'landing_leads', email: parsed.email, maxAttempts: 3 })) {
+    return NextResponse.json(
+      { error: 'Příliš mnoho žádostí z tohoto e-mailu. Zkuste to prosím za hodinu.' },
+      { status: 429 },
+    );
+  }
 
   // Allocate a case number first so it's stable across retries.
   const { data: caseRow, error: caseErr } = await supabase.rpc('next_case_number');

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/send';
 import { KontaktInternalEmail } from '@/lib/email/templates/kontakt-internal';
+import { isLikelySpam, isEmailRateLimited } from '@/lib/spam-protection';
 
 const InviteSchema = z.object({
   name: z.string().min(2).max(120),
@@ -12,9 +13,15 @@ const InviteSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const raw = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (isLikelySpam(raw)) {
+    return NextResponse.json({ success: true });
+  }
+
   let parsed: z.infer<typeof InviteSchema>;
   try {
-    parsed = InviteSchema.parse(await request.json());
+    parsed = InviteSchema.parse(raw);
   } catch (err) {
     const issues =
       err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'invalid body';
@@ -34,6 +41,14 @@ export async function POST(request: Request) {
     .join('\n');
 
   const supabase = await createClient();
+
+  if (await isEmailRateLimited({ supabase, table: 'contact_messages', email: parsed.email, maxAttempts: 3 })) {
+    return NextResponse.json(
+      { error: 'Příliš mnoho žádostí z tohoto e-mailu. Zkuste to prosím za hodinu.' },
+      { status: 429 },
+    );
+  }
+
   const { error } = await supabase.from('contact_messages').insert({
     name: parsed.name,
     email: parsed.email,
@@ -44,7 +59,7 @@ export async function POST(request: Request) {
   if (error) {
     console.error('invite-request insert failed', error);
     return NextResponse.json(
-      { error: 'Nepodařilo se odeslat. Zkuste to prosím za chvíli, nebo nám napište na info@arbiq.cz.' },
+      { error: 'Nepodařilo se odeslat. Zkuste to prosím za chvíli, nebo nám napište na info@arbey.cz.' },
       { status: 500 },
     );
   }

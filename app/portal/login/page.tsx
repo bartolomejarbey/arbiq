@@ -106,8 +106,8 @@ export default async function LoginPage({
 
         <p className="text-sandstone/60 text-xs text-center mt-6">
           Přístup vytváří pouze administrátor. Případně napište na{' '}
-          <a href="mailto:bartolomejrota@gmail.com" className="text-caramel hover:text-caramel-light">
-            bartolomejrota@gmail.com
+          <a href="mailto:bartolomej@arbey.cz" className="text-caramel hover:text-caramel-light">
+            bartolomej@arbey.cz
           </a>
           .
         </p>

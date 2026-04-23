@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/send';
 import { KontaktInternalEmail } from '@/lib/email/templates/kontakt-internal';
+import { isLikelySpam, isEmailRateLimited } from '@/lib/spam-protection';
 
 const KontaktSchema = z.object({
   name: z.string().min(2).max(120),
@@ -13,15 +14,28 @@ const KontaktSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const raw = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (isLikelySpam(raw)) {
+    return NextResponse.json({ success: true });
+  }
+
   let parsed: z.infer<typeof KontaktSchema>;
   try {
-    parsed = KontaktSchema.parse(await request.json());
+    parsed = KontaktSchema.parse(raw);
   } catch (err) {
     const issues = err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'invalid body';
     return NextResponse.json({ error: `Vyplňte povinná pole. (${issues})` }, { status: 400 });
   }
 
   const supabase = await createClient();
+
+  if (await isEmailRateLimited({ supabase, table: 'contact_messages', email: parsed.email, maxAttempts: 5 })) {
+    return NextResponse.json(
+      { error: 'Příliš mnoho zpráv z tohoto e-mailu. Zkuste to prosím za hodinu.' },
+      { status: 429 },
+    );
+  }
 
   const { error } = await supabase.from('contact_messages').insert({
     name: parsed.name,

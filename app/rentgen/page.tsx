@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { motion, AnimatePresence } from "framer-motion";
 import DetectiveTag from "@/components/shared/DetectiveTag";
 import MarkerUnderline from "@/components/shared/MarkerUnderline";
 import WaxSeal from "@/components/shared/WaxSeal";
+import Honeypot from "@/components/shared/Honeypot";
 import { Search, FileText, Phone, ChevronDown, ChevronUp, CheckCircle, ArrowDown } from "lucide-react";
 
 const findings = [
@@ -63,6 +65,7 @@ export default function RentgenPage() {
     setSubmitError(null);
     try {
       const params = new URLSearchParams(window.location.search);
+      const hp = (document.getElementById("website_url_hp") as HTMLInputElement | null)?.value ?? "";
       const res = await fetch("/api/rentgen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -71,11 +74,12 @@ export default function RentgenPage() {
           utm_source: params.get("utm_source") ?? "",
           utm_medium: params.get("utm_medium") ?? "",
           utm_campaign: params.get("utm_campaign") ?? "",
+          website_url_hp: hp,
         }),
       });
       const payload = (await res.json().catch(() => ({}))) as { orderId?: string; error?: string };
       if (!res.ok) {
-        throw new Error(payload.error ?? "Něco se pokazilo. Zkuste znovu nebo napište na info@arbiq.cz");
+        throw new Error(payload.error ?? "Něco se pokazilo. Zkuste znovu nebo napište na info@arbey.cz");
       }
       setOrderId(payload.orderId ?? null);
       setSubmitted(true);
@@ -215,26 +219,50 @@ export default function RentgenPage() {
             Časté otázky
           </h2>
           <div className="space-y-2">
-            {faqs.map((faq, i) => (
-              <div key={i} className="border border-tobacco">
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex justify-between items-center p-6 text-left hover:bg-caramel/5 transition-colors"
+            {faqs.map((faq, i) => {
+              const open = openFaq === i;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 12 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.4, delay: i * 0.05 }}
+                  className={`border transition-colors ${open ? "border-caramel/60 bg-caramel/[0.03]" : "border-tobacco"}`}
                 >
-                  <span className="text-moonlight font-medium pr-4">{faq.q}</span>
-                  {openFaq === i ? (
-                    <ChevronUp size={18} className="text-caramel shrink-0" />
-                  ) : (
-                    <ChevronDown size={18} className="text-caramel shrink-0" />
-                  )}
-                </button>
-                {openFaq === i && (
-                  <div className="px-6 pb-6 text-sepia/80 text-sm leading-relaxed border-t border-tobacco pt-4">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
+                  <button
+                    onClick={() => setOpenFaq(open ? null : i)}
+                    className="w-full flex justify-between items-center p-6 text-left hover:bg-caramel/5 transition-colors"
+                    aria-expanded={open}
+                  >
+                    <span className="text-moonlight font-medium pr-4">{faq.q}</span>
+                    <motion.div
+                      animate={{ rotate: open ? 180 : 0 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className="shrink-0"
+                    >
+                      <ChevronDown size={18} className="text-caramel" />
+                    </motion.div>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {open && (
+                      <motion.div
+                        key="content"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-6 pb-6 text-sepia/80 text-sm leading-relaxed border-t border-tobacco pt-4">
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -268,6 +296,7 @@ export default function RentgenPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <Honeypot />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="font-mono text-[10px] uppercase tracking-widest text-sandstone block mb-2">Jméno *</label>

@@ -7,6 +7,7 @@ import { z } from "zod";
 import Link from "next/link";
 import DetectiveTag from "@/components/shared/DetectiveTag";
 import Typewriter from "@/components/shared/Typewriter";
+import Honeypot from "@/components/shared/Honeypot";
 import { Mail, Phone, MapPin, Building, Clock, CheckCircle, Search, Calendar, MessageSquare, ArrowRight } from "lucide-react";
 
 const contactSchema = z.object({
@@ -38,10 +39,11 @@ export default function KontaktPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const hp = (document.getElementById("website_url_hp") as HTMLInputElement | null)?.value ?? "";
       const res = await fetch("/api/kontakt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, website_url_hp: hp }),
       });
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as { error?: string };
@@ -103,7 +105,7 @@ export default function KontaktPage() {
                   <Mail size={20} className="text-caramel mt-1 shrink-0" strokeWidth={1.5} />
                   <div>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone block mb-1">E-mail</span>
-                    <a href="mailto:info@arbiq.cz" className="text-moonlight hover:text-caramel transition-colors">info@arbiq.cz</a>
+                    <a href="mailto:info@arbey.cz" className="text-moonlight hover:text-caramel transition-colors">info@arbey.cz</a>
                   </div>
                 </div>
 
@@ -169,6 +171,7 @@ export default function KontaktPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <Honeypot />
                 <div>
                   <label className="font-mono text-[10px] uppercase tracking-widest text-sandstone block mb-2">Jméno *</label>
                   <input

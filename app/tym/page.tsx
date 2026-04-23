@@ -14,6 +14,8 @@ type Member = {
   skills: string[];
   photo?: string;
   initial?: string;
+  email?: string;
+  phone?: string;
 };
 
 const teamMembers: Member[] = [
@@ -30,6 +32,8 @@ const teamMembers: Member[] = [
       "Automatizace & AI",
     ],
     photo: "/tym/bartolomej.jpg",
+    email: "bartolomej@arbey.cz",
+    phone: "+420 725 932 729",
   },
   {
     name: "Matýáš Petr",
@@ -53,6 +57,8 @@ const teamMembers: Member[] = [
     description: "Váš první kontakt. Zařídí, aby vše klapalo.",
     skills: ["Klientský servis", "Projektové řízení", "Obchodní jednání"],
     photo: "/tym/fidelio.jpg",
+    email: "fidelio@arbey.cz",
+    phone: "+420 739 609 841",
   },
 ];
 
@@ -113,7 +119,7 @@ export default function TymPage() {
               </p>
 
               {/* Skills */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mb-5">
                 {member.skills.map((skill) => (
                   <span
                     key={skill}
@@ -123,6 +129,22 @@ export default function TymPage() {
                   </span>
                 ))}
               </div>
+
+              {/* Contact (jen pokud má email/tel) */}
+              {(member.email || member.phone) && (
+                <div className="pt-4 border-t border-tobacco/60 flex flex-col gap-1.5 text-sm">
+                  {member.email && (
+                    <a href={`mailto:${member.email}`} className="text-caramel hover:text-caramel-light transition-colors font-mono text-xs">
+                      {member.email}
+                    </a>
+                  )}
+                  {member.phone && (
+                    <a href={`tel:${member.phone.replace(/\s/g, "")}`} className="text-sepia hover:text-caramel transition-colors font-mono text-xs">
+                      {member.phone}
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </StaggerGrid>

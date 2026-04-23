@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Mail, ChevronDown, CheckCircle2 } from 'lucide-react';
+import Honeypot from '@/components/shared/Honeypot';
 
 const inputClass =
   'w-full bg-espresso border border-tobacco px-4 py-3 text-moonlight placeholder:text-sandstone/40 focus:border-caramel focus:outline-none transition-colors text-sm';
@@ -24,6 +25,7 @@ export default function InviteRequestForm() {
       email: String(fd.get('email') ?? ''),
       company: String(fd.get('company') ?? ''),
       reason: String(fd.get('reason') ?? ''),
+      website_url_hp: String(fd.get('website_url_hp') ?? ''),
     };
     try {
       const res = await fetch('/api/portal/invite-request', {
@@ -81,6 +83,7 @@ export default function InviteRequestForm() {
 
       {open && (
         <form onSubmit={onSubmit} className="px-6 pb-6 space-y-4 border-t border-tobacco">
+          <Honeypot />
           <p className="text-sandstone text-xs leading-relaxed pt-4">
             Klientská zóna je jen pro klienty ARBIQ. Pokud Vás zajímá co tam je, napište nám —
             ozveme se a domluvíme se na dalším kroku.

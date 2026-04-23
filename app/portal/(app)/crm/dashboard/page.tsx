@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/lib/supabase/viewer";
+import { PREVIEW_LEADS, PREVIEW_TASKS, PREVIEW_STATS } from '@/lib/preview-data';
 import PageHeader from '@/components/portal/PageHeader';
 import StatsCard from '@/components/portal/StatsCard';
 import LeadTable, { type LeadRow } from '@/components/portal/LeadTable';
@@ -13,6 +14,34 @@ export const dynamic = 'force-dynamic';
 
 export default async function CrmDashboardPage() {
   const viewer = await requireViewer();
+
+  // Demo data v preview módu — návštěvník vidí ostrý dashboard.
+  if (viewer.isPreview) {
+    const newLeads = PREVIEW_LEADS.filter((l) => l.status === 'new') as unknown as LeadRow[];
+    const tasks = PREVIEW_TASKS as unknown as TaskRow[];
+    return (
+      <div>
+        <PageHeader eyebrow="CRM · DEMO" title="Přehled" subtitle="Ukázka — klienti jsou Sherlock Holmes a spol." />
+        <div className="px-8 py-8 space-y-12">
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <StatsCard label="Aktivní klienti" value={PREVIEW_STATS.activeClients} tone="accent" />
+            <StatsCard label="Leady ke zpracování" value={newLeads.length} tone={newLeads.length > 0 ? 'danger' : 'default'} />
+            <StatsCard label="Otevřené úkoly" value={tasks.length} hint="3 s termínem tento týden" />
+            <StatsCard label="Hodnota pipeline" value={formatMoney(PREVIEW_STATS.pipelineValue)} />
+          </section>
+          <section>
+            <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Nepřiřazené nové leady</h2>
+            <LeadTable leads={newLeads} />
+          </section>
+          <section>
+            <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Vaše dnešní úkoly</h2>
+            <TaskList tasks={tasks} />
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const user = viewer;
 

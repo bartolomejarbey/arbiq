@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/send';
 import { RentgenConfirmEmail } from '@/lib/email/templates/rentgen-confirm';
 import { RentgenInternalEmail } from '@/lib/email/templates/rentgen-internal';
+import { isLikelySpam, isEmailRateLimited } from '@/lib/spam-protection';
 
 const RentgenSchema = z.object({
   name: z.string().min(2).max(120),
@@ -18,15 +19,28 @@ const RentgenSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const raw = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (isLikelySpam(raw)) {
+    return NextResponse.json({ success: true, orderId: 'RTG-DROPPED' });
+  }
+
   let parsed: z.infer<typeof RentgenSchema>;
   try {
-    parsed = RentgenSchema.parse(await request.json());
+    parsed = RentgenSchema.parse(raw);
   } catch (err) {
     const issues = err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'invalid body';
     return NextResponse.json({ error: `Vyplňte povinná pole. (${issues})` }, { status: 400 });
   }
 
   const supabase = await createClient();
+
+  if (await isEmailRateLimited({ supabase, table: 'rentgen_orders', email: parsed.email, maxAttempts: 3 })) {
+    return NextResponse.json(
+      { error: 'Příliš mnoho objednávek z tohoto e-mailu. Zkuste to prosím za hodinu.' },
+      { status: 429 },
+    );
+  }
 
   const { data: row, error } = await supabase
     .from('rentgen_orders')
@@ -46,7 +60,7 @@ export async function POST(request: Request) {
 
   if (error || !row) {
     console.error('rentgen_orders insert failed', error);
-    return NextResponse.json({ error: 'Něco se pokazilo. Zkuste znovu nebo napište na info@arbiq.cz' }, { status: 500 });
+    return NextResponse.json({ error: 'Něco se pokazilo. Zkuste znovu nebo napište na info@arbey.cz' }, { status: 500 });
   }
 
   // Friendly displayable order id: RTG-YYYYMMDD-<first 6 of uuid>

@@ -9,12 +9,12 @@ export const PREVIEW_COOKIE = 'arbiq_preview';
 
 export const PREVIEW_USER = {
   id: '00000000-0000-0000-0000-000000001000',
-  email: 'preview@arbiq.cz',
+  email: 'preview@arbey.cz',
 } as const;
 
 export const PREVIEW_PROFILE = {
   id: PREVIEW_USER.id,
-  full_name: 'Bartoloměj Rota (náhled)',
+  full_name: 'Sherlock Holmes (demo)',
   email: PREVIEW_USER.email,
   role: 'admin' as UserRole,
   avatar_url: null,
