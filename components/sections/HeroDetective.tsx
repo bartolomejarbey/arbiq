@@ -16,6 +16,11 @@ type StoryMode = null | "short" | "full";
 export default function HeroDetective() {
   const { revealed, setRevealed } = useIntro();
   const [story, setStory] = useState<StoryMode>(null);
+  const [today, setToday] = useState<string>("");
+
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "numeric" }));
+  }, []);
 
   useEffect(() => {
     if (revealed) return;
@@ -35,13 +40,20 @@ export default function HeroDetective() {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background image */}
+      {/* Background image — different composition for mobile vs desktop */}
       <div className="absolute inset-0 z-0">
+        <Image
+          src="/hero-detective-arbiq-mobile.png"
+          alt=""
+          fill
+          className="object-cover object-center md:hidden"
+          priority
+        />
         <Image
           src="/ilustrace/hero-detective-arbiq.png"
           alt=""
           fill
-          className="object-cover object-center"
+          className="object-cover object-center hidden md:block"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-espresso/60 via-transparent to-transparent" />
@@ -65,7 +77,7 @@ export default function HeroDetective() {
         style={{ pointerEvents: revealed ? "auto" : "none" }}
       >
         <div className="max-w-3xl space-y-8">
-          <DetectiveTag className="mb-2">PŘÍPAD #001 — OTEVŘEN {new Date().toLocaleDateString("cs-CZ", { day: "2-digit", month: "2-digit", year: "numeric" })}</DetectiveTag>
+          <DetectiveTag className="mb-2">PŘÍPAD #001{today ? ` — OTEVŘEN ${today}` : ''}</DetectiveTag>
 
           <h1 className="font-display font-black text-moonlight leading-[0.9] text-5xl md:text-7xl lg:text-8xl">
             Váš digitální business má <MarkerUnderline>případ</MarkerUnderline>. My ho vyřešíme.

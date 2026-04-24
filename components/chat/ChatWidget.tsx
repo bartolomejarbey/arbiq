@@ -21,7 +21,7 @@ function getVisitorId(): string {
 
 const GREETING: Msg = {
   role: 'assistant',
-  content: 'Dobrý den! Jsem AI asistent ARBIQ. Pomůžu Vám s otázkami o našich službách, cenách, nebo Rentgenu. S čím mám začít?',
+  content: 'Dobrý den, jsem Pomocník Watson. Pomáhám návštěvníkům arbiq.cz odpovídat na otázky — co Vás zajímá? (Cena? Reference? Jak začít?)',
 };
 
 export default function ChatWidget() {
@@ -116,19 +116,21 @@ export default function ChatWidget() {
       {!open && (
         <button
           onClick={() => { setOpen(true); track('chat_open'); }}
-          className="fixed bottom-6 right-6 z-40 bg-caramel hover:bg-caramel-light text-espresso w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105"
-          aria-label="Otevřít chat"
+          className="group fixed bottom-6 right-6 z-[60] bg-caramel hover:bg-caramel-light text-espresso flex items-center gap-2 pl-3 pr-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-all hover:scale-105 font-mono text-xs uppercase tracking-widest font-bold"
+          aria-label="Otevřít chat s Watsonem"
         >
-          <MessageSquare size={24} />
+          <MessageSquare size={18} />
+          <span>Pomocník Watson</span>
+          <span className="hidden sm:inline-block w-2 h-2 bg-olive rounded-full animate-pulse ml-1" aria-hidden="true" />
         </button>
       )}
 
       {open && (
-        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 w-[calc(100vw-2rem)] md:w-[380px] h-[80vh] md:h-[560px] bg-coffee border border-tobacco shadow-2xl flex flex-col">
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] w-[calc(100vw-2rem)] md:w-[380px] h-[80vh] md:h-[560px] bg-coffee border border-tobacco shadow-2xl flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-tobacco bg-espresso">
             <div>
-              <div className="font-display italic font-black text-moonlight text-base leading-tight">ARBIQ asistent</div>
-              <div className="font-mono text-[9px] uppercase tracking-widest text-sandstone mt-0.5">AI · vyzkoušejte zdarma</div>
+              <div className="font-display italic font-black text-moonlight text-base leading-tight">Pomocník Watson</div>
+              <div className="font-mono text-[9px] uppercase tracking-widest text-sandstone mt-0.5">AI · 24/7 · zdarma</div>
             </div>
             <button
               onClick={() => { setOpen(false); track('chat_close'); }}

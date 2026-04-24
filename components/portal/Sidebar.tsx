@@ -75,15 +75,19 @@ export default function Sidebar() {
   return (
     <aside className="w-60 shrink-0 bg-coffee border-r border-tobacco flex flex-col h-screen sticky top-0">
       <div className="px-6 py-6 border-b border-tobacco">
-        <Link href="/portal" className="block">
-          <div className="font-display italic font-black text-moonlight text-2xl tracking-tight">
-            ARBIQ
-          </div>
-          <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-sandstone mt-1">
-            {profile.role === 'klient' && 'Klientská zóna'}
-            {profile.role === 'obchodnik' && 'CRM'}
-            {profile.role === 'admin' && 'Admin'}
-          </div>
+        <div className="font-display italic font-black text-moonlight text-2xl tracking-tight">
+          ARBIQ
+        </div>
+        <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-sandstone mt-1">
+          {profile.role === 'klient' && 'Klientská zóna'}
+          {profile.role === 'obchodnik' && 'CRM'}
+          {profile.role === 'admin' && 'Admin'}
+        </div>
+        <Link
+          href="/"
+          className="mt-3 inline-flex items-center gap-1 text-sandstone hover:text-caramel font-mono text-[9px] uppercase tracking-widest transition-colors"
+        >
+          <span>←</span> arbiq.cz
         </Link>
       </div>
 

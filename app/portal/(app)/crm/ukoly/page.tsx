@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
 import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/lib/supabase/viewer";
+import { PREVIEW_TASKS } from '@/lib/preview-data';
 import PageHeader from '@/components/portal/PageHeader';
 import TaskList, { type TaskRow } from '@/components/portal/TaskList';
 import NewTaskForm from './NewTaskForm';
@@ -9,6 +9,23 @@ export const dynamic = 'force-dynamic';
 
 export default async function UkolyPage() {
   const viewer = await requireViewer();
+
+  if (viewer.isPreview) {
+    return (
+      <div>
+        <PageHeader eyebrow="CRM · DEMO" title="Úkoly" subtitle="Vaše to-do. Klikněte na kruh pro označení jako hotové. (Demo data — Sherlockova kancelář.)" />
+        <div className="px-8 py-8 space-y-8">
+          <section className="bg-coffee p-6">
+            <NewTaskForm />
+          </section>
+          <section>
+            <TaskList tasks={PREVIEW_TASKS as unknown as TaskRow[]} />
+          </section>
+        </div>
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const user = viewer;
 
@@ -23,11 +40,7 @@ export default async function UkolyPage() {
 
   return (
     <div>
-      <PageHeader
-        eyebrow="CRM"
-        title="Úkoly"
-        subtitle="Vaše to-do. Klikněte na kruh pro označení jako hotové."
-      />
+      <PageHeader eyebrow="CRM" title="Úkoly" subtitle="Vaše to-do. Klikněte na kruh pro označení jako hotové." />
       <div className="px-8 py-8 space-y-8">
         <section className="bg-coffee p-6">
           <NewTaskForm />

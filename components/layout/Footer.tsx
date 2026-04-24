@@ -49,7 +49,8 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><a href="mailto:info@arbiq.cz" className="text-sepia hover:text-caramel text-sm transition-colors">info@arbiq.cz</a></li>
               <li><a href="tel:+420725932729" className="text-sepia hover:text-caramel text-sm transition-colors">+420 725 932 729</a></li>
-              <li className="text-sepia text-sm">Praha 1</li>
+              <li className="text-sepia text-sm">Školská 689/20</li>
+              <li className="text-sepia text-sm">110 00 Praha 1</li>
             </ul>
           </div>
 
@@ -59,12 +60,13 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-caramel/10 gap-4">
-          <p className="font-mono text-[10px] tracking-widest text-sepia/40 uppercase">
-            © 2026 ARBIQ • SOUČÁST HAROTAS S.R.O. • IČO: 21402027
+          <p className="font-mono text-[10px] tracking-widest text-sepia/40 uppercase text-center md:text-left">
+            © 2026 ARBIQ • Harotas s.r.o. • IČO: 21402027 • Školská 689/20, 110 00 Praha 1
           </p>
-          <div className="flex gap-6 text-[10px] font-mono uppercase tracking-widest">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest justify-center">
             <Link href="/gdpr" className="text-sepia/40 hover:text-caramel transition-colors">GDPR</Link>
             <Link href="/obchodni-podminky" className="text-sepia/40 hover:text-caramel transition-colors">Obchodní podmínky</Link>
+            <Link href="/podminky-uzivani" className="text-sepia/40 hover:text-caramel transition-colors">Podmínky užívání</Link>
           </div>
         </div>
       </div>

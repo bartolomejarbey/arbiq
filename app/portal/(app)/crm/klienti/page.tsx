@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/lib/supabase/viewer";
+import { PREVIEW_KLIENTI_FOR_CRM } from '@/lib/preview-data';
 import PageHeader from '@/components/portal/PageHeader';
 import EmptyState from '@/components/portal/EmptyState';
 import { formatDate, formatMoney } from '@/lib/formatters';
@@ -20,23 +20,26 @@ type ClientRow = {
 
 export default async function KlientiPage() {
   const viewer = await requireViewer();
-  const supabase = await createClient();
-  const user = viewer;
 
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, full_name, email, company, is_active, created_at, projects(id, total_value, status)')
-    .eq('role', 'klient')
-    .order('full_name', { ascending: true });
-
-  const clients = ((data ?? []) as unknown as ClientRow[]);
+  let clients: ClientRow[];
+  if (viewer.isPreview) {
+    clients = PREVIEW_KLIENTI_FOR_CRM as unknown as ClientRow[];
+  } else {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, company, is_active, created_at, projects(id, total_value, status)')
+      .eq('role', 'klient')
+      .order('full_name', { ascending: true });
+    clients = ((data ?? []) as unknown as ClientRow[]);
+  }
 
   return (
     <div>
       <PageHeader
-        eyebrow="CRM"
+        eyebrow={viewer.isPreview ? "CRM · DEMO" : "CRM"}
         title="Klienti"
-        subtitle="Vaši přiřazení klienti a jejich projekty."
+        subtitle={viewer.isPreview ? "Vaši přiřazení klienti — fiktivní krimi-univerzum." : "Vaši přiřazení klienti a jejich projekty."}
       />
       <div className="px-8 py-8">
         {clients.length === 0 ? (
