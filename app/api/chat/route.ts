@@ -9,9 +9,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const ChatSchema = z.object({
-  session_id: z.string().min(4).max(64).optional(),
+  session_id: z.string().min(4).max(64).nullable().optional(),
   visitor_id: z.string().min(4).max(64),
-  page_path: z.string().max(200).optional(),
+  page_path: z.string().max(200).nullable().optional(),
   message: z.string().min(1).max(2000),
   history: z.array(z.object({
     role: z.enum(['user', 'assistant']),
@@ -68,8 +68,8 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
-  // Resolve / create session
-  let sessionId = parsed.session_id ?? null;
+  // Resolve / create session (sessionId may be undefined or null on first message)
+  let sessionId: string | null = parsed.session_id ?? null;
   if (!sessionId) {
     const { data: created, error: sessErr } = await supabase
       .from('chat_sessions')
