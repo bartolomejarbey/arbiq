@@ -3,11 +3,14 @@
 import { usePathname } from 'next/navigation';
 
 /**
- * Hides children when the current pathname starts with /portal.
- * Used to keep public Header/Footer off the portal/CRM/admin shell.
+ * Hides children when the current pathname matches a chrome-less route.
+ * - /portal — portal/CRM/admin shell má vlastní layout
+ * - /vizitka — focused mobile landing page (vCard download flow)
  */
+const CHROMELESS_PREFIXES = ['/portal', '/vizitka'];
+
 export default function ChromeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname?.startsWith('/portal')) return null;
+  if (pathname && CHROMELESS_PREFIXES.some((p) => pathname.startsWith(p))) return null;
   return <>{children}</>;
 }
