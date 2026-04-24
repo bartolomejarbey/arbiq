@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Phone, MessageSquare, Mail, Download, Globe, ArrowRight } from "lucide-react";
+import { Phone, MessageSquare, Mail, Download, Globe, ArrowRight, ScanLine } from "lucide-react";
 import DetectiveTag from "@/components/shared/DetectiveTag";
 import CopyContactButton from "@/components/vizitka/CopyContactButton";
+import InlineVCardQR from "@/components/vizitka/InlineVCardQR";
+import { VCARD_BODY_FOR_QR } from "@/lib/vizitka/vcard";
 
 export const metadata: Metadata = {
   title: "Bartoloměj Rota — ARBIQ",
@@ -91,7 +93,19 @@ export default function VizitkaPage() {
           </div>
         </header>
 
-        {/* PRIMARY CTA */}
+        {/* QR — pro skenování z mé obrazovky → automatický „Add Contact" prompt */}
+        <section className="bg-parchment text-espresso-text p-6 flex flex-col items-center gap-4 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-espresso-text/70">
+            <ScanLine size={14} />
+            <span>Naskenujte pro uložení</span>
+          </div>
+          <InlineVCardQR vcard={VCARD_BODY_FOR_QR} />
+          <p className="text-espresso-text/70 text-xs text-center max-w-[260px] leading-relaxed">
+            Telefon protějšku nabídne <strong>„Přidat kontakt"</strong> — bez stahování, bez internetu.
+          </p>
+        </section>
+
+        {/* PRIMARY CTA — fallback pro vlastní stažení */}
         <a
           href="/vizitka/bartolomej.vcf"
           download
