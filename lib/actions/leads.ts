@@ -189,7 +189,7 @@ export async function convertLeadToClient(formData: FormData): Promise<ConvertRe
     await sendEmail({
       to: parsed.email,
       subject: 'Vítejte v klientské zóně ARBIQ',
-      replyTo: process.env.RESEND_BCC_ADMIN,
+      replyTo: process.env.RESEND_REPLY_TO,
       body: PortalInviteEmail({
         name: parsed.fullName,
         email: parsed.email,

@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     sendEmail({
       to: parsed.email,
       subject: `Děkujeme — Váš případ ${caseNumber}`,
-      replyTo: process.env.RESEND_BCC_ADMIN,
+      replyTo: process.env.RESEND_REPLY_TO,
       body: LeadConfirmEmail({ name: parsed.name, caseNumber }),
     }).catch((e) => console.error('lead-confirm email failed', e)),
 

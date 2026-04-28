@@ -81,7 +81,7 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
     await sendEmail({
       to: parsed.email,
       subject: 'Přístup do ARBIQ portálu',
-      replyTo: process.env.RESEND_BCC_ADMIN,
+      replyTo: process.env.RESEND_REPLY_TO,
       body: PortalInviteEmail({ name: parsed.full_name, email: parsed.email, password, loginUrl }),
     }).catch((e) => console.error('portal-invite email failed', e));
   }

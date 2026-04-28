@@ -35,7 +35,7 @@ export async function notifyPortalUser(opts: NotifyOptions): Promise<void> {
     await sendEmail({
       to: profile.email,
       subject: opts.subject,
-      replyTo: process.env.RESEND_BCC_ADMIN,
+      replyTo: process.env.RESEND_REPLY_TO,
       body: PortalNotificationEmail({
         heading: opts.heading,
         intro: opts.intro,

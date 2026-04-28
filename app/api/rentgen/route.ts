@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     sendEmail({
       to: parsed.email,
       subject: `Rentgen objednán — ${orderId}`,
-      replyTo: process.env.RESEND_BCC_ADMIN,
+      replyTo: process.env.RESEND_REPLY_TO,
       body: RentgenConfirmEmail({
         name: parsed.name,
         orderId,
