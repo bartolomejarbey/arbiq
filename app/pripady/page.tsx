@@ -1,6 +1,7 @@
 import Image from "next/image";
 import DetectiveTag from "@/components/shared/DetectiveTag";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import MoreCasesBanner from "@/components/sections/MoreCasesBanner";
+import { ExternalLink } from "lucide-react";
 
 const cases = [
   {
@@ -100,7 +101,7 @@ export default function PripadyPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
           {cases.map((c) => (
             <div
               key={c.number}
@@ -157,6 +158,7 @@ export default function PripadyPage() {
           ))}
         </div>
       </div>
+      <MoreCasesBanner />
     </div>
   );
 }
