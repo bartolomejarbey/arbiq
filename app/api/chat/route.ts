@@ -120,7 +120,17 @@ export async function POST(request: Request) {
     tokensIn = completion.usage?.prompt_tokens ?? 0;
     tokensOut = completion.usage?.completion_tokens ?? 0;
   } catch (err) {
-    console.error('OpenAI error', err);
+    // Detailní logging do Vercel logs pro diagnostiku — typování přes APIError z OpenAI SDK.
+    const e = err as { status?: number; code?: string; type?: string; message?: string };
+    console.error('OpenAI error', {
+      status: e?.status,
+      code: e?.code,
+      type: e?.type,
+      message: e?.message?.slice(0, 500),
+      hasKey: Boolean(process.env.OPENAI_API_KEY),
+      keyPrefix: process.env.OPENAI_API_KEY?.slice(0, 10) ?? null,
+      model: MODEL,
+    });
     return NextResponse.json(
       { error: 'Chatbot je dočasně nedostupný. Napište nám na info@arbiq.cz.' },
       { status: 502 }
