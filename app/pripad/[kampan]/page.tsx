@@ -517,12 +517,6 @@ export default function PripadPage({
                   >
                     Vyřešené případy <ArrowRight size={14} />
                   </Link>
-                  <Link
-                    href="/rentgen"
-                    className="bg-caramel text-espresso px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center gap-2 justify-center"
-                  >
-                    Objednat Rentgen <ArrowRight size={14} />
-                  </Link>
                 </div>
               </motion.div>
             )}

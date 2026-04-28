@@ -6,8 +6,8 @@ export default function Footer() {
   return (
     <footer className="bg-espresso border-t border-caramel/20 pt-24 pb-12 px-6 md:px-12 relative overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-20">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10 lg:gap-8 mb-20">
+          <div className="lg:col-span-1 sm:col-span-2 md:col-span-3 lg:col-auto">
             <Image
               src="/arbiq-logo.png"
               alt="ARBIQ"
@@ -15,9 +15,12 @@ export default function Footer() {
               height={80}
               className="h-16 w-auto mb-5"
             />
-            <p className="text-sepia/60 text-sm leading-relaxed">
+            <p className="text-sepia/60 text-sm leading-relaxed mb-6">
               Detektivní agentura pro weby, produkty a strategie. Vyšetřujeme, proč váš digitální business nefunguje, a opravujeme to.
             </p>
+            <div className="hidden lg:block">
+              <WaxSeal text="UZAVŘEN" />
+            </div>
           </div>
 
           <div>
@@ -45,6 +48,26 @@ export default function Footer() {
           </div>
 
           <div>
+            <h5 className="font-mono text-[10px] uppercase tracking-[0.3em] text-caramel mb-6">Pro koho</h5>
+            <ul className="space-y-3">
+              <li><Link href="/pripad/remeslnici" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Řemeslníci</Link></li>
+              <li><Link href="/pripad/financni-poradci" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Finanční poradci</Link></li>
+              <li><Link href="/pripad/realitni-makleri" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Realitní makléři</Link></li>
+              <li><Link href="/pripad/startup" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Startupy</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h5 className="font-mono text-[10px] uppercase tracking-[0.3em] text-caramel mb-6">Co řešíme</h5>
+            <ul className="space-y-3">
+              <li><Link href="/pripad/webove-stranky" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Webové stránky</Link></li>
+              <li><Link href="/pripad/marketing" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Marketing</Link></li>
+              <li><Link href="/pripad/automatizace" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Automatizace</Link></li>
+              <li><Link href="/pripad/edukace" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Edukace a obsah</Link></li>
+            </ul>
+          </div>
+
+          <div>
             <h5 className="font-mono text-[10px] uppercase tracking-[0.3em] text-caramel mb-6">Kontakt</h5>
             <ul className="space-y-3">
               <li><a href="mailto:info@arbiq.cz" className="text-sepia hover:text-caramel text-sm transition-colors">info@arbiq.cz</a></li>
@@ -52,10 +75,9 @@ export default function Footer() {
               <li className="text-sepia text-sm">Školská 689/20</li>
               <li className="text-sepia text-sm">110 00 Praha 1</li>
             </ul>
-          </div>
-
-          <div className="flex justify-end items-start">
-            <WaxSeal text="UZAVŘEN" />
+            <div className="lg:hidden mt-8">
+              <WaxSeal text="UZAVŘEN" />
+            </div>
           </div>
         </div>
 

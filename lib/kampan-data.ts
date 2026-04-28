@@ -29,7 +29,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Víc zákazníků", "Profesionální vzhled", "E-shop", "Rezervační systém", "Všechno"],
     showUrl: true,
     showPopis: false,
-    successExtra: "Připravíme Vám nezávazný návrh webu do 48 hodin.",
+    successExtra: "Připravíme Vám návrh webu zdarma do 48 hodin.",
   },
   marketing: {
     headline: "Vaše reklamy utrácejí bez výsledků. Pojďme to změnit.",
@@ -39,6 +39,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Do 5 000 Kč", "5–15 000 Kč", "15–50 000 Kč", "Nad 50 000 Kč", "Nevím, poraďte"],
     showUrl: true,
     showPopis: false,
+    successExtra: "Připravíme Vám návrh webu zdarma do 48 hodin.",
   },
   rentgen: {
     headline: "Něco ve Vašem podnikání nefunguje. Pojďme to najít.",
@@ -48,6 +49,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Web nevypadá dobře", "Nemám zákazníky z internetu", "Konkurence mě předbíhá", "Nevím co je špatně"],
     showUrl: true,
     showPopis: false,
+    successExtra: "Připravíme Vám audit Vašeho webu zdarma.",
   },
   edukace: {
     headline: "Viděli jste naše video. Teď pojďme řešit Váš případ.",
@@ -57,6 +59,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Web nevypadá dobře", "Nemám zákazníky z internetu", "Konkurence mě předbíhá", "Nevím co je špatně"],
     showUrl: true,
     showPopis: false,
+    successExtra: "Ozveme se Vám do 24 hodin.",
   },
   remeslnici: {
     headline: "Máte plné ruce práce ale prázdný kalendář? Pojďme to otočit.",
@@ -66,6 +69,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Víc zákazníků", "Profesionální vzhled", "E-shop", "Rezervační systém", "Všechno"],
     showUrl: true,
     showPopis: false,
+    successExtra: "Připravíme Vám návrh webu zdarma do 48 hodin.",
   },
   "financni-poradci": {
     headline: "90 % Vašich klientů neví, co má pojištěné. Pojďme to změnit.",
@@ -75,6 +79,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Web nevypadá dobře", "Nemám zákazníky z internetu", "Konkurence mě předbíhá", "Nevím co je špatně"],
     showUrl: true,
     showPopis: false,
+    successExtra: "Připravíme Vám návrh webu zdarma do 48 hodin.",
   },
   "realitni-makleri": {
     headline: "Vaše nabídky se ztrácejí v davu. Pojďme Vás z něj vytáhnout.",
@@ -84,6 +89,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Web nevypadá dobře", "Nemám zákazníky z internetu", "Konkurence mě předbíhá", "Nevím co je špatně"],
     showUrl: true,
     showPopis: false,
+    successExtra: "Připravíme Vám návrh webu zdarma do 48 hodin.",
   },
   automatizace: {
     headline: "Kolik hodin týdně ztrácíte opakovanou prací? Pojďme to spočítat.",
@@ -93,7 +99,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Do 5 hodin", "5–15 hodin", "15–30 hodin", "Nad 30 hodin"],
     showUrl: false,
     showPopis: false,
-    successExtra: "Připravíme Vám analýzu, kolik hodin a peněz Vám ušetříme.",
+    successExtra: "Připravíme Vám analýzu úspory zdarma.",
   },
   startup: {
     headline: "Rozjíždíte podnikání? Pojďme to udělat správně od začátku.",
@@ -103,7 +109,7 @@ export const kampanData: Record<KampanKey, KampanConfig> = {
     step3Options: ["Web a branding", "Marketing a zákazníky", "Aplikaci/systém", "Strategii"],
     showUrl: false,
     showPopis: true,
-    successExtra: undefined,
+    successExtra: "Připravíme Vám návrh webu zdarma do 48 hodin.",
   },
 };
 
