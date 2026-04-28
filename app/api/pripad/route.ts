@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/email/send';
 import { LeadConfirmEmail } from '@/lib/email/templates/lead-confirm';
 import { LeadInternalEmail } from '@/lib/email/templates/lead-internal';
 import { isLikelySpam, isEmailRateLimited, HONEYPOT_FIELD } from '@/lib/spam-protection';
+import { inferSourceTag } from '@/lib/source-tag';
 
 const PripadSchema = z.object({
   kampan: z.string().min(1).max(80),
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
     utm_source: parsed.utm_source || null,
     utm_medium: parsed.utm_medium || null,
     utm_campaign: parsed.utm_campaign || null,
+    source_tag: inferSourceTag({ utmSource: parsed.utm_source, kampan: parsed.kampan }),
     case_number: caseNumber,
   });
 

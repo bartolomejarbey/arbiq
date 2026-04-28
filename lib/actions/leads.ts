@@ -9,6 +9,29 @@ import { PortalInviteEmail } from '@/lib/email/templates/portal-invite';
 
 const LeadStatusValues = ['new', 'contacted', 'qualified', 'unqualified', 'converted', 'lost'] as const;
 
+const SourceTagValues = [
+  'meta_ads',
+  'google_ads',
+  'cold_call',
+  'email_outreach',
+  'linkedin',
+  'doporuceni',
+  'organic',
+  'imported_db',
+  'jine',
+] as const;
+export type SourceTagValue = (typeof SourceTagValues)[number];
+
+export async function updateLeadSourceTag(leadId: string, tag: SourceTagValue) {
+  if (!SourceTagValues.includes(tag)) throw new Error('Neplatný source_tag.');
+  const supabase = await createClient();
+  const { error } = await supabase.from('landing_leads').update({ source_tag: tag }).eq('id', leadId);
+  if (error) throw new Error(error.message);
+  revalidatePath('/portal/crm/leady');
+  revalidatePath('/portal/crm/dashboard');
+  revalidatePath('/portal/crm/pipeline');
+}
+
 export async function assignLeadToMe(leadId: string) {
   const supabase = await createClient();
   const {

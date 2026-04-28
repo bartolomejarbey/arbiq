@@ -17,7 +17,7 @@ export default async function LeadyPage() {
     const supabase = await createClient();
     const { data } = await supabase
       .from('landing_leads')
-      .select('id, created_at, case_number, kampan, obor, velikost_firmy, step3_odpoved, name, email, phone, website_url, popis, utm_source, utm_medium, utm_campaign, status, assigned_to, notes')
+      .select('id, created_at, case_number, kampan, obor, velikost_firmy, step3_odpoved, name, email, phone, website_url, popis, utm_source, utm_medium, utm_campaign, status, source_tag, assigned_to, notes')
       .order('created_at', { ascending: false })
       .limit(500);
     leads = ((data ?? []) as unknown as LeadRow[]);

@@ -5,6 +5,7 @@ import { sendEmail } from '@/lib/email/send';
 import { RentgenConfirmEmail } from '@/lib/email/templates/rentgen-confirm';
 import { RentgenInternalEmail } from '@/lib/email/templates/rentgen-internal';
 import { isLikelySpam, isEmailRateLimited } from '@/lib/spam-protection';
+import { inferSourceTag } from '@/lib/source-tag';
 
 const RentgenSchema = z.object({
   name: z.string().min(2).max(120),
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
       utm_source: parsed.utm_source || null,
       utm_medium: parsed.utm_medium || null,
       utm_campaign: parsed.utm_campaign || null,
+      source_tag: inferSourceTag({ utmSource: parsed.utm_source }),
     })
     .select('id, created_at')
     .single();

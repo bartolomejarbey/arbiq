@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from 'react';
 import { ChevronRight } from 'lucide-react';
 import StatusBadge from './StatusBadge';
+import SourceTagBadge, { SOURCE_TAG_VALUES, tagLabel } from './SourceTagBadge';
 import { formatDateShort } from '@/lib/formatters';
 import { kampanData, type KampanKey } from '@/lib/kampan-data';
 import { assignLeadToMe, discardLead } from '@/lib/actions/leads';
@@ -25,6 +26,7 @@ export type LeadRow = {
   utm_medium: string | null;
   utm_campaign: string | null;
   status: string;
+  source_tag: string | null;
   assigned_to: string | null;
   notes: string | null;
 };
@@ -38,15 +40,17 @@ export default function LeadTable({
 }) {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [kampanFilter, setKampanFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
   const [selected, setSelected] = useState<LeadRow | null>(null);
   const [pending, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
     return leads.filter((l) =>
       (statusFilter === 'all' || l.status === statusFilter) &&
-      (kampanFilter === 'all' || l.kampan === kampanFilter),
+      (kampanFilter === 'all' || l.kampan === kampanFilter) &&
+      (tagFilter === 'all' || (l.source_tag ?? '') === tagFilter),
     );
-  }, [leads, statusFilter, kampanFilter]);
+  }, [leads, statusFilter, kampanFilter, tagFilter]);
 
   const allKampans = Array.from(new Set(leads.map((l) => l.kampan)));
 
@@ -76,6 +80,12 @@ export default function LeadTable({
             })),
           ]}
         />
+        <FilterSelect label="Zdroj" value={tagFilter} onChange={setTagFilter}
+          options={[
+            { value: 'all', label: 'Všechny' },
+            ...SOURCE_TAG_VALUES.map((v) => ({ value: v, label: tagLabel(v) })),
+          ]}
+        />
         <span className="ml-auto text-sandstone text-xs font-mono">
           {filtered.length} / {leads.length}
         </span>
@@ -90,6 +100,7 @@ export default function LeadTable({
               <Th>Jméno</Th>
               <Th>E-mail</Th>
               <Th>Kampaň</Th>
+              <Th>Zdroj</Th>
               <Th>Obor</Th>
               <Th>Status</Th>
               {showActions && <th className="px-4 py-3"></th>}
@@ -98,7 +109,7 @@ export default function LeadTable({
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={showActions ? 8 : 7} className="text-center text-sandstone py-12">
+                <td colSpan={showActions ? 9 : 8} className="text-center text-sandstone py-12">
                   Žádné leady neodpovídají filtru.
                 </td>
               </tr>
@@ -112,6 +123,7 @@ export default function LeadTable({
                   <a href={`mailto:${l.email}`} className="hover:text-caramel">{l.email}</a>
                 </td>
                 <td className="px-4 py-3 text-sepia">{l.kampan}</td>
+                <td className="px-4 py-3"><SourceTagBadge tag={l.source_tag} leadId={l.id} editable /></td>
                 <td className="px-4 py-3 text-sandstone">{l.obor ?? '—'}</td>
                 <td className="px-4 py-3"><StatusBadge kind="lead" value={l.status} /></td>
                 {showActions && (
