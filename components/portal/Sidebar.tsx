@@ -19,6 +19,7 @@ import {
   Cookie,
   Activity,
   MessageSquare,
+  Database,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -36,6 +37,7 @@ const crmNav: NavItem[] = [
   { href: '/portal/crm/pipeline',  label: 'Pipeline',  icon: KanbanSquare },
   { href: '/portal/crm/klienti',   label: 'Klienti',   icon: Users },
   { href: '/portal/crm/leady',     label: 'Leady',     icon: Inbox },
+  { href: '/portal/crm/databaze',  label: 'Databáze',  icon: Database },
   { href: '/portal/crm/ukoly',     label: 'Úkoly',     icon: CheckSquare },
 ];
 
