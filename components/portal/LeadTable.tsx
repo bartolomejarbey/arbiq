@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Phone, Mail } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import SourceTagBadge, { SOURCE_TAG_VALUES, tagLabel } from './SourceTagBadge';
 import { formatDateShort } from '@/lib/formatters';
@@ -91,7 +91,8 @@ export default function LeadTable({
         </span>
       </div>
 
-      <div className="bg-coffee overflow-x-auto">
+      {/* Desktop tabulka */}
+      <div className="hidden md:block bg-coffee overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-tobacco">
@@ -159,6 +160,65 @@ export default function LeadTable({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile karty */}
+      <div className="md:hidden space-y-3">
+        {filtered.length === 0 && (
+          <div className="text-center text-sandstone py-12 bg-coffee">
+            Žádné leady neodpovídají filtru.
+          </div>
+        )}
+        {filtered.map((l) => (
+          <div key={l.id} className="bg-coffee border-l-4 border-caramel/40 p-4">
+            <div className="flex items-start justify-between mb-2 gap-3">
+              <div className="min-w-0">
+                <div className="text-moonlight font-medium truncate">{l.name}</div>
+                <div className="text-sandstone text-xs font-mono mt-0.5">
+                  {l.case_number ?? 'lead'} · {formatDateShort(l.created_at)}
+                </div>
+              </div>
+              <StatusBadge kind="lead" value={l.status} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mb-3 text-xs">
+              <span className="text-sepia">{l.kampan}</span>
+              {l.obor && <span className="text-sandstone">· {l.obor}</span>}
+              <SourceTagBadge tag={l.source_tag} leadId={l.id} editable />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href={`mailto:${l.email}`}
+                className="px-3 py-2 min-h-[44px] inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest bg-caramel/20 text-caramel hover:bg-caramel/30"
+              >
+                <Mail size={12} /> Email
+              </a>
+              {l.phone && (
+                <a
+                  href={`tel:${l.phone.replace(/\s/g, '')}`}
+                  className="px-3 py-2 min-h-[44px] inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest bg-olive/20 text-olive hover:bg-olive/30"
+                >
+                  <Phone size={12} /> Volat
+                </a>
+              )}
+              {showActions && l.status === 'new' && !l.assigned_to && (
+                <button
+                  onClick={() => handleAssign(l.id)}
+                  disabled={pending}
+                  className="px-3 py-2 min-h-[44px] inline-flex items-center text-xs font-mono uppercase tracking-widest bg-tobacco text-sepia hover:bg-tobacco/70 disabled:opacity-50"
+                >
+                  Vzít si
+                </button>
+              )}
+              <button
+                onClick={() => setSelected(l)}
+                className="px-3 py-2 min-h-[44px] ml-auto inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest text-sepia hover:text-moonlight"
+                aria-label="Detail leadu"
+              >
+                Detail <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
       {selected && (

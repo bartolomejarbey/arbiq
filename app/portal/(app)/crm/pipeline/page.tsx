@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/lib/supabase/viewer";
 import PageHeader from '@/components/portal/PageHeader';
 import KanbanBoard, { type KanbanLead } from '@/components/portal/KanbanBoard';
+import PipelineMobileTabs from '@/components/portal/PipelineMobileTabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,31 +24,39 @@ const PREVIEW_PIPELINE: KanbanLead[] = [
 export default async function PipelinePage() {
   const viewer = await requireViewer();
 
+  let leads: KanbanLead[];
+  let isPreview = false;
   if (viewer.isPreview) {
-    return (
-      <div>
-        <PageHeader eyebrow="CRM · DEMO" title="Pipeline" subtitle="Klasické kanban — drag &amp; drop mezi sloupci. (Demo data — Sherlockovi klienti.)" />
-        <div className="px-8 py-8">
-          <KanbanBoard leads={PREVIEW_PIPELINE} />
-        </div>
-      </div>
-    );
+    leads = PREVIEW_PIPELINE;
+    isPreview = true;
+  } else {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('landing_leads')
+      .select('id, name, case_number, kampan, pipeline_stage, created_at, email')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    leads = ((data ?? []) as unknown as KanbanLead[]);
   }
-
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('landing_leads')
-    .select('id, name, case_number, kampan, pipeline_stage, created_at, email')
-    .order('created_at', { ascending: false })
-    .limit(500);
-
-  const leads = ((data ?? []) as unknown as KanbanLead[]);
 
   return (
     <div>
-      <PageHeader eyebrow="CRM" title="Pipeline" subtitle="Přetáhněte kartu pro změnu fáze." />
-      <div className="px-8 py-8">
-        <KanbanBoard leads={leads} />
+      <PageHeader
+        eyebrow={isPreview ? 'CRM · DEMO' : 'CRM'}
+        title="Pipeline"
+        subtitle={
+          isPreview
+            ? 'Drag & drop na desktopu, taby na mobilu. (Demo data — Sherlockovi klienti.)'
+            : 'Drag & drop na desktopu, taby s tlačítky Zpět/Dál na mobilu.'
+        }
+      />
+      <div className="px-4 md:px-8 py-8">
+        <div className="hidden md:block">
+          <KanbanBoard leads={leads} />
+        </div>
+        <div className="md:hidden">
+          <PipelineMobileTabs leads={leads} />
+        </div>
       </div>
     </div>
   );
