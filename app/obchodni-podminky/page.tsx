@@ -112,7 +112,7 @@ export default function ObchodniPodminkyPage() {
         </section>
 
         <p className="text-sandstone text-sm pt-8 border-t border-tobacco">
-          Otázky? Napište na <a href="mailto:info@arbiq.cz" className="text-caramel hover:text-caramel-light">info@arbiq.cz</a>.
+          Otázky? Napište na <a href="mailto:info@arbey.cz" className="text-caramel hover:text-caramel-light">info@arbey.cz</a>.
         </p>
 
         <div className="flex gap-4 pt-8">

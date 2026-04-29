@@ -80,7 +80,7 @@ export default function RentgenPage() {
       });
       const payload = (await res.json().catch(() => ({}))) as { orderId?: string; error?: string };
       if (!res.ok) {
-        throw new Error(payload.error ?? "Něco se pokazilo. Zkuste znovu nebo napište na info@arbiq.cz");
+        throw new Error(payload.error ?? "Něco se pokazilo. Zkuste znovu nebo napište na info@arbey.cz");
       }
       setOrderId(payload.orderId ?? null);
       setSubmitted(true);

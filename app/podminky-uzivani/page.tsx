@@ -54,7 +54,7 @@ export default function PodminkyUzivaniPage() {
           </p>
           <ul className="list-disc pl-6 mt-3 space-y-2">
             <li>Chránit přístupové údaje, neposkytovat je třetím osobám.</li>
-            <li>Při podezření na zneužití účtu okamžitě informovat ARBIQ na <a href="mailto:info@arbiq.cz" className="text-caramel hover:text-caramel-light">info@arbiq.cz</a>.</li>
+            <li>Při podezření na zneužití účtu okamžitě informovat ARBIQ na <a href="mailto:info@arbey.cz" className="text-caramel hover:text-caramel-light">info@arbey.cz</a>.</li>
             <li>Užívat portál v souladu se smlouvou — nezneužívat ho k jiným účelům než ke správě vlastních projektů.</li>
           </ul>
           <p className="mt-3">Portál je dostupný v režimu „best-effort" — nezaručujeme nepřetržitou dostupnost. Plánovanou údržbu oznamujeme s předstihem.</p>
@@ -107,7 +107,7 @@ export default function PodminkyUzivaniPage() {
         <section>
           <h2 className="font-display italic font-black text-moonlight text-2xl mb-3">10. Kontakt</h2>
           <p>
-            Otázky, připomínky, žádosti směřujte na <a href="mailto:info@arbiq.cz" className="text-caramel hover:text-caramel-light">info@arbiq.cz</a>. Odpovídáme do 5 pracovních dní.
+            Otázky, připomínky, žádosti směřujte na <a href="mailto:info@arbey.cz" className="text-caramel hover:text-caramel-light">info@arbey.cz</a>. Odpovídáme do 5 pracovních dní.
           </p>
         </section>
 

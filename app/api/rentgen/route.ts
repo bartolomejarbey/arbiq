@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   if (error || !row) {
     console.error('rentgen_orders insert failed', error);
-    return NextResponse.json({ error: 'Něco se pokazilo. Zkuste znovu nebo napište na info@arbiq.cz' }, { status: 500 });
+    return NextResponse.json({ error: 'Něco se pokazilo. Zkuste znovu nebo napište na info@arbey.cz' }, { status: 500 });
   }
 
   // Friendly displayable order id: RTG-YYYYMMDD-<first 6 of uuid>

@@ -35,7 +35,7 @@ export default function PreviewBanner() {
     );
     console.log('%c🔍 Vítejte ve vyšetřovací místnosti, Watsone.',
       'color: #D8DDE5; font-size: 14px; font-family: monospace; font-weight: bold;');
-    console.log('%cPokud vidíte tuto zprávu, něco hledáte. Najdete nás na info@arbiq.cz.',
+    console.log('%cPokud vidíte tuto zprávu, něco hledáte. Najdete nás na info@arbey.cz.',
       'color: #8B7B65; font-family: monospace;');
     console.log('%c→ Kódujete? Hledáme Senior Next.js. Pošlete nám CV.',
       'color: #C9986A; font-family: monospace;');

@@ -107,7 +107,7 @@ export default function KontaktPage() {
                   <Mail size={20} className="text-caramel mt-1 shrink-0" strokeWidth={1.5} />
                   <div>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone block mb-1">E-mail</span>
-                    <a href="mailto:info@arbiq.cz" className="text-moonlight hover:text-caramel transition-colors">info@arbiq.cz</a>
+                    <a href="mailto:info@arbey.cz" className="text-moonlight hover:text-caramel transition-colors">info@arbey.cz</a>
                   </div>
                 </div>
 

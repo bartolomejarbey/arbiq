@@ -22,7 +22,7 @@ export default function GDPRPage() {
             Správcem osobních údajů je společnost <strong className="text-moonlight">Harotas s.r.o.</strong>, IČO 21402027, se sídlem
             Školská 689/20, 110 00 Praha 1, zapsaná v obchodním rejstříku vedeném Městským soudem v Praze (dále jen „Správce" nebo „ARBIQ").
           </p>
-          <p className="mt-3">Kontaktní e-mail pro otázky GDPR: <a href="mailto:info@arbiq.cz" className="text-caramel hover:text-caramel-light">info@arbiq.cz</a></p>
+          <p className="mt-3">Kontaktní e-mail pro otázky GDPR: <a href="mailto:info@arbey.cz" className="text-caramel hover:text-caramel-light">info@arbey.cz</a></p>
         </section>
 
         <section>
@@ -87,7 +87,7 @@ export default function GDPRPage() {
             <li><strong className="text-moonlight">Právo odvolat souhlas</strong> — kdykoliv pro účely, kde byl souhlas právním základem</li>
             <li><strong className="text-moonlight">Právo podat stížnost</strong> u dozorového úřadu (Úřad pro ochranu osobních údajů, Pplk. Sochora 27, 170 00 Praha 7, <a href="https://uoou.gov.cz" className="text-caramel">uoou.gov.cz</a>)</li>
           </ul>
-          <p className="mt-3">Pro uplatnění práv nás kontaktujte na <a href="mailto:info@arbiq.cz" className="text-caramel hover:text-caramel-light">info@arbiq.cz</a>. Odpovídáme do 30 dní.</p>
+          <p className="mt-3">Pro uplatnění práv nás kontaktujte na <a href="mailto:info@arbey.cz" className="text-caramel hover:text-caramel-light">info@arbey.cz</a>. Odpovídáme do 30 dní.</p>
         </section>
 
         <section>
@@ -118,7 +118,7 @@ export default function GDPRPage() {
         </section>
 
         <p className="text-sandstone text-sm pt-8 border-t border-tobacco">
-          Máte-li dotaz, napište na <a href="mailto:info@arbiq.cz" className="text-caramel hover:text-caramel-light">info@arbiq.cz</a>. Děkujeme za důvěru.
+          Máte-li dotaz, napište na <a href="mailto:info@arbey.cz" className="text-caramel hover:text-caramel-light">info@arbey.cz</a>. Děkujeme za důvěru.
         </p>
 
         <div className="flex gap-4 pt-8">

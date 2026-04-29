@@ -196,7 +196,7 @@ export default function ChatWidget() {
               </button>
             </div>
             <div className="mt-2 text-[10px] text-sandstone/70 font-mono">
-              Odpovídá AI. Pro závazné nabídky napište na <span className="text-caramel">info@arbiq.cz</span>.
+              Odpovídá AI. Pro závazné nabídky napište na <span className="text-caramel">info@arbey.cz</span>.
             </div>
           </div>
         </div>

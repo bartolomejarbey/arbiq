@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   const rate = checkRateLimit(ipHash);
   if (!rate.ok) {
     return NextResponse.json(
-      { error: 'Překročili jste limit zpráv (30/hod). Zkuste za hodinu, nebo nám napište na info@arbiq.cz.' },
+      { error: 'Překročili jste limit zpráv (30/hod). Zkuste za hodinu, nebo nám napište na info@arbey.cz.' },
       { status: 429 }
     );
   }
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       model: MODEL,
     });
     return NextResponse.json(
-      { error: 'Chatbot je dočasně nedostupný. Napište nám na info@arbiq.cz.' },
+      { error: 'Chatbot je dočasně nedostupný. Napište nám na info@arbey.cz.' },
       { status: 502 }
     );
   }
