@@ -32,7 +32,7 @@ const teamMembers: Member[] = [
       "Automatizace & AI",
     ],
     photo: "/tym/bartolomej.jpg",
-    email: "bartolomej@arbiq.cz",
+    email: "bartolomej@arbey.cz",
     phone: "+420 725 932 729",
   },
   {
@@ -57,7 +57,7 @@ const teamMembers: Member[] = [
     description: "Váš první kontakt. Zařídí, aby vše klapalo.",
     skills: ["Klientský servis", "Projektové řízení", "Obchodní jednání"],
     photo: "/tym/fidelio.jpg",
-    email: "fidelio@arbiq.cz",
+    email: "fidelio@arbey.cz",
     phone: "+420 739 609 841",
   },
 ];

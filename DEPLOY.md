@@ -48,7 +48,7 @@ git push -u origin main
 ### 2b) Vytvořit Vás jako admin
 
 **Dashboard → Authentication → Users → Add user** (manuální):
-- Email: `bartolomej@arbiq.cz`
+- Email: `bartolomej@arbey.cz`
 - Password: vlastní (nebo "Send invite link")
 - ✅ Auto Confirm User
 
@@ -80,7 +80,7 @@ Vrátí se zpět do **SQL Editor → New query** → vložte `supabase/seed-admi
    | `SUPABASE_SERVICE_ROLE_KEY` | z Supabase (**tajné**) |
    | `RESEND_API_KEY` | z Resend |
    | `RESEND_FROM` | `ARBIQ <noreply@arbiq.cz>` |
-   | `RESEND_BCC_ADMIN` | `bartolomej@arbiq.cz` |
+   | `RESEND_BCC_ADMIN` | `bartolomej@arbey.cz,fidelio@arbey.cz` |
    | `APP_URL` | `https://arbiq.cz` |
    | `CRON_SECRET` | náhodný 32znakový řetězec (např. `openssl rand -hex 16`) |
 

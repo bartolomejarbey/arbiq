@@ -27,7 +27,7 @@ const PHONE_PRIMARY_DISPLAY = "+420 725 932 729";
 const PHONE_WHATSAPP = "+420725893968";
 const PHONE_WHATSAPP_DIGITS = "420725893968";
 const PHONE_WHATSAPP_DISPLAY = "+420 725 893 968";
-const EMAIL = "bartolomej@arbiq.cz";
+const EMAIL = "bartolomej@arbey.cz";
 
 const CONTACT_TEXT = [
   "Bartoloměj Rota",

@@ -21,7 +21,7 @@ const VCARD_LINES = [
   'TITLE:Zakladatel',
   'TEL;TYPE=CELL,VOICE:+420725932729',
   'TEL;TYPE=CELL;X-ABLabel=WhatsApp:+420725893968',
-  'EMAIL;TYPE=INTERNET,WORK:bartolomej@arbiq.cz',
+  'EMAIL;TYPE=INTERNET,WORK:bartolomej@arbey.cz',
   'URL:https://arbiq.cz',
   'ADR;TYPE=WORK:;;Školská 689/20;Praha 1;;110 00;Česká republika',
   'NOTE:ARBIQ — detektivní agentura pro digitální business. Web. Marketing. Aplikace na míru.',
