@@ -21,7 +21,7 @@ function getVisitorId(): string {
 
 const GREETING: Msg = {
   role: 'assistant',
-  content: 'Dobrý den, jsem Pomocník Watson. Pomáhám návštěvníkům arbiq.cz odpovídat na otázky — co Vás zajímá? (Cena? Reference? Jak začít?)',
+  content: 'Dobrý den, jsem Pomocník Watson — pomáhám s prvním odhadem ceny a rozsahu projektu. Co byste rád řešil? (Web, e-shop, reklama, automatizace, něco jiného?)',
 };
 
 export default function ChatWidget() {
