@@ -6,6 +6,7 @@ import { track } from '@/lib/track';
 
 const VISITOR_KEY = 'arbiq_anon_id';
 const SESSION_KEY = 'arbiq_chat_session';
+const DISMISSED_KEY = 'arbiq_chat_dismissed';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -26,6 +27,7 @@ const GREETING: Msg = {
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
   const [sending, setSending] = useState(false);
@@ -38,7 +40,17 @@ export default function ChatWidget() {
     if (typeof window === 'undefined') return;
     const stored = window.sessionStorage.getItem(SESSION_KEY);
     if (stored) setSessionId(stored);
+    if (window.sessionStorage.getItem(DISMISSED_KEY) === '1') setDismissed(true);
   }, []);
+
+  function dismiss() {
+    setDismissed(true);
+    setOpen(false);
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem(DISMISSED_KEY, '1');
+    }
+    track('chat_dismiss');
+  }
 
   useEffect(() => {
     if (open && scrollRef.current) {
@@ -111,18 +123,30 @@ export default function ChatWidget() {
     }
   }
 
+  if (dismissed) return null;
+
   return (
     <>
       {!open && (
-        <button
-          onClick={() => { setOpen(true); track('chat_open'); }}
-          className="group fixed bottom-6 right-6 z-[60] bg-caramel hover:bg-caramel-light text-espresso flex items-center gap-2 pl-3 pr-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-all hover:scale-105 font-mono text-xs uppercase tracking-widest font-bold"
-          aria-label="Otevřít chat s Watsonem"
-        >
-          <MessageSquare size={18} />
-          <span>Pomocník Watson</span>
-          <span className="hidden sm:inline-block w-2 h-2 bg-olive rounded-full animate-pulse ml-1" aria-hidden="true" />
-        </button>
+        <div className="fixed bottom-6 right-6 z-[60] flex items-start gap-1">
+          <button
+            onClick={() => { setOpen(true); track('chat_open'); }}
+            className="group bg-caramel hover:bg-caramel-light text-espresso flex items-center gap-2 pl-3 pr-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-all hover:scale-105 font-mono text-xs uppercase tracking-widest font-bold"
+            aria-label="Otevřít chat s Watsonem"
+          >
+            <MessageSquare size={18} />
+            <span>Pomocník Watson</span>
+            <span className="hidden sm:inline-block w-2 h-2 bg-olive rounded-full animate-pulse ml-1" aria-hidden="true" />
+          </button>
+          <button
+            onClick={dismiss}
+            className="bg-coffee/95 border border-tobacco text-sandstone hover:text-rust hover:border-rust w-7 h-7 flex items-center justify-center transition-all shadow-md"
+            aria-label="Skrýt Watson na zbytek session"
+            title="Skrýt"
+          >
+            <X size={14} />
+          </button>
+        </div>
       )}
 
       {open && (

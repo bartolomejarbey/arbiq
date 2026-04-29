@@ -2,15 +2,29 @@
 
 import { usePathname } from 'next/navigation';
 
-/**
- * Hides children when the current pathname matches a chrome-less route.
- * - /portal — portal/CRM/admin shell má vlastní layout
- * - /vizitka — focused mobile landing page (vCard download flow)
- */
-const CHROMELESS_PREFIXES = ['/portal', '/vizitka'];
+type Target = 'header' | 'footer' | 'cookies' | 'chat';
 
-export default function ChromeGate({ children }: { children: React.ReactNode }) {
+/**
+ * Skryje konkrétní chrome element na vybraných cestách.
+ * - /portal a /vizitka — vlastní layout, schováme všechno.
+ * - /pripad/* — onboarding flow musí být focused, schováme header + footer.
+ *   CookieBanner zůstává (legal), ChatWidget zůstává (může pomoci s otázkou).
+ */
+const RULES: Record<Target, string[]> = {
+  header: ['/portal', '/vizitka', '/pripad'],
+  footer: ['/portal', '/vizitka', '/pripad'],
+  cookies: ['/portal', '/vizitka'],
+  chat: ['/portal', '/vizitka'],
+};
+
+export default function ChromeGate({
+  target = 'header',
+  children,
+}: {
+  target?: Target;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
-  if (pathname && CHROMELESS_PREFIXES.some((p) => pathname.startsWith(p))) return null;
+  if (pathname && RULES[target].some((p) => pathname.startsWith(p))) return null;
   return <>{children}</>;
 }

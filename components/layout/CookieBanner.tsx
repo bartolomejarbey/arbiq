@@ -94,7 +94,7 @@ export default function CookieBanner() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:max-w-md z-50 bg-coffee border border-tobacco shadow-2xl">
+    <div className="fixed bottom-4 left-4 right-4 md:right-auto md:left-6 md:bottom-6 md:max-w-md z-50 bg-coffee border border-tobacco shadow-2xl">
       <div className="p-5 space-y-4">
         <div>
           <div className="font-display italic text-moonlight text-lg leading-tight">Cookies a soukromí</div>

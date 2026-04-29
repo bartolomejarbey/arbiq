@@ -85,12 +85,12 @@ export default function RootLayout({
     >
       <body className="flex flex-col min-h-screen grain-overlay">
         <IntroContextProvider>
-          <ChromeGate><Header /></ChromeGate>
+          <ChromeGate target="header"><Header /></ChromeGate>
           <main className="flex-1">{children}</main>
-          <ChromeGate><Footer /></ChromeGate>
-          <ChromeGate><CookieBanner /></ChromeGate>
+          <ChromeGate target="footer"><Footer /></ChromeGate>
+          <ChromeGate target="cookies"><CookieBanner /></ChromeGate>
           <Suspense fallback={null}><AnalyticsTracker /></Suspense>
-          <ChromeGate><ChatWidget /></ChromeGate>
+          <ChromeGate target="chat"><ChatWidget /></ChromeGate>
         </IntroContextProvider>
       </body>
     </html>
