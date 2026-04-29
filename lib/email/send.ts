@@ -21,7 +21,8 @@ export type EmailPayload = {
   body: ReactElement;
   bcc?: string[];
   cc?: string[];
-  replyTo?: string;
+  /** Single email or comma-separated string of multiple — both expand to array. */
+  replyTo?: string | string[];
   /** When true, also BCC the admin defined in RESEND_BCC_ADMIN. */
   bccAdmin?: boolean;
 };
@@ -45,12 +46,19 @@ export async function sendEmail(payload: EmailPayload) {
     ...(payload.bccAdmin ? adminBccList : []),
   ];
 
+  // Allow comma-separated reply-to (e.g. RESEND_REPLY_TO=a@x.cz,b@x.cz) — split into array.
+  const replyToList = Array.isArray(payload.replyTo)
+    ? payload.replyTo
+    : typeof payload.replyTo === 'string' && payload.replyTo.includes(',')
+      ? payload.replyTo.split(',').map((s) => s.trim()).filter(Boolean)
+      : payload.replyTo;
+
   const result = await client().emails.send({
     from: process.env.RESEND_FROM,
     to: Array.isArray(payload.to) ? payload.to : [payload.to],
     bcc: bcc.length ? bcc : undefined,
     cc: payload.cc,
-    replyTo: payload.replyTo,
+    replyTo: replyToList,
     subject: payload.subject,
     html,
     text,

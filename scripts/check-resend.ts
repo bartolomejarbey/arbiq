@@ -13,7 +13,7 @@ const apiKey = process.env.RESEND_API_KEY;
 const fromHeader = process.env.RESEND_FROM ?? 'ARBIQ <noreply@arbiq.cz>';
 const replyTo = process.env.RESEND_REPLY_TO ?? null;
 const bccAdmin = process.env.RESEND_BCC_ADMIN ?? null;
-const targetEmail = process.argv[2] ?? 'bartolomejrota@gmail.com';
+const targetEmail = process.argv[2] ?? 'bartolomej@arbey.cz';
 
 function ok(msg: string) {
   console.log(`  ✓ ${msg}`);
@@ -77,7 +77,9 @@ async function main() {
     body: JSON.stringify({
       from: fromHeader,
       to: targetEmail,
-      ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(replyTo
+        ? { reply_to: replyTo.includes(',') ? replyTo.split(',').map((s) => s.trim()).filter(Boolean) : replyTo }
+        : {}),
       ...(bccAdmin ? { bcc: bccAdmin.split(',').map((s) => s.trim()) } : {}),
       subject: `ARBIQ Resend smoke test — ${new Date().toISOString().slice(0, 16)}`,
       html: `
