@@ -9,7 +9,6 @@ import CookieBanner from "@/components/layout/CookieBanner";
 import AnalyticsTracker from "@/components/layout/AnalyticsTracker";
 import ChatWidget from "@/components/chat/ChatWidget";
 import { IntroContextProvider } from "@/lib/intro-context";
-import { ModeProvider } from "@/lib/mode-context";
 
 const playfair = Playfair_Display({
   subsets: ["latin", "latin-ext"],
@@ -85,16 +84,14 @@ export default function RootLayout({
       className={`${playfair.variable} ${inter.variable} ${ibmPlexMono.variable} ${newsreader.variable}`}
     >
       <body className="flex flex-col min-h-screen grain-overlay">
-        <ModeProvider>
-          <IntroContextProvider>
-            <ChromeGate><Header /></ChromeGate>
-            <main className="flex-1">{children}</main>
-            <ChromeGate><Footer /></ChromeGate>
-            <ChromeGate><CookieBanner /></ChromeGate>
-            <Suspense fallback={null}><AnalyticsTracker /></Suspense>
-            <ChromeGate><ChatWidget /></ChromeGate>
-          </IntroContextProvider>
-        </ModeProvider>
+        <IntroContextProvider>
+          <ChromeGate><Header /></ChromeGate>
+          <main className="flex-1">{children}</main>
+          <ChromeGate><Footer /></ChromeGate>
+          <ChromeGate><CookieBanner /></ChromeGate>
+          <Suspense fallback={null}><AnalyticsTracker /></Suspense>
+          <ChromeGate><ChatWidget /></ChromeGate>
+        </IntroContextProvider>
       </body>
     </html>
   );

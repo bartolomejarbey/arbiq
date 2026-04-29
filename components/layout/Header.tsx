@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { Menu, X, ChevronDown, LogIn } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMode } from "@/lib/mode-context";
 
 const sluzbyLinks = [
   { href: "/sluzby/webove-stranky", label: "Webové stránky" },
@@ -29,7 +28,6 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileSluzbyOpen, setMobileSluzbyOpen] = useState(false);
-  const { mode, setMode } = useMode();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -117,7 +115,7 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* Klientská zóna CTA + Age toggle */}
+        {/* Klientská zóna CTA */}
         <div className="hidden md:flex items-center gap-4 shrink-0">
           <Link
             href="/portal/login"
@@ -126,31 +124,6 @@ export default function Header() {
             <LogIn size={14} strokeWidth={2.5} />
             Klientská zóna
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] uppercase tracking-widest text-sandstone">
-              REŽIM:
-            </span>
-            <button
-              onClick={() => setMode("mladsi")}
-              className={`px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest transition-all ${
-                mode === "mladsi"
-                  ? "bg-caramel text-espresso font-bold"
-                  : "border border-caramel/30 text-caramel hover:bg-caramel hover:text-espresso"
-              }`}
-            >
-              Mladší
-            </button>
-            <button
-              onClick={() => setMode("zkusenejsi")}
-              className={`px-3 py-1.5 font-mono text-[9px] uppercase tracking-widest transition-all ${
-                mode === "zkusenejsi"
-                  ? "bg-caramel text-espresso font-bold"
-                  : "border border-caramel/30 text-caramel hover:bg-caramel hover:text-espresso"
-              }`}
-            >
-              Zkušenější
-            </button>
-          </div>
         </div>
 
         {/* Mobile hamburger */}
