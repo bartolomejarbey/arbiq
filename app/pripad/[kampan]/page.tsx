@@ -512,6 +512,12 @@ export default function PripadPage({
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                   <Link
+                    href="/"
+                    className="bg-caramel text-espresso px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center gap-2 justify-center"
+                  >
+                    Prohlédnout web <ArrowRight size={14} />
+                  </Link>
+                  <Link
                     href="/pripady"
                     className="border border-caramel/30 text-caramel px-8 py-4 font-mono text-xs uppercase tracking-widest hover:bg-caramel/10 transition-all inline-flex items-center gap-2 justify-center"
                   >
