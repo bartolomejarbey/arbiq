@@ -52,8 +52,8 @@ export default function Header() {
           <Image
             src="/arbiq-logo.png"
             alt="ARBIQ"
-            width={240}
-            height={80}
+            width={500}
+            height={500}
             priority
             className="h-12 md:h-20 w-auto"
           />

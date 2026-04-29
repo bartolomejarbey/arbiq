@@ -11,8 +11,8 @@ export default function Footer() {
             <Image
               src="/arbiq-logo.png"
               alt="ARBIQ"
-              width={240}
-              height={80}
+              width={500}
+              height={500}
               className="h-16 w-auto mb-5"
             />
             <p className="text-sepia/60 text-sm leading-relaxed mb-6">
