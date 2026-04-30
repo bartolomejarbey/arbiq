@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { createClient } from "@/lib/supabase/server";
 import { requireViewer } from "@/lib/supabase/viewer";
 import PageHeader from '@/components/portal/PageHeader';
 import StatusBadge from '@/components/portal/StatusBadge';
 import InvoiceTable, { type InvoiceRow } from '@/components/portal/InvoiceTable';
+import NotesTimeline, { type NoteRow } from '@/components/portal/NotesTimeline';
 import ContactHistoryForm from './ContactHistoryForm';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
@@ -56,11 +57,12 @@ export default async function KlientDetailPage({
   const supabase = await createClient();
   const user = viewer;
 
-  const [{ data: profileRow }, { data: projectRows }, { data: invoiceRows }, { data: contactRows }] = await Promise.all([
+  const [{ data: profileRow }, { data: projectRows }, { data: invoiceRows }, { data: contactRows }, { data: noteRows }] = await Promise.all([
     supabase.from('profiles').select('id, full_name, email, phone, company, ico, website_url, is_active').eq('id', id).eq('role', 'klient').single(),
     supabase.from('projects').select('id, name, status, progress, total_value').eq('client_id', id).order('created_at', { ascending: false }),
     supabase.from('invoices').select('id, invoice_number, amount, description, issued_at, due_date, paid_at, status, pdf_url').eq('client_id', id).order('issued_at', { ascending: false }),
     supabase.from('crm_contacts').select('id, type, note, next_followup, created_at, obchodnik:profiles!crm_contacts_obchodnik_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
+    supabase.from('crm_notes').select('id, content, created_at, author_id, author:profiles!crm_notes_author_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
   ]);
 
   const profile = profileRow as unknown as ClientProfile | null;
@@ -69,6 +71,19 @@ export default async function KlientDetailPage({
   const projects = ((projectRows ?? []) as unknown as ProjectRow[]);
   const invoices = ((invoiceRows ?? []) as unknown as InvoiceRow[]);
   const contacts = ((contactRows ?? []) as unknown as ContactRow[]);
+  const notes: NoteRow[] = ((noteRows ?? []) as unknown as Array<{
+    id: string;
+    content: string;
+    created_at: string;
+    author_id: string;
+    author: { full_name: string | null } | null;
+  }>).map((n) => ({
+    id: n.id,
+    content: n.content,
+    created_at: n.created_at,
+    author_id: n.author_id,
+    author_name: n.author?.full_name ?? null,
+  }));
   const totalValue = projects.reduce((s, p) => s + Number(p.total_value ?? 0), 0);
 
   return (
@@ -110,6 +125,17 @@ export default async function KlientDetailPage({
             <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Faktury</h2>
             <div className="bg-coffee">
               <InvoiceTable invoices={invoices} />
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Poznámky</h2>
+            <div className="bg-coffee p-6">
+              <NotesTimeline
+                entity={{ type: 'client', clientId: profile.id }}
+                initialNotes={notes}
+                currentUserId={user.id}
+              />
             </div>
           </section>
 

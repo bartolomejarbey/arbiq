@@ -22,6 +22,104 @@ const SourceTagValues = [
 ] as const;
 export type SourceTagValue = (typeof SourceTagValues)[number];
 
+async function requireObchodnikOrAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Nepřihlášený uživatel.');
+  const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  const role = (data as { role?: string } | null)?.role;
+  if (role !== 'obchodnik' && role !== 'admin') throw new Error('Jen obchodník nebo admin.');
+  return { supabase, user, role };
+}
+
+const CreateLeadManualSchema = z.object({
+  full_name: z.string().trim().min(2, 'Jméno je moc krátké.').max(120),
+  email: z.string().email('Neplatný e-mail.').max(200),
+  phone: z.string().trim().max(40).optional().default(''),
+  company: z.string().trim().max(160).optional().default(''),
+  popis: z.string().trim().max(4000).optional().default(''),
+  kampan: z.string().trim().min(1).max(80).default('manual'),
+  source_tag: z.enum(SourceTagValues).default('jine'),
+  assigned_to: z.string().uuid().optional(),
+});
+
+export type CreateLeadManualResult = { ok: true; leadId: string; caseNumber: string } | { ok: false; error: string };
+
+export async function createLeadManual(formData: FormData): Promise<CreateLeadManualResult> {
+  let supabase;
+  let user;
+  try {
+    ({ supabase, user } = await requireObchodnikOrAdmin());
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
+  }
+
+  let parsed: z.infer<typeof CreateLeadManualSchema>;
+  try {
+    parsed = CreateLeadManualSchema.parse({
+      full_name: String(formData.get('full_name') ?? ''),
+      email: String(formData.get('email') ?? ''),
+      phone: String(formData.get('phone') ?? ''),
+      company: String(formData.get('company') ?? ''),
+      popis: String(formData.get('popis') ?? ''),
+      kampan: String(formData.get('kampan') ?? 'manual'),
+      source_tag: String(formData.get('source_tag') ?? 'jine') as SourceTagValue,
+      assigned_to: String(formData.get('assigned_to') ?? '') || undefined,
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'Neplatná data.',
+    };
+  }
+
+  const { data: caseRow, error: caseErr } = await supabase.rpc('next_case_number');
+  if (caseErr || typeof caseRow !== 'string') {
+    return { ok: false, error: 'Nepodařilo se vygenerovat case_number.' };
+  }
+  const caseNumber = caseRow;
+
+  // Pokud nezadán assigned_to a volá obchodník, přiřadíme jemu (jako u assignLeadToMe).
+  const assignedTo = parsed.assigned_to ?? user.id;
+
+  const { data: inserted, error: insertErr } = await supabase
+    .from('landing_leads')
+    .insert({
+      kampan: parsed.kampan,
+      name: parsed.full_name,
+      email: parsed.email,
+      phone: parsed.phone || null,
+      popis: parsed.popis || null,
+      source_tag: parsed.source_tag,
+      case_number: caseNumber,
+      assigned_to: assignedTo,
+      status: 'new',
+      pipeline_stage: 'novy_lead',
+      // Manuální leady mají implicitní companyfield — uložíme do popisu pokud je vyplněno
+      // (tabulka landing_leads nemá company sloupec, je odvozen z profilu při konverzi).
+    })
+    .select('id')
+    .single();
+
+  if (insertErr || !inserted) {
+    return { ok: false, error: insertErr?.message ?? 'Nepodařilo se uložit lead.' };
+  }
+
+  // Pokud user vyplnil company, doplníme do popis (pre-pend) ať se neztratí.
+  if (parsed.company) {
+    const enrichedPopis = `Firma: ${parsed.company}${parsed.popis ? `\n\n${parsed.popis}` : ''}`;
+    await supabase.from('landing_leads').update({ popis: enrichedPopis }).eq('id', (inserted as { id: string }).id);
+  }
+
+  revalidatePath('/portal/crm/leady');
+  revalidatePath('/portal/crm/dashboard');
+  revalidatePath('/portal/crm/pipeline');
+
+  return { ok: true, leadId: (inserted as { id: string }).id, caseNumber };
+}
+
 export async function updateLeadSourceTag(leadId: string, tag: SourceTagValue) {
   if (!SourceTagValues.includes(tag)) throw new Error('Neplatný source_tag.');
   const supabase = await createClient();

@@ -24,11 +24,17 @@ const CreateUserSchema = z.object({
   full_name: z.string().min(2).max(120),
   email: z.string().email().max(200),
   role: z.enum(['klient', 'obchodnik', 'admin']),
+  phone: z.string().trim().max(40).optional().default(''),
+  company: z.string().trim().max(160).optional().default(''),
+  ico: z.string().trim().max(20).optional().default(''),
   assigned_obchodnik: z.string().uuid().optional(),
   send_invite: z.boolean().default(true),
+  create_initial_project: z.boolean().default(false),
+  initial_project_name: z.string().trim().max(160).optional().default(''),
+  initial_project_description: z.string().trim().max(4000).optional().default(''),
 });
 
-export type UserActionResult = { ok: true; userId: string } | { ok: false; error: string };
+export type UserActionResult = { ok: true; userId: string; projectId?: string } | { ok: false; error: string };
 
 export async function createPortalUser(formData: FormData): Promise<UserActionResult> {
   try {
@@ -43,14 +49,25 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
       full_name: String(formData.get('full_name') ?? ''),
       email: String(formData.get('email') ?? ''),
       role: String(formData.get('role') ?? 'klient') as z.infer<typeof CreateUserSchema>['role'],
+      phone: String(formData.get('phone') ?? ''),
+      company: String(formData.get('company') ?? ''),
+      ico: String(formData.get('ico') ?? ''),
       assigned_obchodnik: String(formData.get('assigned_obchodnik') ?? '') || undefined,
-      send_invite: formData.get('send_invite') === 'on',
+      send_invite: formData.get('send_invite') === 'on' || formData.get('send_invite') === 'true',
+      create_initial_project: formData.get('create_initial_project') === 'on' || formData.get('create_initial_project') === 'true',
+      initial_project_name: String(formData.get('initial_project_name') ?? ''),
+      initial_project_description: String(formData.get('initial_project_description') ?? ''),
     });
   } catch (err) {
     return {
       ok: false,
       error: err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'Neplatná data.',
     };
+  }
+
+  // Pokud klient + initial project, jméno projektu je povinné.
+  if (parsed.create_initial_project && parsed.role === 'klient' && !parsed.initial_project_name) {
+    return { ok: false, error: 'Pro vytvoření projektu zadejte jeho název.' };
   }
 
   const admin = createAdminClient();
@@ -67,14 +84,42 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
   }
   const newUserId = created.user.id;
 
+  const obchodnikForClient = parsed.role === 'klient' ? parsed.assigned_obchodnik ?? null : null;
+
   await admin
     .from('profiles')
     .update({
       full_name: parsed.full_name,
       role: parsed.role,
-      assigned_obchodnik: parsed.role === 'klient' ? parsed.assigned_obchodnik ?? null : null,
+      phone: parsed.phone || null,
+      company: parsed.company || null,
+      ico: parsed.ico || null,
+      assigned_obchodnik: obchodnikForClient,
     })
     .eq('id', newUserId);
+
+  let projectId: string | undefined;
+  if (parsed.create_initial_project && parsed.role === 'klient') {
+    const { data: project, error: projErr } = await admin
+      .from('projects')
+      .insert({
+        client_id: newUserId,
+        obchodnik_id: obchodnikForClient,
+        name: parsed.initial_project_name,
+        description: parsed.initial_project_description || null,
+        status: 'novy',
+        progress: 0,
+      })
+      .select('id')
+      .single();
+
+    if (projErr || !project) {
+      // Rollback auth user.
+      await admin.auth.admin.deleteUser(newUserId).catch(() => undefined);
+      return { ok: false, error: projErr?.message ?? 'Nepodařilo se vytvořit projekt.' };
+    }
+    projectId = (project as { id: string }).id;
+  }
 
   if (parsed.send_invite && process.env.RESEND_API_KEY) {
     const loginUrl = `${process.env.APP_URL ?? 'http://localhost:3000'}/portal/login`;
@@ -87,7 +132,9 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
   }
 
   revalidatePath('/portal/admin/uzivatele');
-  return { ok: true, userId: newUserId };
+  revalidatePath('/portal/crm/klienti');
+  revalidatePath('/portal/crm/dashboard');
+  return { ok: true, userId: newUserId, projectId };
 }
 
 export async function setUserActive(userId: string, isActive: boolean) {

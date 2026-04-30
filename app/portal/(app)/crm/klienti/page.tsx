@@ -4,6 +4,7 @@ import { requireViewer } from "@/lib/supabase/viewer";
 import { PREVIEW_KLIENTI_FOR_CRM } from '@/lib/preview-data';
 import PageHeader from '@/components/portal/PageHeader';
 import EmptyState from '@/components/portal/EmptyState';
+import CreateClientDialog, { type ObchodnikOption } from '@/components/portal/CreateClientDialog';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
@@ -22,16 +23,31 @@ export default async function KlientiPage() {
   const viewer = await requireViewer();
 
   let clients: ClientRow[];
+  let obchodnici: ObchodnikOption[] = [];
+  let isAdmin = false;
   if (viewer.isPreview) {
     clients = PREVIEW_KLIENTI_FOR_CRM as unknown as ClientRow[];
   } else {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, company, is_active, created_at, projects(id, total_value, status)')
-      .eq('role', 'klient')
-      .order('full_name', { ascending: true });
-    clients = ((data ?? []) as unknown as ClientRow[]);
+    const [clientsResp, viewerProfileResp, obchResp] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, full_name, email, company, is_active, created_at, projects(id, total_value, status)')
+        .eq('role', 'klient')
+        .order('full_name', { ascending: true }),
+      supabase.from('profiles').select('role').eq('id', viewer.id).single(),
+      supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('role', ['obchodnik', 'admin'])
+        .eq('is_active', true)
+        .order('full_name'),
+    ]);
+    clients = ((clientsResp.data ?? []) as unknown as ClientRow[]);
+    isAdmin = (viewerProfileResp.data as { role?: string } | null)?.role === 'admin';
+    if (isAdmin) {
+      obchodnici = ((obchResp.data ?? []) as unknown as ObchodnikOption[]);
+    }
   }
 
   return (
@@ -40,6 +56,7 @@ export default async function KlientiPage() {
         eyebrow={viewer.isPreview ? "CRM · DEMO" : "CRM"}
         title="Klienti"
         subtitle={viewer.isPreview ? "Vaši přiřazení klienti — fiktivní krimi-univerzum." : "Vaši přiřazení klienti a jejich projekty."}
+        actions={isAdmin ? <CreateClientDialog obchodnici={obchodnici} /> : undefined}
       />
       <div className="px-8 py-8">
         {clients.length === 0 ? (
