@@ -109,7 +109,7 @@ export default function CreateClientDialog({ obchodnici }: { obchodnici: Obchodn
             {withProject && (
               <div className="space-y-4 pt-2 pl-7 border-l-2 border-caramel/30">
                 <Field label="Název projektu *" htmlFor="initial_project_name">
-                  <input id="initial_project_name" name="initial_project_name" type="text" required={withProject} maxLength={160} disabled={pending} placeholder="Např. Web masi-co.cz redesign" className={inputClass} />
+                  <input id="initial_project_name" name="initial_project_name" type="text" required={withProject} maxLength={160} disabled={pending} placeholder="Např. Web greenderatizace.cz redesign" className={inputClass} />
                 </Field>
                 <Field label="Popis projektu" htmlFor="initial_project_description">
                   <textarea id="initial_project_description" name="initial_project_description" rows={3} maxLength={4000} disabled={pending} placeholder="Rozsah, deadline, klíčové výstupy…" className={`${inputClass} resize-none`} />
