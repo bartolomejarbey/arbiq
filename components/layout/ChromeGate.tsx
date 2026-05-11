@@ -25,6 +25,6 @@ export default function ChromeGate({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  if (pathname && RULES[target].some((p) => pathname.startsWith(p))) return null;
+  if (pathname && RULES[target].some((p) => pathname === p || pathname.startsWith(`${p}/`))) return null;
   return <>{children}</>;
 }
