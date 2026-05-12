@@ -42,11 +42,11 @@ const cases = [
   },
   {
     number: "#005",
-    name: "empras.cz",
-    url: "https://empras.cz",
-    screenshot: "/ilustrace/references/empras.png",
-    summary: "Gastronomy tech, 5 stránek, produktový katalog, B2B kontaktní flow, integrace s CRM systémem.",
-    tags: ["WEBDESIGN", "GASTRO", "B2B"],
+    name: "refreshstudio.cz",
+    url: "https://refreshstudio.cz",
+    screenshot: "/ilustrace/references/refreshstudio.png",
+    summary: "Wellness studio v Kadani — Human Regenerator (plazmaterapie), masáže, EMS Kegel Chair. Prezentační web s prodejem terapií a dárkových poukazů.",
+    tags: ["WEBDESIGN", "WELLNESS", "E-SHOP"],
     rotation: "rotate-[1.5deg]",
   },
   {
