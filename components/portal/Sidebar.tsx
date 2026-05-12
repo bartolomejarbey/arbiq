@@ -20,6 +20,7 @@ import {
   Activity,
   MessageSquare,
   Database,
+  Calendar,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -39,6 +40,7 @@ const crmNav: NavItem[] = [
   { href: '/portal/crm/leady',     label: 'Leady',     icon: Inbox },
   { href: '/portal/crm/databaze',  label: 'Databáze',  icon: Database },
   { href: '/portal/crm/ukoly',     label: 'Úkoly',     icon: CheckSquare },
+  { href: '/portal/crm/kalendar',  label: 'Kalendář',  icon: Calendar },
 ];
 
 const adminNav: NavItem[] = [
