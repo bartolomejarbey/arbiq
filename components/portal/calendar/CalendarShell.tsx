@@ -3,7 +3,15 @@
 import CalendarToolbar from './CalendarToolbar';
 import SyncStatusBar from './SyncStatusBar';
 import WeekView from './WeekView';
+import DayView from './DayView';
+import MonthView from './MonthView';
+import AgendaView from './AgendaView';
+import EventBlock from './EventBlock';
+import EventSidePanel from './EventSidePanel';
+import EventEditForm from './EventEditForm';
 import type { CalendarView } from '@/app/portal/(app)/crm/kalendar/CalendarClient';
+
+type EventLike = { id: string; [key: string]: unknown };
 
 export default function CalendarShell({
   view,
@@ -15,6 +23,7 @@ export default function CalendarShell({
   onSelectEvent,
   viewerId,
   connection,
+  onRefresh,
 }: {
   view: CalendarView;
   onViewChange: (v: CalendarView) => void;
@@ -27,6 +36,11 @@ export default function CalendarShell({
   connection: unknown | null;
   onRefresh: () => void;
 }) {
+  const selectedEvent =
+    selectedEventId && selectedEventId !== 'new'
+      ? (events as EventLike[]).find(e => e.id === selectedEventId)
+      : null;
+
   return (
     <div className="flex flex-col h-full">
       <CalendarToolbar
@@ -47,22 +61,52 @@ export default function CalendarShell({
           />
         )}
         {view === 'day' && (
-          <div className="p-8 text-center text-sepia/60 font-mono text-xs uppercase tracking-widest">
-            Day view — implementuje se v další fázi
-          </div>
+          <DayView
+            anchorDate={anchorDate}
+            events={events}
+            selectedEventId={selectedEventId}
+            onSelectEvent={onSelectEvent}
+            viewerId={viewerId}
+          />
         )}
         {view === 'month' && (
-          <div className="p-8 text-center text-sepia/60 font-mono text-xs uppercase tracking-widest">
-            Month view — implementuje se v další fázi
-          </div>
+          <MonthView
+            anchorDate={anchorDate}
+            events={events}
+            selectedEventId={selectedEventId}
+            onSelectEvent={onSelectEvent}
+            viewerId={viewerId}
+          />
         )}
         {view === 'agenda' && (
-          <div className="p-8 text-center text-sepia/60 font-mono text-xs uppercase tracking-widest">
-            Agenda — implementuje se v další fázi
-          </div>
+          <AgendaView
+            anchorDate={anchorDate}
+            events={events}
+            selectedEventId={selectedEventId}
+            onSelectEvent={onSelectEvent}
+            viewerId={viewerId}
+          />
         )}
       </div>
       <SyncStatusBar connection={connection} eventCount={events.length} />
+
+      {selectedEventId === 'new' && (
+        <EventEditForm
+          onCancel={() => onSelectEvent(null)}
+          onSaved={() => {
+            onSelectEvent(null);
+            onRefresh();
+          }}
+        />
+      )}
+      {selectedEvent && (
+        <EventSidePanel
+          event={selectedEvent}
+          viewerId={viewerId}
+          onClose={() => onSelectEvent(null)}
+          onUpdated={onRefresh}
+        />
+      )}
     </div>
   );
 }
