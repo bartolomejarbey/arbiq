@@ -3,7 +3,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from './server';
-import type { UserRole } from '@/lib/types/database';
+import type { UserRole } from '@/lib/types/auth';
 
 export const PREVIEW_COOKIE = 'arbiq_preview';
 

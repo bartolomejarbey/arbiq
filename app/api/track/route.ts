@@ -42,8 +42,6 @@ export async function POST(request: Request) {
     utm_source: utm.utm_source ?? null,
     utm_medium: utm.utm_medium ?? null,
     utm_campaign: utm.utm_campaign ?? null,
-    utm_term: utm.utm_term ?? null,
-    utm_content: utm.utm_content ?? null,
     user_agent: request.headers.get('user-agent')?.slice(0, 400) ?? null,
     ip_hash: hashIp(request),
     props: (parsed.props ?? {}) as never,

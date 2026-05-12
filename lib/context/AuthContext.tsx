@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { UserRole } from '@/lib/types/database';
+import type { UserRole } from '@/lib/types/auth';
 
 export type AuthProfile = {
   id: string;
