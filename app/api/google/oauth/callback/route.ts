@@ -8,6 +8,7 @@ import {
   fetchUserEmail,
 } from '@/lib/google/oauth';
 import { encryptToken } from '@/lib/google/encryption';
+import { initialSync, startWatch } from '@/lib/services/calendar-sync';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,7 +54,11 @@ export async function GET(req: NextRequest) {
       last_error: null,
     });
 
-    // Initial sync + watch budou v Phase 5
+    // Initial sync + watch (fire-and-forget; uživatel uvidí výsledek po refreshi)
+    initialSync(userId)
+      .then(() => startWatch(userId))
+      .catch(console.error);
+
     return NextResponse.redirect(`${settingsUrl}?ok=1`);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
