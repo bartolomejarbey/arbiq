@@ -31,12 +31,14 @@ export default function WeekView({
   selectedEventId,
   onSelectEvent,
   viewerId,
+  onMoveEvent,
 }: {
   anchorDate: Date;
   events: unknown[];
   selectedEventId: string | null;
   onSelectEvent: (id: string | null) => void;
   viewerId: string;
+  onMoveEvent?: (id: string, newStart: Date, newEnd: Date) => void;
 }) {
   const weekStart = startOfWeek(anchorDate, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -120,6 +122,7 @@ export default function WeekView({
                 viewerId={viewerId}
                 selected={e.id === selectedEventId}
                 onClick={() => onSelectEvent(e.id)}
+                onMove={onMoveEvent}
               />
             ))}
           </div>

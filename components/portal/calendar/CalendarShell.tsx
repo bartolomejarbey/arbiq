@@ -6,7 +6,6 @@ import WeekView from './WeekView';
 import DayView from './DayView';
 import MonthView from './MonthView';
 import AgendaView from './AgendaView';
-import EventBlock from './EventBlock';
 import EventSidePanel from './EventSidePanel';
 import EventEditForm from './EventEditForm';
 import type { CalendarView } from '@/app/portal/(app)/crm/kalendar/CalendarClient';
@@ -24,6 +23,7 @@ export default function CalendarShell({
   viewerId,
   connection,
   onRefresh,
+  onMoveEvent,
 }: {
   view: CalendarView;
   onViewChange: (v: CalendarView) => void;
@@ -35,6 +35,7 @@ export default function CalendarShell({
   viewerId: string;
   connection: unknown | null;
   onRefresh: () => void;
+  onMoveEvent?: (id: string, newStart: Date, newEnd: Date) => void;
 }) {
   const selectedEvent =
     selectedEventId && selectedEventId !== 'new'
@@ -58,6 +59,7 @@ export default function CalendarShell({
             selectedEventId={selectedEventId}
             onSelectEvent={onSelectEvent}
             viewerId={viewerId}
+            onMoveEvent={onMoveEvent}
           />
         )}
         {view === 'day' && (
@@ -67,6 +69,7 @@ export default function CalendarShell({
             selectedEventId={selectedEventId}
             onSelectEvent={onSelectEvent}
             viewerId={viewerId}
+            onMoveEvent={onMoveEvent}
           />
         )}
         {view === 'month' && (

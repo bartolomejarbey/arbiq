@@ -31,12 +31,14 @@ export default function DayView({
   selectedEventId,
   onSelectEvent,
   viewerId,
+  onMoveEvent,
 }: {
   anchorDate: Date;
   events: unknown[];
   selectedEventId: string | null;
   onSelectEvent: (id: string | null) => void;
   viewerId: string;
+  onMoveEvent?: (id: string, newStart: Date, newEnd: Date) => void;
 }) {
   const typedEvents = events as EventLike[];
   const dayEvents = typedEvents.filter(
@@ -105,6 +107,7 @@ export default function DayView({
             viewerId={viewerId}
             selected={e.id === selectedEventId}
             onClick={() => onSelectEvent(e.id)}
+            onMove={onMoveEvent}
           />
         ))}
       </div>

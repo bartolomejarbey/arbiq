@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import {
   startOfWeek,
   endOfWeek,
@@ -14,6 +14,9 @@ import {
   addMonths,
 } from 'date-fns';
 import CalendarShell from '@/components/portal/calendar/CalendarShell';
+import { moveEvent } from '@/lib/actions/calendar';
+
+type EventLike = { id: string; start_at: string; end_at: string; [k: string]: unknown };
 
 export type CalendarView = 'day' | 'week' | 'month' | 'agenda';
 
@@ -33,8 +36,35 @@ export default function CalendarClient({
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [events, setEvents] = useState<unknown[]>(initialEvents);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [, startTransition] = useTransition();
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
+
+  const handleMoveEvent = useCallback(
+    (id: string, newStart: Date, newEnd: Date) => {
+      // Optimistic update
+      setEvents(prev =>
+        (prev as EventLike[]).map(e =>
+          e.id === id
+            ? { ...e, start_at: newStart.toISOString(), end_at: newEnd.toISOString() }
+            : e,
+        ),
+      );
+      startTransition(async () => {
+        const res = await moveEvent({
+          id,
+          start_at: newStart.toISOString(),
+          end_at: newEnd.toISOString(),
+        });
+        if (!res.ok) {
+          // Rollback by refetching
+          refresh();
+          if (typeof window !== 'undefined') alert('Přesun se nepodařil: ' + res.error);
+        }
+      });
+    },
+    [refresh],
+  );
 
   const rangeForView = useCallback(
     (v: CalendarView, anchor: Date): { from: string; to: string } => {
@@ -123,6 +153,7 @@ export default function CalendarClient({
       viewerId={viewerId}
       connection={connection}
       onRefresh={refresh}
+      onMoveEvent={handleMoveEvent}
     />
   );
 }
