@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import DetectiveTag from '@/components/shared/DetectiveTag';
+import RevealOnScroll from '@/components/shared/RevealOnScroll';
+import StaggerGrid from '@/components/shared/StaggerGrid';
 import { ArrowRight, Clock } from 'lucide-react';
 
 export const blogPosts = [
@@ -31,22 +33,27 @@ export const blogPosts = [
 
 export default function BlogPreview() {
   return (
-    <section id="blog" className="py-24 md:py-32 bg-espresso scroll-mt-32 md:scroll-mt-44">
+    <section id="blog" className="py-20 md:py-32 bg-espresso scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        <DetectiveTag className="mb-4">SPISY K NASTUDOVÁNÍ</DetectiveTag>
-        <h2 className="font-display font-black text-moonlight text-4xl md:text-5xl mb-4">
-          Tři články, než se rozhodnete
-        </h2>
-        <p className="text-sepia/80 text-base leading-relaxed max-w-3xl mb-16">
-          Tohle si přečtěte dřív, než nám napíšete. Pochopíte rámec, uvidíte data, a budete vědět, jaké otázky se nás máte ptát.
-        </p>
+        <RevealOnScroll>
+          <DetectiveTag className="mb-4">SPISY K NASTUDOVÁNÍ</DetectiveTag>
+          <h2 className="font-display font-black text-moonlight text-3xl md:text-5xl mb-4 leading-tight">
+            Tři články, než se rozhodnete
+          </h2>
+          <p className="text-sepia/80 text-base leading-relaxed max-w-3xl mb-16">
+            Tohle si přečtěte dřív, než nám napíšete. Pochopíte rámec, uvidíte data, a budete vědět, jaké otázky se nás máte ptát.
+          </p>
+        </RevealOnScroll>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StaggerGrid
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          staggerDelay={0.12}
+        >
           {blogPosts.map((post) => (
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group bg-coffee border border-tobacco p-8 flex flex-col hover:border-caramel/40 transition-all"
+              className="group bg-coffee border border-tobacco p-6 md:p-8 flex flex-col hover:border-caramel/40 hover:-translate-y-1 transition-all"
             >
               <div className="font-mono text-[10px] uppercase tracking-widest text-caramel mb-4">
                 {post.tag}
@@ -65,7 +72,7 @@ export default function BlogPreview() {
               </div>
             </Link>
           ))}
-        </div>
+        </StaggerGrid>
       </div>
     </section>
   );

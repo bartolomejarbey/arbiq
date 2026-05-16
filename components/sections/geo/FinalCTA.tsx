@@ -76,16 +76,16 @@ export default function FinalCTA() {
   }
 
   return (
-    <section id="audit-zdarma" className="py-24 md:py-32 bg-coffee relative overflow-hidden scroll-mt-32 md:scroll-mt-44">
+    <section id="audit-zdarma" className="py-20 md:py-32 bg-coffee relative overflow-hidden scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-5xl mx-auto px-6 md:px-12">
-        <div className="bg-espresso border border-caramel/30 p-8 md:p-16 relative">
+        <div className="bg-espresso border border-caramel/30 p-6 md:p-16 relative">
           <WaxSeal text="ZDARMA" subtext="MINI-AUDIT" className="hidden md:flex absolute -top-8 -right-8" />
 
           <DetectiveTag className="mb-6">ZAČNĚTE VYŠETŘOVÁNÍ</DetectiveTag>
-          <h2 className="font-display font-black text-moonlight text-3xl md:text-5xl leading-tight mb-6">
+          <h2 className="font-display font-black text-moonlight text-2xl md:text-5xl leading-tight mb-6">
             Nevíte, kde dnes v AI vyhledávání jste?
           </h2>
-          <p className="text-sepia/85 text-base md:text-lg leading-relaxed max-w-2xl mb-10">
+          <p className="text-sepia/85 text-base md:text-lg leading-relaxed max-w-2xl mb-8 md:mb-10">
             Zdarma Vám položíme pět otázek, které pokládají Vaši zákazníci, do ChatGPT a Perplexity. Pošleme report — kde jste, kde je konkurence, a jestli má smysl tohle řešit. Bez závazku, bez follow-up callu, pokud nechcete.
           </p>
 

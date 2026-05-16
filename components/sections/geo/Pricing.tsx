@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import DetectiveTag from '@/components/shared/DetectiveTag';
+import RevealOnScroll from '@/components/shared/RevealOnScroll';
+import StaggerGrid from '@/components/shared/StaggerGrid';
 import { Check, ArrowRight } from 'lucide-react';
 
 type Tier = {
@@ -73,21 +75,26 @@ const tiers: Tier[] = [
 
 export default function Pricing() {
   return (
-    <section id="cenik" className="py-24 md:py-32 bg-espresso scroll-mt-32 md:scroll-mt-44">
+    <section id="cenik" className="py-20 md:py-32 bg-espresso scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        <DetectiveTag className="mb-4">CENÍK</DetectiveTag>
-        <h2 className="font-display font-black text-moonlight text-4xl md:text-5xl mb-4">
-          Tři balíčky podle hloubky vyšetřování
-        </h2>
-        <p className="text-sepia/80 text-base leading-relaxed max-w-3xl mb-16">
-          Žádné skryté poplatky, žádné dlouhodobé závazky. Měsíční výpověď po prvních třech měsících.
-        </p>
+        <RevealOnScroll>
+          <DetectiveTag className="mb-4">CENÍK</DetectiveTag>
+          <h2 className="font-display font-black text-moonlight text-3xl md:text-5xl mb-4 leading-tight">
+            Tři balíčky podle hloubky vyšetřování
+          </h2>
+          <p className="text-sepia/80 text-base leading-relaxed max-w-3xl mb-16">
+            Žádné skryté poplatky, žádné dlouhodobé závazky. Měsíční výpověď po prvních třech měsících.
+          </p>
+        </RevealOnScroll>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <StaggerGrid
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-6"
+          staggerDelay={0.12}
+        >
           {tiers.map((tier) => (
             <div
               key={tier.name}
-              className={`relative flex flex-col p-8 md:p-10 transition-all ${
+              className={`relative flex flex-col p-6 md:p-10 transition-all ${
                 tier.highlight
                   ? 'bg-coffee border-2 border-caramel shadow-2xl lg:-translate-y-4'
                   : 'bg-coffee border border-tobacco'
@@ -102,14 +109,14 @@ export default function Pricing() {
               <div className="font-mono text-[10px] uppercase tracking-widest text-caramel mb-3">
                 BALÍČEK
               </div>
-              <h3 className="font-display font-black text-3xl text-moonlight mb-4">{tier.name}</h3>
-              <p className="text-sepia/80 text-sm leading-relaxed mb-8 min-h-[3.5rem]">
+              <h3 className="font-display font-black text-2xl md:text-3xl text-moonlight mb-4">{tier.name}</h3>
+              <p className="text-sepia/80 text-sm leading-relaxed mb-6 md:mb-8 lg:min-h-[3.5rem]">
                 {tier.description}
               </p>
 
-              <div className="mb-8 pb-8 border-b border-tobacco">
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-display font-black text-4xl text-caramel">{tier.monthly}</span>
+              <div className="mb-6 md:mb-8 pb-6 md:pb-8 border-b border-tobacco">
+                <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+                  <span className="font-display font-black text-3xl md:text-4xl text-caramel">{tier.monthly}</span>
                   <span className="font-mono text-[11px] uppercase tracking-widest text-sandstone">
                     / měsíc
                   </span>
@@ -147,7 +154,7 @@ export default function Pricing() {
               </Link>
             </div>
           ))}
-        </div>
+        </StaggerGrid>
 
         {/* Spodek — odkaz na Rentgen */}
         <div className="mt-16 max-w-3xl mx-auto text-center">

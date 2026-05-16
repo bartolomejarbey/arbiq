@@ -1,4 +1,6 @@
 import DetectiveTag from '@/components/shared/DetectiveTag';
+import RevealOnScroll from '@/components/shared/RevealOnScroll';
+import StaggerGrid from '@/components/shared/StaggerGrid';
 import { Search, Wrench, FileEdit, Globe2, LineChart } from 'lucide-react';
 
 const steps = [
@@ -41,35 +43,37 @@ const steps = [
 
 export default function Process() {
   return (
-    <section id="proces" className="py-24 md:py-32 bg-coffee scroll-mt-32 md:scroll-mt-44">
+    <section id="proces" className="py-20 md:py-32 bg-coffee scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-5xl mx-auto px-6 md:px-12">
-        <DetectiveTag className="mb-4">VYŠETŘOVACÍ POSTUP</DetectiveTag>
-        <h2 className="font-display font-black text-moonlight text-4xl md:text-5xl mb-4">
-          Jak to děláme
-        </h2>
-        <p className="text-sepia/80 text-base leading-relaxed max-w-3xl mb-16">
-          Pět kroků. Žádné magie, žádné sliby. Konkrétní práce s konkrétními výstupy.
-        </p>
+        <RevealOnScroll>
+          <DetectiveTag className="mb-4">VYŠETŘOVACÍ POSTUP</DetectiveTag>
+          <h2 className="font-display font-black text-moonlight text-3xl md:text-5xl mb-4 leading-tight">
+            Jak to děláme
+          </h2>
+          <p className="text-sepia/80 text-base leading-relaxed max-w-3xl mb-16">
+            Pět kroků. Žádné magie, žádné sliby. Konkrétní práce s konkrétními výstupy.
+          </p>
+        </RevealOnScroll>
 
-        <div className="space-y-6">
+        <StaggerGrid className="space-y-5 md:space-y-6" staggerDelay={0.1}>
           {steps.map((s, i) => {
             const Icon = s.icon;
             return (
               <div
                 key={s.title}
-                className="grid grid-cols-[auto_1fr] gap-6 md:gap-10 bg-espresso border border-tobacco p-6 md:p-8 hover:border-caramel/40 transition-colors"
+                className="grid grid-cols-[auto_1fr] gap-5 md:gap-10 bg-espresso border border-tobacco p-5 md:p-8 hover:border-caramel/40 transition-colors"
               >
                 <div className="flex flex-col items-center gap-3">
                   <span className="font-mono text-xl md:text-2xl font-bold text-caramel/30">
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <div className="w-12 h-12 bg-coffee border border-tobacco flex items-center justify-center">
-                    <Icon size={20} className="text-caramel" strokeWidth={1.5} />
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-coffee border border-tobacco flex items-center justify-center">
+                    <Icon size={18} className="text-caramel" strokeWidth={1.5} />
                   </div>
                 </div>
                 <div>
-                  <div className="flex flex-wrap items-baseline gap-3 mb-3">
-                    <h3 className="font-display font-bold text-xl md:text-2xl text-moonlight">
+                  <div className="flex flex-wrap items-baseline gap-2 md:gap-3 mb-3">
+                    <h3 className="font-display font-bold text-lg md:text-2xl text-moonlight">
                       {s.title}
                     </h3>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-caramel border border-caramel/30 px-2 py-1">
@@ -81,7 +85,7 @@ export default function Process() {
               </div>
             );
           })}
-        </div>
+        </StaggerGrid>
       </div>
     </section>
   );
