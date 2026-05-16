@@ -1,0 +1,46 @@
+# ARBIQ — Detektivní agentura pro digitální business
+
+> ARBIQ je česká agentura, která pro malé a střední firmy vyšetřuje, proč jejich digitální business nefunguje, a opravuje to. Specializujeme se na weby na míru, automatizace, audit (Rentgen), získávání zakázek a GEO/AI viditelnost — disciplínu, která dostane Vaši firmu do odpovědí ChatGPT, Perplexity, Gemini a dalších AI vyhledávačů.
+
+## Klíčové stránky
+
+- [Domovská stránka](https://arbiq.cz/): Úvod do filozofie ARBIQ a přehled služeb.
+- [Rentgen — flagship audit](https://arbiq.cz/rentgen): Hluboká analýza digitálního businessu za 1 500 Kč/hod. Identifikuje slabiny, doporučuje řešení.
+- [GEO — viditelnost v AI vyhledávačích](https://arbiq.cz/sluzby/geo-ai-viditelnost): Komplexní optimalizace pro ChatGPT, Google AI Overviews, Perplexity, Gemini a Claude. Tři balíčky od 3 500 Kč/měs. AI mini-audit zdarma.
+- [Manifest](https://arbiq.cz/manifest): Naše hodnoty a přístup k práci.
+- [Tým](https://arbiq.cz/tym): Bartoloměj Rota a tým ARBIQ.
+- [Kontakt](https://arbiq.cz/kontakt): Formulář a kontaktní údaje.
+
+## Služby
+
+- [Webové stránky na míru](https://arbiq.cz/sluzby/webove-stranky): Vlastní design, vlastní kód, žádné šablony.
+- [Získat zakázky](https://arbiq.cz/sluzby/ziskat-zakazky): Marketing a leadgen pro malé firmy.
+- [Pro firmy](https://arbiq.cz/sluzby/firma): Komplexní digitální zázemí.
+- [Systémy na míru](https://arbiq.cz/sluzby/systemy-na-miru): Interní aplikace, CRM, custom workflow.
+- [Automatizace firem](https://arbiq.cz/sluzby/automatizace): Procesní automatizace, integrace, zero-touch workflow.
+- [SEO](https://arbiq.cz/sluzby/seo): Klasická optimalizace pro Google.
+- [GEO / AI viditelnost](https://arbiq.cz/sluzby/geo-ai-viditelnost): Optimalizace pro generativní AI vyhledávače.
+
+## Blog (GEO/AI vyhledávání)
+
+- [Proč hledá Vaše budoucnost v ChatGPT, ne v Googlu](https://arbiq.cz/blog/proc-hledat-budoucnost-v-chatgpt): Edukační úvod do AI vyhledávání pro laiky.
+- [Princeton dokázal, že malé firmy předhánějí korporáty](https://arbiq.cz/blog/princeton-studie-male-firmy-v-ai-vyhledavani): Rozbor peer-reviewed studie z roku 2024 o GEO.
+- [Jak za 90 dní zjistíte, zda Vás ChatGPT doporučuje](https://arbiq.cz/blog/jak-zjistit-zda-vas-chatgpt-doporucuje): Praktický DIY návod pro vlastní AI audit.
+
+## Případové studie
+
+- [Vyřešené případy](https://arbiq.cz/pripady): Přehled realizací.
+- [Aplikace](https://arbiq.cz/aplikace): Custom aplikace, které jsme postavili.
+
+## Optional
+
+- [Manifest](https://arbiq.cz/manifest): Filozofie a principy práce.
+- [GDPR](https://arbiq.cz/gdpr): Ochrana osobních údajů.
+- [Obchodní podmínky](https://arbiq.cz/obchodni-podminky): VOP.
+
+## Kontakt
+
+- E-mail: info@arbiq.cz
+- Web: https://arbiq.cz
+- Jazyk: čeština (cs-CZ)
+- Region: Česká republika

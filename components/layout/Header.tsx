@@ -13,6 +13,7 @@ const sluzbyLinks = [
   { href: "/sluzby/systemy-na-miru", label: "Systémy na míru" },
   { href: "/sluzby/automatizace", label: "Automatizace firem" },
   { href: "/sluzby/seo", label: "SEO" },
+  { href: "/sluzby/geo-ai-viditelnost", label: "GEO — AI viditelnost" },
 ];
 
 const navLinks = [

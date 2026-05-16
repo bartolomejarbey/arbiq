@@ -21,6 +21,13 @@ const SLUZBY = [
   'systemy-na-miru',
   'automatizace',
   'seo',
+  'geo-ai-viditelnost',
+];
+
+const BLOG_POSTS = [
+  'proc-hledat-budoucnost-v-chatgpt',
+  'princeton-studie-male-firmy-v-ai-vyhledavani',
+  'jak-zjistit-zda-vas-chatgpt-doporucuje',
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -44,6 +51,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: `${BASE}/pripad/${k}`,
       priority: 0.7,
       changeFrequency: 'monthly' as const,
+      lastModified: now,
+    })),
+    ...BLOG_POSTS.map((slug) => ({
+      url: `${BASE}/blog/${slug}`,
+      priority: 0.7,
+      changeFrequency: 'weekly' as const,
       lastModified: now,
     })),
     { url: `${BASE}/gdpr`,                priority: 0.3, changeFrequency: 'yearly', lastModified: now },
