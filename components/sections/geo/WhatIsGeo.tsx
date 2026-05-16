@@ -11,7 +11,7 @@ const aiPlatforms = [
 
 export default function WhatIsGeo() {
   return (
-    <section id="co-je-geo" className="py-24 md:py-32 bg-coffee">
+    <section id="co-je-geo" className="py-24 md:py-32 bg-coffee scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-5xl mx-auto px-6 md:px-12">
         <DetectiveTag className="mb-4">EDUKACE — ZÁKLAD</DetectiveTag>
         <h2 className="font-display font-black text-moonlight text-4xl md:text-5xl mb-4">

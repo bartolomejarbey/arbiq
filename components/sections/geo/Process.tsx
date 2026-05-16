@@ -41,7 +41,7 @@ const steps = [
 
 export default function Process() {
   return (
-    <section className="py-24 md:py-32 bg-coffee">
+    <section id="proces" className="py-24 md:py-32 bg-coffee scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-5xl mx-auto px-6 md:px-12">
         <DetectiveTag className="mb-4">VYŠETŘOVACÍ POSTUP</DetectiveTag>
         <h2 className="font-display font-black text-moonlight text-4xl md:text-5xl mb-4">

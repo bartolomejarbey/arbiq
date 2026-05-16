@@ -76,7 +76,7 @@ export default function FinalCTA() {
   }
 
   return (
-    <section id="audit-zdarma" className="py-24 md:py-32 bg-coffee relative overflow-hidden">
+    <section id="audit-zdarma" className="py-24 md:py-32 bg-coffee relative overflow-hidden scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-5xl mx-auto px-6 md:px-12">
         <div className="bg-espresso border border-caramel/30 p-8 md:p-16 relative">
           <WaxSeal text="ZDARMA" subtext="MINI-AUDIT" className="hidden md:flex absolute -top-8 -right-8" />

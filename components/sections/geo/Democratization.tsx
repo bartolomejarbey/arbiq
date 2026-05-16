@@ -3,7 +3,7 @@ import MarkerUnderline from '@/components/shared/MarkerUnderline';
 
 export default function Democratization() {
   return (
-    <section className="py-24 md:py-32 bg-espresso relative overflow-hidden">
+    <section id="sance" className="py-24 md:py-32 bg-espresso relative overflow-hidden scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-6xl mx-auto px-6 md:px-12">
         <DetectiveTag className="mb-6">VAŠE ŠANCE</DetectiveTag>
         <h2 className="font-display font-black text-moonlight text-4xl md:text-6xl leading-[1.05] mb-12 max-w-4xl">

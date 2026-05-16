@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Hero from '@/components/sections/geo/Hero';
+import SectionNav from '@/components/sections/geo/SectionNav';
 import WhatIsGeo from '@/components/sections/geo/WhatIsGeo';
 import WhyNow from '@/components/sections/geo/WhyNow';
 import PrincetonProof from '@/components/sections/geo/PrincetonProof';
@@ -66,6 +67,7 @@ export default function GeoAIVisibilityPage() {
       />
 
       <Hero />
+      <SectionNav />
       <WhatIsGeo />
       <WhyNow />
       <PrincetonProof />

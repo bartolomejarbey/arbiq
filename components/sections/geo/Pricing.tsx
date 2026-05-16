@@ -73,7 +73,7 @@ const tiers: Tier[] = [
 
 export default function Pricing() {
   return (
-    <section className="py-24 md:py-32 bg-espresso">
+    <section id="cenik" className="py-24 md:py-32 bg-espresso scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <DetectiveTag className="mb-4">CENÍK</DetectiveTag>
         <h2 className="font-display font-black text-moonlight text-4xl md:text-5xl mb-4">

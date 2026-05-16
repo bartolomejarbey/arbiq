@@ -3,7 +3,7 @@ import { Quote } from 'lucide-react';
 
 export default function PrincetonProof() {
   return (
-    <section className="py-24 md:py-32 bg-parchment paper-texture text-espresso-text">
+    <section id="dukaz" className="py-24 md:py-32 bg-parchment paper-texture text-espresso-text scroll-mt-32 md:scroll-mt-44">
       <div className="max-w-4xl mx-auto px-6 md:px-12">
         <DetectiveTag variant="light" className="mb-4">AKADEMICKÝ DŮKAZ</DetectiveTag>
         <h2 className="font-display font-black text-espresso-text text-4xl md:text-5xl mb-8">
