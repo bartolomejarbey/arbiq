@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import ChromeGate from "@/components/layout/ChromeGate";
 import CookieBanner from "@/components/layout/CookieBanner";
 import AnalyticsTracker from "@/components/layout/AnalyticsTracker";
+import MetaPixel from "@/components/layout/MetaPixel";
 import ChatWidget from "@/components/chat/ChatWidget";
 import { IntroContextProvider } from "@/lib/intro-context";
 
@@ -90,6 +91,7 @@ export default function RootLayout({
           <ChromeGate target="footer"><Footer /></ChromeGate>
           <ChromeGate target="cookies"><CookieBanner /></ChromeGate>
           <Suspense fallback={null}><AnalyticsTracker /></Suspense>
+          <Suspense fallback={null}><MetaPixel /></Suspense>
           <ChromeGate target="chat"><ChatWidget /></ChromeGate>
         </IntroContextProvider>
       </body>
