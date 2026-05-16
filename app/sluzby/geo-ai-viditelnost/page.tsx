@@ -6,7 +6,8 @@ import PrincetonProof from '@/components/sections/geo/PrincetonProof';
 import Democratization from '@/components/sections/geo/Democratization';
 import Process from '@/components/sections/geo/Process';
 import Pricing from '@/components/sections/geo/Pricing';
-import FAQ, { faqs } from '@/components/sections/geo/FAQ';
+import FAQ from '@/components/sections/geo/FAQ';
+import { geoFaqs } from '@/lib/geo/faqs';
 import BlogPreview from '@/components/sections/geo/BlogPreview';
 import FinalCTA from '@/components/sections/geo/FinalCTA';
 import {
@@ -55,7 +56,7 @@ export default function GeoAIVisibilityPage() {
     <div className="pt-32">
       <JsonLd data={organizationSchema()} />
       <JsonLd data={serviceSchema()} />
-      <JsonLd data={faqSchema(faqs)} />
+      <JsonLd data={faqSchema(geoFaqs)} />
       <JsonLd
         data={breadcrumbSchema([
           { name: 'Domů', url: '/' },
