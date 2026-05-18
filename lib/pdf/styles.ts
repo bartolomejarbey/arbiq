@@ -12,29 +12,30 @@ let _fontsRegistered = false;
 
 /** Registruje Inter (Czech support) + Newsreader (serif, smlouvy). Idempotent.
  *
- *  POZOR: External fetch z gstatic.com může na Vercel Lambda padat (cold start
- *  timeout / network restrictions), proto fonty bundlujeme lokálně v public/fonts/.
- *  Vercel funkce mají přístup k public/ přes process.cwd(). */
+ *  Fonts servujeme jako static assety přes vlastní doménu (public/fonts/*).
+ *  Tahle cesta funguje spolehlivě v Vercel Lambda (žádné quirks s public/
+ *  bundling, žádný external CDN, fetch sám na sebe = rychlý). Pro lokální
+ *  dev používáme APP_URL=http://localhost:3000 ze .env.local. */
 export function registerArbiqFonts(): void {
   if (_fontsRegistered) return;
   _fontsRegistered = true;
 
-  const fontDir = path.join(process.cwd(), 'public', 'fonts');
+  const base = (process.env.APP_URL ?? 'https://arbiq.cz').replace(/\/$/, '');
 
   Font.register({
     family: 'Inter',
     fonts: [
-      { src: path.join(fontDir, 'Inter-Regular.ttf'), fontWeight: 400 },
-      { src: path.join(fontDir, 'Inter-SemiBold.ttf'), fontWeight: 600 },
-      { src: path.join(fontDir, 'Inter-Bold.ttf'), fontWeight: 700 },
+      { src: `${base}/fonts/Inter-Regular.ttf`, fontWeight: 400 },
+      { src: `${base}/fonts/Inter-SemiBold.ttf`, fontWeight: 600 },
+      { src: `${base}/fonts/Inter-Bold.ttf`, fontWeight: 700 },
     ],
   });
 
   Font.register({
     family: 'Newsreader',
     fonts: [
-      { src: path.join(fontDir, 'Newsreader-Regular.ttf'), fontWeight: 400 },
-      { src: path.join(fontDir, 'Newsreader-Bold.ttf'), fontWeight: 700 },
+      { src: `${base}/fonts/Newsreader-Regular.ttf`, fontWeight: 400 },
+      { src: `${base}/fonts/Newsreader-Bold.ttf`, fontWeight: 700 },
     ],
   });
 
