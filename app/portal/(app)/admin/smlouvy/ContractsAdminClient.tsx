@@ -147,11 +147,11 @@ export default function ContractsAdminClient({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className={labelClass} htmlFor="s_total_price">Celková cena (Kč) *</label>
-              <input id="s_total_price" name="total_price" required type="number" min="1" step="100" placeholder="27000" className={inputClass} />
+              <input id="s_total_price" name="total_price" required type="number" min="1" step="1" placeholder="27000" className={inputClass} />
             </div>
             <div>
               <label className={labelClass} htmlFor="s_deposit_percent">Záloha (%)</label>
-              <input id="s_deposit_percent" name="deposit_percent" type="number" min="0" max="100" step="5" defaultValue={50} className={inputClass} />
+              <input id="s_deposit_percent" name="deposit_percent" type="number" min="0" max="100" step="1" defaultValue={50} className={inputClass} />
             </div>
             <div>
               <label className={labelClass} htmlFor="s_deadline_days">Termín (dnů od podpisu)</label>
@@ -166,11 +166,11 @@ export default function ContractsAdminClient({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className={labelClass} htmlFor="s_hourly_rate">Sazba vícepráce (Kč / hod)</label>
-              <input id="s_hourly_rate" name="hourly_rate" type="number" min="100" step="50" defaultValue={900} className={inputClass} />
+              <input id="s_hourly_rate" name="hourly_rate" type="number" min="100" step="1" defaultValue={900} className={inputClass} />
             </div>
             <div>
               <label className={labelClass} htmlFor="s_monthly_fee">Měsíční paušál (volitelné)</label>
-              <input id="s_monthly_fee" name="monthly_fee" type="number" min="0" step="100" placeholder="např. 7500" className={inputClass} />
+              <input id="s_monthly_fee" name="monthly_fee" type="number" min="0" step="1" placeholder="např. 7500" className={inputClass} />
             </div>
             <div>
               <label className={labelClass} htmlFor="s_place_of_signing">Místo podpisu</label>
@@ -185,7 +185,7 @@ export default function ContractsAdminClient({
             </label>
             <div>
               <label className={labelClass} htmlFor="s_nda_penalty">Pokuta za porušení NDA (Kč)</label>
-              <input id="s_nda_penalty" name="nda_penalty" type="number" min="0" step="10000" defaultValue={100000} className={inputClass} />
+              <input id="s_nda_penalty" name="nda_penalty" type="number" min="0" step="1" defaultValue={100000} className={inputClass} />
             </div>
           </div>
 
