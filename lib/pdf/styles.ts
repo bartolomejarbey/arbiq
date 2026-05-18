@@ -28,6 +28,7 @@ export function registerArbiqFonts(): void {
       { src: `${base}/fonts/Inter-Regular.ttf`, fontWeight: 400 },
       { src: `${base}/fonts/Inter-SemiBold.ttf`, fontWeight: 600 },
       { src: `${base}/fonts/Inter-Bold.ttf`, fontWeight: 700 },
+      { src: `${base}/fonts/Inter-Italic.ttf`, fontWeight: 400, fontStyle: 'italic' },
     ],
   });
 
@@ -36,6 +37,8 @@ export function registerArbiqFonts(): void {
     fonts: [
       { src: `${base}/fonts/Newsreader-Regular.ttf`, fontWeight: 400 },
       { src: `${base}/fonts/Newsreader-Bold.ttf`, fontWeight: 700 },
+      { src: `${base}/fonts/Newsreader-Italic.ttf`, fontWeight: 400, fontStyle: 'italic' },
+      { src: `${base}/fonts/Newsreader-BoldItalic.ttf`, fontWeight: 700, fontStyle: 'italic' },
     ],
   });
 
