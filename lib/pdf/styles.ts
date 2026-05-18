@@ -10,27 +10,31 @@ import { Font, StyleSheet } from '@react-pdf/renderer';
 
 let _fontsRegistered = false;
 
-/** Registruje Inter (Czech support) + Newsreader (serif, smlouvy). Idempotent. */
+/** Registruje Inter (Czech support) + Newsreader (serif, smlouvy). Idempotent.
+ *
+ *  POZOR: External fetch z gstatic.com může na Vercel Lambda padat (cold start
+ *  timeout / network restrictions), proto fonty bundlujeme lokálně v public/fonts/.
+ *  Vercel funkce mají přístup k public/ přes process.cwd(). */
 export function registerArbiqFonts(): void {
   if (_fontsRegistered) return;
   _fontsRegistered = true;
 
-  // Inter — Latin Extended pokrývá českou diakritiku. Stažené z gstatic CDN.
+  const fontDir = path.join(process.cwd(), 'public', 'fonts');
+
   Font.register({
     family: 'Inter',
     fonts: [
-      { src: 'https://fonts.gstatic.com/s/inter/v19/UcCm3FwrK3iLTcvneQg7Ca725JhhKnOqk.ttf', fontWeight: 400 },
-      { src: 'https://fonts.gstatic.com/s/inter/v19/UcCm3FwrK3iLTcvneVA6Ca725JhhKnOqk.ttf', fontWeight: 600 },
-      { src: 'https://fonts.gstatic.com/s/inter/v19/UcCm3FwrK3iLTcvneXg5Ca725JhhKnOqk.ttf', fontWeight: 700 },
+      { src: path.join(fontDir, 'Inter-Regular.ttf'), fontWeight: 400 },
+      { src: path.join(fontDir, 'Inter-SemiBold.ttf'), fontWeight: 600 },
+      { src: path.join(fontDir, 'Inter-Bold.ttf'), fontWeight: 700 },
     ],
   });
 
-  // Newsreader serif pro smlouvy / „literární" výstupy.
   Font.register({
     family: 'Newsreader',
     fonts: [
-      { src: 'https://fonts.gstatic.com/s/newsreader/v25/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9Jn1WSU.ttf', fontWeight: 400 },
-      { src: 'https://fonts.gstatic.com/s/newsreader/v25/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JmtWiU.ttf', fontWeight: 700 },
+      { src: path.join(fontDir, 'Newsreader-Regular.ttf'), fontWeight: 400 },
+      { src: path.join(fontDir, 'Newsreader-Bold.ttf'), fontWeight: 700 },
     ],
   });
 

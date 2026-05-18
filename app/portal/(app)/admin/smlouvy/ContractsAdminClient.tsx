@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { Plus, Check, Ban, FileDown, FileText } from 'lucide-react';
+import { Plus, Check, Ban, FileDown, FileText, RefreshCw } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
-import { createContract, markContractSigned, cancelContract } from '@/lib/actions/contracts';
+import { createContract, markContractSigned, cancelContract, regenerateContractDocs } from '@/lib/actions/contracts';
 
 type Row = {
   id: string;
@@ -73,6 +73,14 @@ export default function ContractsAdminClient({
     if (!confirm('Zrušit smlouvu?')) return;
     startTransition(() => {
       void cancelContract(id);
+    });
+  }
+
+  function handleRegen(id: string) {
+    setError(null);
+    startTransition(async () => {
+      const res = await regenerateContractDocs(id);
+      if (!res.ok) setError(`Regenerace selhala: ${res.error}`);
     });
   }
 
@@ -247,7 +255,7 @@ export default function ContractsAdminClient({
                 <td className="px-4 py-3 text-sandstone whitespace-nowrap">{formatDate(c.created_at)}</td>
                 <td className="px-4 py-3"><StatusBadge kind="task" value={mapStatus(c.status)} /></td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                  {c.pdf_url && (
+                  {c.pdf_url ? (
                     <a
                       href={`/api/portal/contracts/${c.id}/pdf`}
                       target="_blank"
@@ -257,6 +265,15 @@ export default function ContractsAdminClient({
                     >
                       <FileText size={13} /> PDF
                     </a>
+                  ) : (
+                    <button
+                      onClick={() => handleRegen(c.id)}
+                      disabled={pending}
+                      className="inline-flex items-center gap-1 text-rust hover:text-caramel-light text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50"
+                      title="PDF chybí — regenerovat"
+                    >
+                      <RefreshCw size={13} /> Regen PDF
+                    </button>
                   )}
                   {c.docx_url && (
                     <a

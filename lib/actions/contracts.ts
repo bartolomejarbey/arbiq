@@ -229,6 +229,152 @@ export async function createContract(formData: FormData): Promise<ContractAction
   return { ok: true, contractId, pdfPath, docxPath };
 }
 
+type ContractRow = {
+  id: string;
+  contract_number: string;
+  title: string;
+  subject: string;
+  scope_bullets: string[] | null;
+  total_price: number;
+  currency: string;
+  deposit_percent: number;
+  hourly_rate: number;
+  monthly_fee: number | null;
+  deadline_days: number;
+  warranty_months: number;
+  late_fee_per_day: number;
+  penalty_max: number | null;
+  place_of_signing: string;
+  has_nda: boolean;
+  nda_penalty: number;
+  has_exclusivity: boolean;
+  exclusivity_clause: string | null;
+  client_id: string;
+  project_id: string | null;
+};
+
+/**
+ * Přegeneruje PDF (a DOCX) existující smlouvy. Užitečné když původní render
+ * selhal (např. font fetch z gstatic timeoutoval) a contract zůstal s pdf_url=null.
+ */
+export async function regenerateContractDocs(contractId: string): Promise<
+  { ok: true; pdfPath?: string; docxPath?: string } | { ok: false; error: string }
+> {
+  const admin = createAdminClient();
+
+  const { data: ctrRow, error: ctrErr } = await untyped(admin)
+    .from('contracts')
+    .select(
+      'id, contract_number, title, subject, scope_bullets, total_price, currency, deposit_percent, hourly_rate, monthly_fee, deadline_days, warranty_months, late_fee_per_day, penalty_max, place_of_signing, has_nda, nda_penalty, has_exclusivity, exclusivity_clause, client_id, project_id',
+    )
+    .eq('id', contractId)
+    .single();
+  if (ctrErr || !ctrRow) {
+    return { ok: false, error: ctrErr?.message ?? 'Smlouva nenalezena.' };
+  }
+  const c = ctrRow as unknown as ContractRow;
+
+  const [{ data: clientRow }, dodavatel] = await Promise.all([
+    untyped(admin)
+      .from('profiles')
+      .select('id, full_name, email, phone, company, ico, dic, street, city, representative_name')
+      .eq('id', c.client_id)
+      .single(),
+    getDodavatel(),
+  ]);
+
+  const customer: ContractCustomer = {
+    full_name: (clientRow as { full_name?: string | null } | null)?.full_name ?? 'Klient',
+    email: (clientRow as { email?: string | null } | null)?.email ?? null,
+    phone: (clientRow as { phone?: string | null } | null)?.phone ?? null,
+    company: (clientRow as { company?: string | null } | null)?.company ?? null,
+    ico: (clientRow as { ico?: string | null } | null)?.ico ?? null,
+    dic: (clientRow as { dic?: string | null } | null)?.dic ?? null,
+    street: (clientRow as { street?: string | null } | null)?.street ?? null,
+    city: (clientRow as { city?: string | null } | null)?.city ?? null,
+    representative: (clientRow as { representative_name?: string | null } | null)?.representative_name ?? null,
+  };
+
+  const doc: ContractDoc = {
+    contractNumber: c.contract_number,
+    title: c.title,
+    subject: c.subject,
+    scopeBullets: c.scope_bullets ?? [],
+    totalPrice: Number(c.total_price),
+    currency: c.currency ?? 'CZK',
+    depositPercent: Number(c.deposit_percent ?? 50),
+    hourlyRate: Number(c.hourly_rate ?? 900),
+    monthlyFee: c.monthly_fee !== null ? Number(c.monthly_fee) : null,
+    deadlineDays: Number(c.deadline_days ?? 14),
+    warrantyMonths: Number(c.warranty_months ?? 3),
+    lateFeePerDay: Number(c.late_fee_per_day ?? 0.0005),
+    penaltyMax: c.penalty_max !== null ? Number(c.penalty_max) : null,
+    placeOfSigning: c.place_of_signing ?? 'Bělči',
+    hasNda: !!c.has_nda,
+    ndaPenalty: Number(c.nda_penalty ?? 100000),
+    hasExclusivity: !!c.has_exclusivity,
+    exclusivityClause: c.exclusivity_clause ?? null,
+  };
+
+  let pdfPath: string | undefined;
+  let docxPath: string | undefined;
+  const errors: string[] = [];
+
+  try {
+    const pdf = await renderContractPdf({ doc, customer, dodavatel });
+    const up = await uploadDocument({
+      clientId: c.client_id,
+      projectId: c.project_id,
+      type: 'smlouva',
+      filename: `${c.contract_number}.pdf`,
+      contentType: 'application/pdf',
+      body: pdf,
+      contractId,
+      title: `${c.title} (PDF)`,
+    });
+    pdfPath = up.path;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[CONTRACT PDF] regenerate failed:', msg);
+    errors.push(`PDF: ${msg}`);
+  }
+
+  try {
+    const docx = await renderContractDocx({ doc, customer, dodavatel });
+    const up = await uploadDocument({
+      clientId: c.client_id,
+      projectId: c.project_id,
+      type: 'smlouva',
+      filename: `${c.contract_number}.docx`,
+      contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      body: docx,
+      contractId,
+      title: `${c.title} (DOCX)`,
+    });
+    docxPath = up.path;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[CONTRACT DOCX] regenerate failed:', msg);
+    errors.push(`DOCX: ${msg}`);
+  }
+
+  const updates: Record<string, unknown> = {};
+  if (pdfPath) updates['pdf_url'] = pdfPath;
+  if (docxPath) updates['docx_url'] = docxPath;
+  if (Object.keys(updates).length > 0) {
+    await untyped(admin).from('contracts').update(updates).eq('id', contractId);
+  }
+
+  revalidatePath('/portal/admin/smlouvy');
+  revalidatePath(`/portal/admin/crm/klient/${c.client_id}`);
+  revalidatePath('/portal/smlouvy');
+
+  if (errors.length > 0 && !pdfPath && !docxPath) {
+    return { ok: false, error: errors.join(' · ') };
+  }
+  return { ok: true, pdfPath, docxPath };
+}
+
 export async function markContractSigned(contractId: string) {
   const supabase = await createClient();
   const { error } = await untyped(supabase)
