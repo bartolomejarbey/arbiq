@@ -27,19 +27,22 @@ export type EmailPayload = {
   bccAdmin?: boolean;
 };
 
+/** Fallback z domény arbiq.cz (verified v Resend) — nepadá ani když RESEND_FROM
+ *  chybí v Vercel env. Důležité, protože jinak veškeré outbound emaily padají
+ *  tiše v Promise.allSettled. */
+const DEFAULT_FROM = 'ARBIQ <noreply@arbiq.cz>';
+const DEFAULT_BCC_ADMIN = 'bartolomej@arbiq.cz,info@arbiq.cz';
+
 export async function sendEmail(payload: EmailPayload) {
-  if (!process.env.RESEND_FROM) {
-    throw new Error('RESEND_FROM is not set');
-  }
+  const fromAddress = process.env.RESEND_FROM || DEFAULT_FROM;
 
   const inner = await render(payload.body, { pretty: false });
   const html = wrapInShell(inner);
   const text = htmlToPlainText(html);
 
-  // RESEND_BCC_ADMIN can be a single email or comma-separated list of emails.
-  const adminBccList = process.env.RESEND_BCC_ADMIN
-    ? process.env.RESEND_BCC_ADMIN.split(',').map((s) => s.trim()).filter(Boolean)
-    : [];
+  // RESEND_BCC_ADMIN may be empty on Vercel; fall back to hard-coded admin list.
+  const adminBccRaw = process.env.RESEND_BCC_ADMIN || DEFAULT_BCC_ADMIN;
+  const adminBccList = adminBccRaw.split(',').map((s) => s.trim()).filter(Boolean);
 
   const bcc = [
     ...(payload.bcc ?? []),
@@ -54,7 +57,7 @@ export async function sendEmail(payload: EmailPayload) {
       : payload.replyTo;
 
   const result = await client().emails.send({
-    from: process.env.RESEND_FROM,
+    from: fromAddress,
     to: Array.isArray(payload.to) ? payload.to : [payload.to],
     bcc: bcc.length ? bcc : undefined,
     cc: payload.cc,

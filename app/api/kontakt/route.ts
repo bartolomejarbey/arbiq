@@ -66,20 +66,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Něco se pokazilo.' }, { status: 500 });
   }
 
-  if (process.env.RESEND_BCC_ADMIN) {
-    await sendEmail({
-      to: process.env.RESEND_BCC_ADMIN,
-      subject: `[ARBIQ] Nová zpráva: ${parsed.name}`,
-      replyTo: parsed.email,
-      body: KontaktInternalEmail({
-        name: parsed.name,
-        email: parsed.email,
-        phone: parsed.phone,
-        type: parsed.type,
-        message: parsed.message,
-      }),
-    }).catch((e) => console.error('kontakt-internal email failed', e));
-  }
+  // Notifikace pro admina (BCC) — sendEmail si bere RESEND_BCC_ADMIN sám,
+  // s fallbackem na bartolomej@arbiq.cz,info@arbiq.cz.
+  const adminTo = process.env.RESEND_BCC_ADMIN || 'bartolomej@arbiq.cz,info@arbiq.cz';
+  await sendEmail({
+    to: adminTo,
+    subject: `[ARBIQ] Nová zpráva: ${parsed.name}`,
+    replyTo: parsed.email,
+    body: KontaktInternalEmail({
+      name: parsed.name,
+      email: parsed.email,
+      phone: parsed.phone,
+      type: parsed.type,
+      message: parsed.message,
+    }),
+  }).catch((e) => console.error('[KONTAKT] internal email failed:', e));
 
   return NextResponse.json({ success: true });
 }
