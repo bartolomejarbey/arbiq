@@ -256,15 +256,25 @@ export default function ContractsAdminClient({
                 <td className="px-4 py-3"><StatusBadge kind="task" value={mapStatus(c.status)} /></td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
                   {c.pdf_url ? (
-                    <a
-                      href={`/api/portal/contracts/${c.id}/pdf`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-caramel hover:text-caramel-light text-xs font-mono uppercase tracking-widest mr-3"
-                      title="Zobrazit PDF"
-                    >
-                      <FileText size={13} /> PDF
-                    </a>
+                    <>
+                      <a
+                        href={`/api/portal/contracts/${c.id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-caramel hover:text-caramel-light text-xs font-mono uppercase tracking-widest mr-2"
+                        title="Zobrazit PDF"
+                      >
+                        <FileText size={13} /> PDF
+                      </a>
+                      <button
+                        onClick={() => handleRegen(c.id)}
+                        disabled={pending}
+                        className="inline-flex items-center text-sandstone hover:text-caramel mr-3 disabled:opacity-50 align-middle"
+                        title="Přegenerovat PDF + DOCX (přepíše stávající)"
+                      >
+                        <RefreshCw size={11} className={pending ? 'animate-spin' : ''} />
+                      </button>
+                    </>
                   ) : (
                     <button
                       onClick={() => handleRegen(c.id)}
@@ -272,7 +282,7 @@ export default function ContractsAdminClient({
                       className="inline-flex items-center gap-1 text-rust hover:text-caramel-light text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50"
                       title="PDF chybí — regenerovat"
                     >
-                      <RefreshCw size={13} /> Regen PDF
+                      <RefreshCw size={13} className={pending ? 'animate-spin' : ''} /> Regen PDF
                     </button>
                   )}
                   {c.docx_url && (
