@@ -5,11 +5,27 @@ import { sendEmail } from '@/lib/email/send';
 import { KontaktInternalEmail } from '@/lib/email/templates/kontakt-internal';
 import { isLikelySpam, isEmailRateLimited } from '@/lib/spam-protection';
 
+/** Form posílá české slugs (obecna/projekt/konzultace/produkt) — zde je mapujeme na EN klíče. */
+const CZ_TO_EN_TYPE: Record<string, 'general' | 'project' | 'consultation' | 'product'> = {
+  obecna: 'general',
+  obecný: 'general',
+  general: 'general',
+  projekt: 'project',
+  project: 'project',
+  konzultace: 'consultation',
+  consultation: 'consultation',
+  produkt: 'product',
+  product: 'product',
+};
+
 const KontaktSchema = z.object({
   name: z.string().min(2).max(120),
   email: z.string().email().max(200),
   phone: z.string().max(40).optional().default(''),
-  type: z.enum(['general', 'project', 'consultation', 'product']).default('general'),
+  type: z.preprocess(
+    (v) => (typeof v === 'string' && CZ_TO_EN_TYPE[v.toLowerCase()]) || v || 'general',
+    z.enum(['general', 'project', 'consultation', 'product']).default('general'),
+  ),
   message: z.string().min(5).max(4000),
 });
 

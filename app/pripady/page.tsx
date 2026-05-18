@@ -33,11 +33,11 @@ const cases = [
   },
   {
     number: "#004",
-    name: "kolinskyhokej.cz",
-    url: "https://kolinskyhokej.cz",
-    screenshot: "/ilustrace/references/kolinskyhokej.png",
-    summary: "E-shop za cenu 8 000 Kč. Jednoduchý WordPress, dostačující pro účely klienta — připraven na expanzi.",
-    tags: ["E-SHOP", "WORDPRESS", "SPORT"],
+    name: "masi-co-food.cz",
+    url: "https://masi-co-food.cz",
+    screenshot: "/ilustrace/references/masicofood.png",
+    summary: "Veřejná jídelna se srdcem v řemesle — masíčko z 18leté tradice (Litoměřice). Prezentační web s aktuálním jídelním lístkem, novinkami a knihou pochval.",
+    tags: ["WEBDESIGN", "GASTRONOMIE", "ŘEZNICTVÍ"],
     rotation: "-rotate-[2deg]",
   },
   {

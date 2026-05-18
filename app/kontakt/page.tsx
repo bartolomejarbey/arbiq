@@ -123,7 +123,9 @@ export default function KontaktPage() {
                   <MapPin size={20} className="text-caramel mt-1 shrink-0" strokeWidth={1.5} />
                   <div>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone block mb-1">Adresa</span>
-                    <p className="text-moonlight">Praha 1</p>
+                    <p className="text-moonlight">Školská 689/20</p>
+                    <p className="text-moonlight">Nové Město</p>
+                    <p className="text-moonlight">110 00 Praha</p>
                   </div>
                 </div>
 
