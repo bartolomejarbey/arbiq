@@ -5,7 +5,7 @@
  *   node --env-file=.env.local --experimental-strip-types --no-warnings scripts/check-resend.ts
  *
  * Nebo s vlastní cílovou adresou:
- *   node --env-file=.env.local --experimental-strip-types --no-warnings scripts/check-resend.ts bartolomej@arbey.cz
+ *   node --env-file=.env.local --experimental-strip-types --no-warnings scripts/check-resend.ts bartolomej@arbiq.cz
  */
 
 const RESEND_API = 'https://api.resend.com';
@@ -13,7 +13,7 @@ const apiKey = process.env.RESEND_API_KEY;
 const fromHeader = process.env.RESEND_FROM ?? 'ARBIQ <noreply@arbiq.cz>';
 const replyTo = process.env.RESEND_REPLY_TO ?? null;
 const bccAdmin = process.env.RESEND_BCC_ADMIN ?? null;
-const targetEmail = process.argv[2] ?? 'bartolomej@arbey.cz';
+const targetEmail = process.argv[2] ?? 'bartolomej@arbiq.cz';
 
 function ok(msg: string) {
   console.log(`  ✓ ${msg}`);
@@ -111,7 +111,7 @@ async function main() {
   console.log(`  1. Otevři ${targetEmail} — email by měl přijít do 30 sec.`);
   console.log(`  2. Zkontroluj Resend Dashboard → Logs (resend.com/emails) — najdi ID ${sendData.id}, status musí být Delivered.`);
   if (bccAdmin) {
-    console.log(`  3. Zkontroluj BCC příjemce (${bccAdmin}) — pokud forwardují na arbey.cz, ověř příchod tam.`);
+    console.log(`  3. Zkontroluj BCC příjemce (${bccAdmin}) — pokud forwardují dál (např. přes Resend Inbound webhook na arbey.cz), ověř příchod tam.`);
   }
   if (replyTo) {
     console.log(`  4. V doručeném emailu klikni Reply — pole "To:" musí být ${replyTo}.`);

@@ -1,5 +1,5 @@
 /**
- * One-shot skript: změna full_name + hesla pro bartolomej@arbey.cz.
+ * One-shot skript: změna full_name + hesla pro bartolomej@arbiq.cz.
  *
  * Spuštění:
  *   node --env-file=.env.local --experimental-strip-types --no-warnings scripts/rename-bartolomej.ts
@@ -13,7 +13,7 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-const EMAIL = 'bartolomej@arbey.cz';
+const EMAIL = 'bartolomej@arbiq.cz';
 const NEW_FULL_NAME = 'Bartolomej21';
 const NEW_PASSWORD = 'AarbeyFur25.';
 

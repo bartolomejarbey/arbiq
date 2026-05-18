@@ -21,6 +21,7 @@ import {
   MessageSquare,
   Database,
   Calendar,
+  FileSignature,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -29,6 +30,7 @@ type NavItem = { href: string; label: string; icon: React.ComponentType<{ size?:
 const clientNav: NavItem[] = [
   { href: '/portal/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
   { href: '/portal/faktury',     label: 'Faktury',     icon: Receipt },
+  { href: '/portal/smlouvy',     label: 'Smlouvy',     icon: FileSignature },
   { href: '/portal/vysledky',    label: 'Výsledky',    icon: BarChart3 },
   { href: '/portal/doporuceni',  label: 'Doporučení',  icon: Sparkles },
 ];
@@ -47,6 +49,7 @@ const adminNav: NavItem[] = [
   { href: '/portal/admin/uzivatele',  label: 'Uživatelé',   icon: UserCog },
   { href: '/portal/admin/projekty',   label: 'Projekty',    icon: FolderKanban },
   { href: '/portal/admin/faktury',    label: 'Faktury',     icon: Receipt },
+  { href: '/portal/admin/smlouvy',    label: 'Smlouvy',     icon: FileSignature },
   { href: '/portal/admin/doporuceni', label: 'Doporučení',  icon: Sparkles },
   { href: '/portal/admin/statistiky', label: 'Statistiky',  icon: Trophy },
   { href: '/portal/admin/analytics',  label: 'Analytics',   icon: Activity },

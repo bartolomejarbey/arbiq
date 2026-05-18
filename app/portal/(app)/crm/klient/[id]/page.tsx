@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { FileText, FileDown, FileSignature, Paperclip } from 'lucide-react';
 import { createClient } from "@/lib/supabase/server";
+import { untyped } from "@/lib/supabase/untyped";
 import { requireViewer } from "@/lib/supabase/viewer";
 import PageHeader from '@/components/portal/PageHeader';
 import StatusBadge from '@/components/portal/StatusBadge';
@@ -47,6 +49,17 @@ const contactTypeLabels: Record<string, string> = {
   jine: 'Jiné',
 };
 
+function contractStatus(s: string): string {
+  switch (s) {
+    case 'koncept': return 'todo';
+    case 'poslano': return 'doing';
+    case 'podepsano': return 'done';
+    case 'odmítnuto':
+    case 'zruseno': return 'cancelled';
+    default: return s;
+  }
+}
+
 export default async function KlientDetailPage({
   params,
 }: {
@@ -57,12 +70,22 @@ export default async function KlientDetailPage({
   const supabase = await createClient();
   const user = viewer;
 
-  const [{ data: profileRow }, { data: projectRows }, { data: invoiceRows }, { data: contactRows }, { data: noteRows }] = await Promise.all([
+  const [
+    { data: profileRow },
+    { data: projectRows },
+    { data: invoiceRows },
+    { data: contactRows },
+    { data: noteRows },
+    { data: contractRows },
+    { data: documentRows },
+  ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, email, phone, company, ico, website_url, is_active').eq('id', id).eq('role', 'klient').single(),
     supabase.from('projects').select('id, name, status, progress, total_value').eq('client_id', id).order('created_at', { ascending: false }),
     supabase.from('invoices').select('id, invoice_number, amount, description, issued_at, due_date, paid_at, status, pdf_url').eq('client_id', id).order('issued_at', { ascending: false }),
     supabase.from('crm_contacts').select('id, type, note, next_followup, created_at, obchodnik:profiles!crm_contacts_obchodnik_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
     supabase.from('crm_notes').select('id, content, created_at, author_id, author:profiles!crm_notes_author_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
+    untyped(supabase).from('contracts').select('id, contract_number, title, total_price, status, created_at, pdf_url, docx_url').eq('client_id', id).order('created_at', { ascending: false }),
+    untyped(supabase).from('documents').select('id, type, title, name, storage_path, file_path, created_at, mime_type, invoice_id, contract_id').eq('client_id', id).order('created_at', { ascending: false }),
   ]);
 
   const profile = profileRow as unknown as ClientProfile | null;
@@ -85,6 +108,33 @@ export default async function KlientDetailPage({
     author_name: n.author?.full_name ?? null,
   }));
   const totalValue = projects.reduce((s, p) => s + Number(p.total_value ?? 0), 0);
+
+  type ContractRow = {
+    id: string;
+    contract_number: string;
+    title: string;
+    total_price: number;
+    status: string;
+    created_at: string;
+    pdf_url: string | null;
+    docx_url: string | null;
+  };
+  const contracts = ((contractRows ?? []) as unknown as ContractRow[]);
+
+  type DocumentRow = {
+    id: string;
+    type: string;
+    title: string | null;
+    name: string;
+    storage_path: string | null;
+    file_path: string;
+    created_at: string;
+    mime_type: string | null;
+    invoice_id: string | null;
+    contract_id: string | null;
+  };
+  const documents = ((documentRows ?? []) as unknown as DocumentRow[]);
+  const totalContracts = contracts.reduce((s, c) => s + Number(c.total_price ?? 0), 0);
 
   return (
     <div>
@@ -122,10 +172,112 @@ export default async function KlientDetailPage({
           </section>
 
           <section>
+            <h2 className="font-display italic font-black text-2xl text-moonlight mb-4 flex items-center gap-3">
+              <FileSignature size={20} className="text-caramel" />
+              <span>Smlouvy</span>
+              {contracts.length > 0 && (
+                <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone ml-auto">
+                  {contracts.length} ks · {formatMoney(totalContracts)}
+                </span>
+              )}
+            </h2>
+            {contracts.length === 0 ? (
+              <p className="text-sandstone text-sm bg-coffee p-6">Žádné smlouvy.</p>
+            ) : (
+              <ul className="space-y-3">
+                {contracts.map((c) => (
+                  <li key={c.id} className="bg-coffee p-5 flex items-center justify-between gap-4 border-l-2 border-caramel/40">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-3">
+                        <span className="font-mono text-caramel text-xs">{c.contract_number}</span>
+                        <span className="text-moonlight font-medium truncate">{c.title}</span>
+                      </div>
+                      <div className="text-sandstone text-xs mt-1">{formatDate(c.created_at)}</div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-sepia text-sm">{formatMoney(c.total_price)}</span>
+                      <StatusBadge kind="task" value={contractStatus(c.status)} />
+                      {c.pdf_url && (
+                        <a
+                          href={`/api/portal/contracts/${c.id}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-caramel hover:text-caramel-light font-mono text-[10px] uppercase tracking-widest inline-flex items-center gap-1"
+                        >
+                          <FileText size={12} /> PDF
+                        </a>
+                      )}
+                      {c.docx_url && (
+                        <a
+                          href={`/api/portal/contracts/${c.id}/docx`}
+                          className="text-caramel hover:text-caramel-light font-mono text-[10px] uppercase tracking-widest inline-flex items-center gap-1"
+                        >
+                          <FileDown size={12} /> DOCX
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section>
             <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Faktury</h2>
             <div className="bg-coffee">
               <InvoiceTable invoices={invoices} />
             </div>
+          </section>
+
+          <section>
+            <h2 className="font-display italic font-black text-2xl text-moonlight mb-4 flex items-center gap-3">
+              <Paperclip size={20} className="text-caramel" />
+              <span>Dokumenty</span>
+              {documents.length > 0 && (
+                <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone ml-auto">
+                  {documents.length} ks
+                </span>
+              )}
+            </h2>
+            {documents.length === 0 ? (
+              <p className="text-sandstone text-sm bg-coffee p-6">Žádné dokumenty.</p>
+            ) : (
+              <ul className="space-y-1 bg-coffee p-4">
+                {documents.map((d) => (
+                  <li key={d.id} className="flex items-center justify-between gap-4 py-2 border-b border-tobacco/40 last:border-b-0">
+                    <div className="min-w-0 flex items-center gap-3">
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-caramel bg-tobacco px-2 py-0.5">
+                        {d.type}
+                      </span>
+                      <span className="text-sepia truncate">{d.title ?? d.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-sandstone text-xs">{formatDate(d.created_at)}</span>
+                      {d.invoice_id && (
+                        <a
+                          href={`/api/portal/invoices/${d.invoice_id}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-caramel hover:text-caramel-light font-mono text-[10px] uppercase tracking-widest"
+                        >
+                          Otevřít
+                        </a>
+                      )}
+                      {d.contract_id && (
+                        <a
+                          href={`/api/portal/contracts/${d.contract_id}/${d.mime_type?.includes('word') ? 'docx' : 'pdf'}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-caramel hover:text-caramel-light font-mono text-[10px] uppercase tracking-widest"
+                        >
+                          Otevřít
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <section>

@@ -230,6 +230,136 @@ export type Database = {
         }
         Relationships: []
       }
+      contracts: {
+        Row: {
+          client_id: string
+          contract_number: string
+          created_at: string
+          currency: string
+          deadline_days: number | null
+          deposit_percent: number | null
+          docx_url: string | null
+          exclusivity_clause: string | null
+          has_exclusivity: boolean
+          has_nda: boolean
+          hourly_rate: number | null
+          id: string
+          kind: string
+          late_fee_per_day: number | null
+          metadata: Json | null
+          monthly_fee: number | null
+          nda_penalty: number | null
+          obchodnik_id: string | null
+          pdf_url: string | null
+          penalty_max: number | null
+          place_of_signing: string | null
+          project_id: string | null
+          scope_bullets: Json | null
+          scope_html: string | null
+          signed_at_customer: string | null
+          signed_at_supplier: string | null
+          status: string
+          subject: string
+          title: string
+          total_price: number
+          updated_at: string
+          vat_note: string | null
+          warranty_months: number | null
+        }
+        Insert: {
+          client_id: string
+          contract_number: string
+          created_at?: string
+          currency?: string
+          deadline_days?: number | null
+          deposit_percent?: number | null
+          docx_url?: string | null
+          exclusivity_clause?: string | null
+          has_exclusivity?: boolean
+          has_nda?: boolean
+          hourly_rate?: number | null
+          id?: string
+          kind?: string
+          late_fee_per_day?: number | null
+          metadata?: Json | null
+          monthly_fee?: number | null
+          nda_penalty?: number | null
+          obchodnik_id?: string | null
+          pdf_url?: string | null
+          penalty_max?: number | null
+          place_of_signing?: string | null
+          project_id?: string | null
+          scope_bullets?: Json | null
+          scope_html?: string | null
+          signed_at_customer?: string | null
+          signed_at_supplier?: string | null
+          status?: string
+          subject: string
+          title: string
+          total_price: number
+          updated_at?: string
+          vat_note?: string | null
+          warranty_months?: number | null
+        }
+        Update: {
+          client_id?: string
+          contract_number?: string
+          created_at?: string
+          currency?: string
+          deadline_days?: number | null
+          deposit_percent?: number | null
+          docx_url?: string | null
+          exclusivity_clause?: string | null
+          has_exclusivity?: boolean
+          has_nda?: boolean
+          hourly_rate?: number | null
+          id?: string
+          kind?: string
+          late_fee_per_day?: number | null
+          metadata?: Json | null
+          monthly_fee?: number | null
+          nda_penalty?: number | null
+          obchodnik_id?: string | null
+          pdf_url?: string | null
+          penalty_max?: number | null
+          place_of_signing?: string | null
+          project_id?: string | null
+          scope_bullets?: Json | null
+          scope_html?: string | null
+          signed_at_customer?: string | null
+          signed_at_supplier?: string | null
+          status?: string
+          subject?: string
+          title?: string
+          total_price?: number
+          updated_at?: string
+          vat_note?: string | null
+          warranty_months?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_obchodnik_id_fkey"
+            columns: ["obchodnik_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cookie_consent_log: {
         Row: {
           analytics: boolean
@@ -517,36 +647,75 @@ export type Database = {
       }
       documents: {
         Row: {
+          client_id: string | null
+          contract_id: string | null
           created_at: string
           file_path: string
           file_size: number | null
           id: string
+          invoice_id: string | null
+          mime_type: string | null
           name: string
-          project_id: string
+          project_id: string | null
+          storage_path: string | null
+          title: string | null
           type: string
           uploaded_by: string | null
         }
         Insert: {
+          client_id?: string | null
+          contract_id?: string | null
           created_at?: string
           file_path: string
           file_size?: number | null
           id?: string
+          invoice_id?: string | null
+          mime_type?: string | null
           name: string
-          project_id: string
+          project_id?: string | null
+          storage_path?: string | null
+          title?: string | null
           type?: string
           uploaded_by?: string | null
         }
         Update: {
+          client_id?: string | null
+          contract_id?: string | null
           created_at?: string
           file_path?: string
           file_size?: number | null
           id?: string
+          invoice_id?: string | null
+          mime_type?: string | null
           name?: string
-          project_id?: string
+          project_id?: string | null
+          storage_path?: string | null
+          title?: string | null
           type?: string
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_project_id_fkey"
             columns: ["project_id"]
@@ -796,44 +965,68 @@ export type Database = {
         Row: {
           amount: number
           client_id: string
+          constant_symbol: string | null
+          contract_id: string | null
           created_at: string
+          currency: string
           description: string | null
           due_date: string
           id: string
           invoice_number: string
           issued_at: string
+          items: Json | null
+          kind: string
           paid_at: string | null
+          payment_method: string
           pdf_url: string | null
           project_id: string | null
+          qr_payload: string | null
           status: string
+          variable_symbol: string | null
         }
         Insert: {
           amount: number
           client_id: string
+          constant_symbol?: string | null
+          contract_id?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
           due_date: string
           id?: string
           invoice_number: string
           issued_at?: string
+          items?: Json | null
+          kind?: string
           paid_at?: string | null
+          payment_method?: string
           pdf_url?: string | null
           project_id?: string | null
+          qr_payload?: string | null
           status?: string
+          variable_symbol?: string | null
         }
         Update: {
           amount?: number
           client_id?: string
+          constant_symbol?: string | null
+          contract_id?: string | null
           created_at?: string
+          currency?: string
           description?: string | null
           due_date?: string
           id?: string
           invoice_number?: string
           issued_at?: string
+          items?: Json | null
+          kind?: string
           paid_at?: string | null
+          payment_method?: string
           pdf_url?: string | null
           project_id?: string | null
+          qr_payload?: string | null
           status?: string
+          variable_symbol?: string | null
         }
         Relationships: [
           {
@@ -841,6 +1034,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_contract_fk"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
           {
@@ -1076,48 +1276,63 @@ export type Database = {
         Row: {
           assigned_obchodnik: string | null
           avatar_url: string | null
+          city: string | null
           company: string | null
           created_at: string
+          dic: string | null
           email: string
           email_notifications_enabled: boolean
           full_name: string
           ico: string | null
           id: string
           is_active: boolean
+          notes: string | null
           phone: string | null
+          representative_name: string | null
           role: string
+          street: string | null
           updated_at: string
           website_url: string | null
         }
         Insert: {
           assigned_obchodnik?: string | null
           avatar_url?: string | null
+          city?: string | null
           company?: string | null
           created_at?: string
+          dic?: string | null
           email: string
           email_notifications_enabled?: boolean
           full_name: string
           ico?: string | null
           id: string
           is_active?: boolean
+          notes?: string | null
           phone?: string | null
+          representative_name?: string | null
           role?: string
+          street?: string | null
           updated_at?: string
           website_url?: string | null
         }
         Update: {
           assigned_obchodnik?: string | null
           avatar_url?: string | null
+          city?: string | null
           company?: string | null
           created_at?: string
+          dic?: string | null
           email?: string
           email_notifications_enabled?: boolean
           full_name?: string
           ico?: string | null
           id?: string
           is_active?: boolean
+          notes?: string | null
           phone?: string | null
+          representative_name?: string | null
           role?: string
+          street?: string | null
           updated_at?: string
           website_url?: string | null
         }
@@ -1336,6 +1551,7 @@ export type Database = {
         Returns: undefined
       }
       next_case_number: { Args: never; Returns: string }
+      next_contract_number: { Args: never; Returns: string }
       next_invoice_number: { Args: never; Returns: string }
     }
     Enums: {

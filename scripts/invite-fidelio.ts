@@ -14,7 +14,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
 const FIDELIO = {
-  email: 'fidelio@arbiq.cz',
+  email: 'info@arbiq.cz',
   full_name: 'Fidelio Seidl',
   phone: '+420 739 609 841',
   role: 'obchodnik' as const,

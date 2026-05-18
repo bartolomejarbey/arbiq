@@ -21,13 +21,13 @@ const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
 
 const ACCOUNTS = [
   {
-    email: 'bartolomej@arbey.cz',
+    email: 'bartolomej@arbiq.cz',
     full_name: 'Bartoloměj Rota',
     phone: '+420 725 932 729',
     role: 'admin' as const,
   },
   {
-    email: 'fidelio@arbey.cz',
+    email: 'info@arbiq.cz',
     full_name: 'Fidelio Seidl',
     phone: '+420 739 609 841',
     role: 'obchodnik' as const,

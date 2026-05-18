@@ -14,8 +14,8 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
 const ACCOUNTS = [
-  { email: 'bartolomej@arbey.cz', label: 'Bartoloměj Rota (admin)' },
-  { email: 'fidelio@arbey.cz', label: 'Fidelio Seidl (obchodnik)' },
+  { email: 'bartolomej@arbiq.cz', label: 'Bartoloměj Rota (admin)' },
+  { email: 'info@arbiq.cz', label: 'Fidelio Seidl (obchodnik)' },
 ];
 
 function generatePassword(length = 16): string {

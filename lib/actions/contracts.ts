@@ -1,0 +1,247 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { untyped } from '@/lib/supabase/untyped';
+import { notifyPortalUser } from '@/lib/email/notify';
+import { getDodavatel } from '@/lib/config/dodavatel';
+import { uploadDocument } from '@/lib/storage/documents';
+import { renderContractPdf, type ContractDoc, type ContractCustomer } from '@/lib/pdf/contract';
+import { renderContractDocx } from '@/lib/docx/contract';
+
+const ContractSchema = z.object({
+  client_id: z.string().uuid(),
+  project_id: z.string().uuid().optional(),
+  kind: z.enum(['smlouva_o_dilo', 'smlouva_paushal', 'nda', 'dodatek', 'jine']).default('smlouva_o_dilo'),
+  title: z.string().min(3).max(200),
+  subject: z.string().min(5).max(500),
+  scope_bullets: z.array(z.string().min(2).max(500)).max(40).optional(),
+  total_price: z.number().positive(),
+  deposit_percent: z.number().min(0).max(100).default(50),
+  hourly_rate: z.number().positive().default(900),
+  monthly_fee: z.number().nonnegative().optional().nullable(),
+  deadline_days: z.number().int().positive().max(365).default(14),
+  warranty_months: z.number().int().min(0).max(36).default(3),
+  late_fee_per_day: z.number().min(0).max(1).default(0.0005),
+  penalty_max: z.number().nonnegative().optional().nullable(),
+  place_of_signing: z.string().max(80).default('Bělči'),
+  has_nda: z.boolean().default(true),
+  nda_penalty: z.number().nonnegative().default(100000),
+  has_exclusivity: z.boolean().default(false),
+  exclusivity_clause: z.string().max(2000).optional().nullable(),
+});
+
+export type ContractActionResult = { ok: true; contractId: string; pdfPath?: string; docxPath?: string } | { ok: false; error: string };
+
+function num(formData: FormData, key: string, fallback?: number): number {
+  const v = formData.get(key);
+  if (typeof v !== 'string' || v.trim() === '') return fallback ?? 0;
+  const n = Number(v.replace(/\s/g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : (fallback ?? 0);
+}
+
+function bool(formData: FormData, key: string, fallback = false): boolean {
+  const v = formData.get(key);
+  if (v === null) return fallback;
+  return v === 'on' || v === 'true' || v === '1';
+}
+
+function parseBullets(formData: FormData): string[] | undefined {
+  const raw = formData.get('scope_bullets');
+  if (typeof raw !== 'string' || !raw.trim()) return undefined;
+  return raw.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+}
+
+export async function createContract(formData: FormData): Promise<ContractActionResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Nepřihlášený uživatel.' };
+
+  let parsed: z.infer<typeof ContractSchema>;
+  try {
+    parsed = ContractSchema.parse({
+      client_id: String(formData.get('client_id') ?? ''),
+      project_id: String(formData.get('project_id') ?? '') || undefined,
+      kind: String(formData.get('kind') ?? 'smlouva_o_dilo'),
+      title: String(formData.get('title') ?? '').trim(),
+      subject: String(formData.get('subject') ?? '').trim(),
+      scope_bullets: parseBullets(formData),
+      total_price: num(formData, 'total_price'),
+      deposit_percent: num(formData, 'deposit_percent', 50),
+      hourly_rate: num(formData, 'hourly_rate', 900),
+      monthly_fee: formData.get('monthly_fee') ? num(formData, 'monthly_fee') : null,
+      deadline_days: Math.round(num(formData, 'deadline_days', 14)),
+      warranty_months: Math.round(num(formData, 'warranty_months', 3)),
+      late_fee_per_day: num(formData, 'late_fee_per_day', 0.0005),
+      penalty_max: formData.get('penalty_max') ? num(formData, 'penalty_max') : null,
+      place_of_signing: String(formData.get('place_of_signing') ?? 'Bělči'),
+      has_nda: bool(formData, 'has_nda', true),
+      nda_penalty: num(formData, 'nda_penalty', 100000),
+      has_exclusivity: bool(formData, 'has_exclusivity', false),
+      exclusivity_clause: String(formData.get('exclusivity_clause') ?? '') || null,
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'Neplatná data.',
+    };
+  }
+
+  // Vygenerujeme číslo smlouvy
+  const { data: numData } = await untyped(supabase).rpc('next_contract_number');
+  const contractNumber = typeof numData === 'string' ? numData : `SMLA-${new Date().getFullYear()}-${Date.now() % 1000}`;
+
+  // INSERT
+  const { data: row, error } = await untyped(supabase)
+    .from('contracts')
+    .insert({
+      client_id: parsed.client_id,
+      project_id: parsed.project_id ?? null,
+      obchodnik_id: user.id,
+      contract_number: contractNumber,
+      kind: parsed.kind,
+      title: parsed.title,
+      subject: parsed.subject,
+      scope_bullets: parsed.scope_bullets ?? null,
+      total_price: parsed.total_price,
+      currency: 'CZK',
+      vat_note: 'Zhotovitel není plátcem DPH',
+      deposit_percent: parsed.deposit_percent,
+      hourly_rate: parsed.hourly_rate,
+      monthly_fee: parsed.monthly_fee,
+      deadline_days: parsed.deadline_days,
+      warranty_months: parsed.warranty_months,
+      late_fee_per_day: parsed.late_fee_per_day,
+      penalty_max: parsed.penalty_max,
+      place_of_signing: parsed.place_of_signing,
+      has_nda: parsed.has_nda,
+      nda_penalty: parsed.nda_penalty,
+      has_exclusivity: parsed.has_exclusivity,
+      exclusivity_clause: parsed.exclusivity_clause,
+      status: 'koncept',
+    })
+    .select('id')
+    .single();
+
+  if (error || !row) {
+    return { ok: false, error: error?.message ?? 'Nepodařilo se vytvořit smlouvu.' };
+  }
+  const contractId = (row as { id: string }).id;
+
+  // Vygeneruj PDF + DOCX
+  const admin = createAdminClient();
+  const [{ data: clientRow }, dodavatel] = await Promise.all([
+    admin
+      .from('profiles')
+      .select('id, full_name, email, phone, company, ico, dic, street, city, representative_name')
+      .eq('id', parsed.client_id)
+      .single(),
+    getDodavatel(),
+  ]);
+
+  const customer: ContractCustomer = {
+    full_name: (clientRow as { full_name?: string | null } | null)?.full_name ?? 'Klient',
+    email: (clientRow as { email?: string | null } | null)?.email ?? null,
+    phone: (clientRow as { phone?: string | null } | null)?.phone ?? null,
+    company: (clientRow as { company?: string | null } | null)?.company ?? null,
+    ico: (clientRow as { ico?: string | null } | null)?.ico ?? null,
+    dic: (clientRow as { dic?: string | null } | null)?.dic ?? null,
+    street: (clientRow as { street?: string | null } | null)?.street ?? null,
+    city: (clientRow as { city?: string | null } | null)?.city ?? null,
+    representative: (clientRow as { representative_name?: string | null } | null)?.representative_name ?? null,
+  };
+
+  const doc: ContractDoc = {
+    contractNumber,
+    title: parsed.title,
+    subject: parsed.subject,
+    scopeBullets: parsed.scope_bullets ?? [],
+    totalPrice: parsed.total_price,
+    currency: 'CZK',
+    depositPercent: parsed.deposit_percent,
+    hourlyRate: parsed.hourly_rate,
+    monthlyFee: parsed.monthly_fee ?? null,
+    deadlineDays: parsed.deadline_days,
+    warrantyMonths: parsed.warranty_months,
+    lateFeePerDay: parsed.late_fee_per_day,
+    penaltyMax: parsed.penalty_max ?? null,
+    placeOfSigning: parsed.place_of_signing,
+    hasNda: parsed.has_nda,
+    ndaPenalty: parsed.nda_penalty,
+    hasExclusivity: parsed.has_exclusivity,
+    exclusivityClause: parsed.exclusivity_clause ?? null,
+  };
+
+  let pdfPath: string | undefined;
+  let docxPath: string | undefined;
+
+  try {
+    const pdf = await renderContractPdf({ doc, customer, dodavatel });
+    const up = await uploadDocument({
+      clientId: parsed.client_id,
+      projectId: parsed.project_id ?? null,
+      type: 'smlouva',
+      filename: `${contractNumber}.pdf`,
+      contentType: 'application/pdf',
+      body: pdf,
+      contractId,
+      title: `${parsed.title} (PDF)`,
+    });
+    pdfPath = up.path;
+  } catch (err) {
+    console.error('[CONTRACT PDF] failed', err);
+  }
+
+  try {
+    const docx = await renderContractDocx({ doc, customer, dodavatel });
+    const up = await uploadDocument({
+      clientId: parsed.client_id,
+      projectId: parsed.project_id ?? null,
+      type: 'smlouva',
+      filename: `${contractNumber}.docx`,
+      contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      body: docx,
+      contractId,
+      title: `${parsed.title} (DOCX)`,
+    });
+    docxPath = up.path;
+  } catch (err) {
+    console.error('[CONTRACT DOCX] failed', err);
+  }
+
+  if (pdfPath || docxPath) {
+    await untyped(admin).from('contracts').update({ pdf_url: pdfPath ?? null, docx_url: docxPath ?? null }).eq('id', contractId);
+  }
+
+  void notifyPortalUser({
+    recipientId: parsed.client_id,
+    subject: `Smlouva ${contractNumber} k podpisu`,
+    heading: `Smlouva ${contractNumber}`,
+    intro: `Připravili jsme pro Vás smlouvu „${parsed.title}". Najdete ji v klientské zóně v sekci Dokumenty.`,
+    ctaLabel: 'Otevřít smlouvu',
+    ctaPath: `/portal/smlouvy`,
+  });
+
+  revalidatePath('/portal/admin/smlouvy');
+  revalidatePath(`/portal/admin/crm/klient/${parsed.client_id}`);
+  return { ok: true, contractId, pdfPath, docxPath };
+}
+
+export async function markContractSigned(contractId: string) {
+  const supabase = await createClient();
+  const { error } = await untyped(supabase)
+    .from('contracts')
+    .update({ status: 'podepsano', signed_at_customer: new Date().toISOString().slice(0, 10) })
+    .eq('id', contractId);
+  if (error) throw new Error(error.message);
+  revalidatePath('/portal/admin/smlouvy');
+}
+
+export async function cancelContract(contractId: string) {
+  const supabase = await createClient();
+  const { error } = await untyped(supabase).from('contracts').update({ status: 'zruseno' }).eq('id', contractId);
+  if (error) throw new Error(error.message);
+  revalidatePath('/portal/admin/smlouvy');
+}

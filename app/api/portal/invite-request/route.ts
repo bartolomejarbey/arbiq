@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   if (error) {
     console.error('invite-request insert failed', error);
     return NextResponse.json(
-      { error: 'Nepodařilo se odeslat. Zkuste to prosím za chvíli, nebo nám napište na info@arbey.cz.' },
+      { error: 'Nepodařilo se odeslat. Zkuste to prosím za chvíli, nebo nám napište na info@arbiq.cz.' },
       { status: 500 },
     );
   }

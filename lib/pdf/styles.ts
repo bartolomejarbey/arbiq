@@ -1,0 +1,203 @@
+import 'server-only';
+import path from 'path';
+import { readFileSync } from 'fs';
+import { Font, StyleSheet } from '@react-pdf/renderer';
+
+/**
+ * Centrální místo pro fonty + barevné tokeny PDF dokumentů ARBIQ.
+ * Sepia paleta odpovídá design system v app/globals.css.
+ */
+
+let _fontsRegistered = false;
+
+/** Registruje Inter (Czech support) + Newsreader (serif, smlouvy). Idempotent. */
+export function registerArbiqFonts(): void {
+  if (_fontsRegistered) return;
+  _fontsRegistered = true;
+
+  // Inter — Latin Extended pokrývá českou diakritiku. Stažené z gstatic CDN.
+  Font.register({
+    family: 'Inter',
+    fonts: [
+      { src: 'https://fonts.gstatic.com/s/inter/v19/UcCm3FwrK3iLTcvneQg7Ca725JhhKnOqk.ttf', fontWeight: 400 },
+      { src: 'https://fonts.gstatic.com/s/inter/v19/UcCm3FwrK3iLTcvneVA6Ca725JhhKnOqk.ttf', fontWeight: 600 },
+      { src: 'https://fonts.gstatic.com/s/inter/v19/UcCm3FwrK3iLTcvneXg5Ca725JhhKnOqk.ttf', fontWeight: 700 },
+    ],
+  });
+
+  // Newsreader serif pro smlouvy / „literární" výstupy.
+  Font.register({
+    family: 'Newsreader',
+    fonts: [
+      { src: 'https://fonts.gstatic.com/s/newsreader/v25/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9Jn1WSU.ttf', fontWeight: 400 },
+      { src: 'https://fonts.gstatic.com/s/newsreader/v25/cY9qfjOCX1hbuyalUrK49dLac06G1ZGsZBtoBCzBDXXD9JmtWiU.ttf', fontWeight: 700 },
+    ],
+  });
+
+  Font.registerHyphenationCallback((word: string) => [word]);
+}
+
+/** Načte logo jako data URL — funguje v Vercel runtime (process.cwd → project root). */
+let _logoCache: string | null = null;
+export function loadLogoDataUrl(): string {
+  if (_logoCache) return _logoCache;
+  try {
+    const p = path.join(process.cwd(), 'public', 'arbiq-logo.png');
+    const buf = readFileSync(p);
+    _logoCache = `data:image/png;base64,${buf.toString('base64')}`;
+    return _logoCache;
+  } catch {
+    return '';
+  }
+}
+
+export const COLORS = {
+  espresso: '#18120e',
+  coffee: '#241B14',
+  tobacco: '#3A2D22',
+  caramel: '#C9986A',
+  caramelLight: '#DDB088',
+  parchmentGold: '#F0D4A8',
+  moonlight: '#D8DDE5',
+  sepia: '#C4B59A',
+  sandstone: '#8B7B65',
+  parchment: '#EDE2CC',
+  olive: '#7A8E5C',
+  rust: '#B85A3E',
+  paper: '#FAF6EF',
+  ink: '#1F1A14',
+  inkSoft: '#4A3E32',
+  divider: '#D8C9B0',
+} as const;
+
+/** Sdílené styly pro ARBIQ PDF dokumenty (sepia téma na papíru). */
+export const styles = StyleSheet.create({
+  page: {
+    backgroundColor: COLORS.paper,
+    color: COLORS.ink,
+    fontFamily: 'Inter',
+    fontSize: 9.5,
+    paddingTop: 48,
+    paddingBottom: 56,
+    paddingHorizontal: 48,
+    lineHeight: 1.5,
+  },
+  pageSerif: {
+    backgroundColor: COLORS.paper,
+    color: COLORS.ink,
+    fontFamily: 'Newsreader',
+    fontSize: 10.5,
+    paddingTop: 56,
+    paddingBottom: 64,
+    paddingHorizontal: 56,
+    lineHeight: 1.55,
+  },
+  // Header
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  logo: { width: 48, height: 48 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  brandText: {
+    fontFamily: 'Newsreader',
+    fontSize: 24,
+    fontWeight: 700,
+    color: COLORS.ink,
+    letterSpacing: 1.5,
+  },
+  brandSubline: {
+    fontFamily: 'Inter',
+    fontSize: 7.5,
+    color: COLORS.caramel,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginTop: 2,
+  },
+  hairline: { borderBottomWidth: 0.75, borderBottomColor: COLORS.divider, marginVertical: 14 },
+
+  // Section labels
+  eyebrow: {
+    fontSize: 7.5,
+    color: COLORS.caramel,
+    textTransform: 'uppercase',
+    letterSpacing: 1.4,
+    marginBottom: 4,
+    fontWeight: 600,
+  },
+  h1: {
+    fontFamily: 'Newsreader',
+    fontSize: 36,
+    fontWeight: 700,
+    color: COLORS.ink,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  h2: {
+    fontFamily: 'Newsreader',
+    fontSize: 18,
+    fontWeight: 700,
+    color: COLORS.ink,
+    marginBottom: 8,
+  },
+  h3: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: 700,
+    color: COLORS.ink,
+    marginBottom: 4,
+  },
+  muted: { color: COLORS.sandstone, fontSize: 9 },
+  body: { color: COLORS.inkSoft, fontSize: 10, lineHeight: 1.55 },
+
+  // Highlights
+  caramelBox: {
+    backgroundColor: COLORS.caramel,
+    color: '#FFFFFF',
+    padding: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  caramelText: { color: '#FFFFFF', fontSize: 13, fontWeight: 700 },
+  parchmentBox: {
+    backgroundColor: COLORS.parchment,
+    padding: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.caramel,
+  },
+
+  // Two columns (Dodavatel/Odběratel)
+  twoCol: { flexDirection: 'row', gap: 16 },
+  col: { flex: 1 },
+
+  // Table
+  tableHead: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.ink,
+    paddingBottom: 6,
+    marginBottom: 6,
+  },
+  tableHeadCell: { fontSize: 8, fontWeight: 700, color: COLORS.ink, textTransform: 'uppercase', letterSpacing: 1.1 },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: COLORS.divider,
+  },
+  tableCell: { fontSize: 10, color: COLORS.inkSoft },
+
+  // Footer
+  footerNote: {
+    fontSize: 8,
+    color: COLORS.sandstone,
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  pageNumber: {
+    position: 'absolute',
+    bottom: 24,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 8,
+    color: COLORS.sandstone,
+  },
+});

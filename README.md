@@ -48,7 +48,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 3. **OAuth consent screen:**
    - User Type: **External** (Workspace = Internal)
    - App name: ARBIQ
-   - User support email: `info@arbey.cz`
+   - User support email: `info@arbiq.cz`
    - Scopes: `.../auth/calendar.events`, `.../auth/calendar.readonly`, `.../auth/userinfo.email`
    - Test users (External + nepublikovaný): všichni obchodníci
 4. **Credentials → Create OAuth 2.0 Client ID:**
