@@ -1,6 +1,4 @@
 import 'server-only';
-import path from 'path';
-import { readFileSync } from 'fs';
 import { Font, StyleSheet } from '@react-pdf/renderer';
 
 /**
@@ -45,18 +43,30 @@ export function registerArbiqFonts(): void {
   Font.registerHyphenationCallback((word: string) => [word]);
 }
 
-/** Načte logo jako data URL — funguje v Vercel runtime (process.cwd → project root). */
-let _logoCache: string | null = null;
-export function loadLogoDataUrl(): string {
-  if (_logoCache) return _logoCache;
-  try {
-    const p = path.join(process.cwd(), 'public', 'arbiq-logo.png');
-    const buf = readFileSync(p);
-    _logoCache = `data:image/png;base64,${buf.toString('base64')}`;
-    return _logoCache;
-  } catch {
-    return '';
-  }
+/** Vrátí URL pro PDF Image src — stejná strategie jako fonty (statika z arbiq.cz). */
+function assetUrl(relPath: string): string {
+  const base = (process.env.APP_URL ?? 'https://arbiq.cz').replace(/\/$/, '');
+  return `${base}/${relPath.replace(/^\//, '')}`;
+}
+
+/** Hlavní logo s tmavým textem (white → espresso, hnědý rys zachovaný). */
+export const loadLogoDataUrl = (): string => assetUrl('arbiq-logo-dark.png');
+
+/** Cropped lynx (samotná maskotová ilustrace bez textu) — vhodné jako page corner mark. */
+export const loadLynxMarkDataUrl = (): string => assetUrl('arbiq-mark.png');
+
+/** Naskenovaný podpis Bartoloměje Roty. */
+export const loadSupplierSignatureDataUrl = (): string => assetUrl('signatures/bartolomej-rota.png');
+
+const CZECH_MONTHS = [
+  'ledna', 'února', 'března', 'dubna', 'května', 'června',
+  'července', 'srpna', 'září', 'října', 'listopadu', 'prosince',
+];
+
+/** Formátuje datum jako "19. května 2026". Bez parametru = dnes. */
+export function formatCzechDate(date?: Date | string): string {
+  const d = date ? (typeof date === 'string' ? new Date(date) : date) : new Date();
+  return `${d.getDate()}. ${CZECH_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 export const COLORS = {
