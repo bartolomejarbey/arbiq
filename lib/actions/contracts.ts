@@ -258,7 +258,7 @@ type ContractRow = {
  * selhal (např. font fetch z gstatic timeoutoval) a contract zůstal s pdf_url=null.
  */
 export async function regenerateContractDocs(contractId: string): Promise<
-  { ok: true; pdfPath?: string; docxPath?: string } | { ok: false; error: string }
+  { ok: true; pdfPath?: string; docxPath?: string; warning?: string } | { ok: false; error: string }
 > {
   const admin = createAdminClient();
 
@@ -335,7 +335,8 @@ export async function regenerateContractDocs(contractId: string): Promise<
     pdfPath = up.path;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[CONTRACT PDF] regenerate failed:', msg);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error('[CONTRACT PDF] regenerate failed:', msg, stack);
     errors.push(`PDF: ${msg}`);
   }
 
@@ -369,8 +370,12 @@ export async function regenerateContractDocs(contractId: string): Promise<
   revalidatePath(`/portal/admin/crm/klient/${c.client_id}`);
   revalidatePath('/portal/smlouvy');
 
-  if (errors.length > 0 && !pdfPath && !docxPath) {
-    return { ok: false, error: errors.join(' · ') };
+  // PDF je must-have — pokud chybí, surface error i když DOCX prošlo.
+  if (!pdfPath) {
+    return {
+      ok: false,
+      error: errors.length > 0 ? errors.join(' · ') : 'PDF se nevygenerovalo (neznámý důvod, zkontrolujte Vercel Runtime Logs).',
+    };
   }
   return { ok: true, pdfPath, docxPath };
 }
