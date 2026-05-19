@@ -48,6 +48,7 @@ const crmNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { href: '/portal/admin/uzivatele',  label: 'Uživatelé',   icon: UserCog },
   { href: '/portal/admin/projekty',   label: 'Projekty',    icon: FolderKanban },
+  { href: '/portal/admin/nabidky',    label: 'Nabídky',     icon: FileSignature },
   { href: '/portal/admin/faktury',    label: 'Faktury',     icon: Receipt },
   { href: '/portal/admin/smlouvy',    label: 'Smlouvy',     icon: FileSignature },
   { href: '/portal/admin/doporuceni', label: 'Doporučení',  icon: Sparkles },

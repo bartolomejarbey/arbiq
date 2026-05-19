@@ -49,6 +49,18 @@ const contactTypeLabels: Record<string, string> = {
   jine: 'Jiné',
 };
 
+function quoteStatus(s: string): string {
+  switch (s) {
+    case 'koncept': return 'todo';
+    case 'poslano': return 'doing';
+    case 'akceptovano': return 'done';
+    case 'odmitnuto':
+    case 'zruseno':
+    case 'expirovano': return 'cancelled';
+    default: return s;
+  }
+}
+
 function contractStatus(s: string): string {
   switch (s) {
     case 'koncept': return 'todo';
@@ -85,8 +97,15 @@ export default async function KlientDetailPage({
     supabase.from('crm_contacts').select('id, type, note, next_followup, created_at, obchodnik:profiles!crm_contacts_obchodnik_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
     supabase.from('crm_notes').select('id, content, created_at, author_id, author:profiles!crm_notes_author_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
     untyped(supabase).from('contracts').select('id, contract_number, title, total_price, status, created_at, pdf_url, docx_url').eq('client_id', id).order('created_at', { ascending: false }),
-    untyped(supabase).from('documents').select('id, type, title, name, storage_path, file_path, created_at, mime_type, invoice_id, contract_id').eq('client_id', id).order('created_at', { ascending: false }),
+    untyped(supabase).from('documents').select('id, type, title, name, storage_path, file_path, created_at, mime_type, invoice_id, contract_id, quote_id').eq('client_id', id).order('created_at', { ascending: false }),
   ]);
+
+  // Quotes (nabídky) — read separately so we keep the long Promise.all unchanged.
+  const { data: quoteRows } = await untyped(supabase)
+    .from('quotes')
+    .select('id, quote_number, title, total_price, status, valid_until, created_at, pdf_url')
+    .eq('client_id', id)
+    .order('created_at', { ascending: false });
 
   const profile = profileRow as unknown as ClientProfile | null;
   if (!profile) notFound();
@@ -136,6 +155,19 @@ export default async function KlientDetailPage({
   const documents = ((documentRows ?? []) as unknown as DocumentRow[]);
   const totalContracts = contracts.reduce((s, c) => s + Number(c.total_price ?? 0), 0);
 
+  type QuoteRow = {
+    id: string;
+    quote_number: string;
+    title: string;
+    total_price: number;
+    status: string;
+    valid_until: string;
+    created_at: string;
+    pdf_url: string | null;
+  };
+  const quotes = ((quoteRows ?? []) as unknown as QuoteRow[]);
+  const totalQuotes = quotes.reduce((s, q) => s + Number(q.total_price ?? 0), 0);
+
   return (
     <div>
       <PageHeader
@@ -169,6 +201,51 @@ export default async function KlientDetailPage({
               </ul>
             )}
             <p className="text-sandstone text-xs mt-3">Celková hodnota: <span className="text-moonlight">{formatMoney(totalValue)}</span></p>
+          </section>
+
+          <section>
+            <h2 className="font-display italic font-black text-2xl text-moonlight mb-4 flex items-center gap-3">
+              <FileSignature size={20} className="text-caramel" />
+              <span>Nabídky</span>
+              {quotes.length > 0 && (
+                <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone ml-auto">
+                  {quotes.length} ks · {formatMoney(totalQuotes)}
+                </span>
+              )}
+            </h2>
+            {quotes.length === 0 ? (
+              <p className="text-sandstone text-sm bg-coffee p-6">Žádné cenové nabídky.</p>
+            ) : (
+              <ul className="space-y-3">
+                {quotes.map((q) => (
+                  <li key={q.id} className="bg-coffee p-5 flex items-center justify-between gap-4 border-l-2 border-caramel/40">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-3">
+                        <span className="font-mono text-caramel text-xs">{q.quote_number}</span>
+                        <span className="text-moonlight font-medium truncate">{q.title}</span>
+                      </div>
+                      <div className="text-sandstone text-xs mt-1">
+                        {formatDate(q.created_at)} · Platí do {formatDate(q.valid_until)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-sepia text-sm">{formatMoney(q.total_price)}</span>
+                      <StatusBadge kind="task" value={quoteStatus(q.status)} />
+                      {q.pdf_url && (
+                        <a
+                          href={`/api/portal/quotes/${q.id}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-caramel hover:text-caramel-light font-mono text-[10px] uppercase tracking-widest inline-flex items-center gap-1"
+                        >
+                          <FileText size={12} /> PDF
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <section>
