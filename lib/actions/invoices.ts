@@ -12,6 +12,35 @@ import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument } from '@/lib/storage/documents';
 import { renderInvoicePdf, type InvoiceDoc, type InvoiceCustomer, type InvoiceItem } from '@/lib/pdf/invoice';
 import { buildSpaydPayload } from '@/lib/payments/spayd';
+import type { Dodavatel } from '@/lib/config/dodavatel';
+
+/** Slije případný supplier_override JSON přes výchozí dodavatel hodnoty. */
+function applySupplierOverride(base: Dodavatel, override: unknown): Dodavatel {
+  if (!override || typeof override !== 'object') return base;
+  const o = override as Partial<Dodavatel>;
+  const cleaned: Partial<Dodavatel> = {};
+  for (const [k, v] of Object.entries(o)) {
+    if (v !== null && v !== undefined && v !== '') (cleaned as Record<string, unknown>)[k] = v;
+  }
+  return { ...base, ...cleaned };
+}
+
+function parseSupplierOverrideForm(formData: FormData): Record<string, string | boolean> | null {
+  const useOverride = formData.get('use_supplier_override');
+  if (useOverride !== 'on' && useOverride !== 'true' && useOverride !== '1') return null;
+  const fields: Array<keyof Dodavatel> = [
+    'name', 'street', 'city', 'ico', 'dic', 'iban', 'bank_account', 'bank_name', 'bic',
+    'email', 'phone', 'website', 'brand', 'place', 'legal_form',
+  ];
+  const out: Record<string, string | boolean> = {};
+  for (const f of fields) {
+    const v = formData.get(`sup_${f}`);
+    if (typeof v === 'string' && v.trim().length > 0) out[f] = v.trim();
+  }
+  const vat = formData.get('sup_vat_payer');
+  if (vat === 'on' || vat === 'true' || vat === '1') out.vat_payer = true;
+  return Object.keys(out).length > 0 ? out : null;
+}
 
 const ItemSchema = z.object({
   label: z.string().min(1).max(200),
@@ -123,6 +152,8 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
   const invoiceNumber = typeof numData === 'string' ? numData : `F${Date.now()}`;
   const variableSymbol = parsed.variable_symbol ?? invoiceNumber.replace(/\D/g, '');
 
+  const supplierOverride = parseSupplierOverrideForm(formData);
+
   // 1) INSERT záznamu (zatím bez pdf_url)
   const { data: insRow, error: insErr } = await untyped(supabase)
     .from('invoices')
@@ -142,6 +173,7 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       payment_method: parsed.payment_method,
       currency: 'CZK',
       items: finalItems as unknown as object,
+      supplier_override: supplierOverride,
     })
     .select('id, issued_at')
     .single();
@@ -154,7 +186,7 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
 
   // 2) Načti klientův profil + dodavatele pro PDF.
   const admin = createAdminClient();
-  const [{ data: clientRow }, dodavatel] = await Promise.all([
+  const [{ data: clientRow }, baseDodavatel] = await Promise.all([
     untyped(admin)
       .from('profiles')
       .select('id, full_name, email, phone, company, ico, dic, street, city')
@@ -162,6 +194,7 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       .single(),
     getDodavatel(),
   ]);
+  const dodavatel = applySupplierOverride(baseDodavatel, supplierOverride);
 
   const customer: InvoiceCustomer = {
     full_name: (clientRow as { full_name?: string | null } | null)?.full_name ?? 'Klient',
@@ -297,14 +330,14 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<{ ok: tru
   const admin = createAdminClient();
   const { data: invRow } = await untyped(admin)
     .from('invoices')
-    .select('id, invoice_number, kind, amount, description, issued_at, due_date, variable_symbol, constant_symbol, payment_method, items, client_id, project_id, currency')
+    .select('id, invoice_number, kind, amount, description, issued_at, due_date, variable_symbol, constant_symbol, payment_method, items, client_id, project_id, currency, supplier_override')
     .eq('id', invoiceId)
     .single();
   if (!invRow) return { ok: false, error: 'Faktura nenalezena.' };
   const inv = invRow as Record<string, unknown>;
   const clientId = inv['client_id'] as string;
 
-  const [{ data: clientRow }, dodavatel] = await Promise.all([
+  const [{ data: clientRow }, baseDodavatel] = await Promise.all([
     untyped(admin)
       .from('profiles')
       .select('id, full_name, email, phone, company, ico, dic, street, city')
@@ -312,6 +345,7 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<{ ok: tru
       .single(),
     getDodavatel(),
   ]);
+  const dodavatel = applySupplierOverride(baseDodavatel, inv['supplier_override']);
 
   const customer: InvoiceCustomer = {
     full_name: (clientRow as { full_name?: string | null } | null)?.full_name ?? 'Klient',

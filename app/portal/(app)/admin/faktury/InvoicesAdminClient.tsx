@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { Plus, Check, Ban } from 'lucide-react';
+import { Plus, Check, Ban, FileText, RefreshCw, ChevronDown } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
-import { createInvoice, markInvoicePaid, cancelInvoice } from '@/lib/actions/invoices';
+import { createInvoice, markInvoicePaid, cancelInvoice, regenerateInvoicePdf } from '@/lib/actions/invoices';
 
 type Row = {
   id: string;
@@ -14,6 +14,7 @@ type Row = {
   issued_at: string;
   due_date: string;
   status: string;
+  pdf_url: string | null;
   client_id: string;
   client: { full_name: string; email: string } | null;
   project: { id: string; name: string } | null;
@@ -39,6 +40,7 @@ export default function InvoicesAdminClient({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string>('');
+  const [overrideOpen, setOverrideOpen] = useState(false);
 
   const projectsForClient = useMemo(
     () => projects.filter((p) => !selectedClient || p.client_id === selectedClient),
@@ -71,6 +73,14 @@ export default function InvoicesAdminClient({
     startTransition(async () => {
       const res = await cancelInvoice(id);
       if (!res.ok) setError(res.error);
+    });
+  }
+
+  function handleRegen(id: string) {
+    setError(null);
+    startTransition(async () => {
+      const res = await regenerateInvoicePdf(id);
+      if (!res.ok) setError(`Regenerace PDF selhala: ${res.error}`);
     });
   }
 
@@ -117,12 +127,89 @@ export default function InvoicesAdminClient({
             <label className={labelClass} htmlFor="i_description">Popis</label>
             <textarea id="i_description" name="description" rows={2} className={`${inputClass} resize-none`} />
           </div>
+
+          {/* JINÝ DODAVATEL — collapsible override */}
+          <div className="border-t border-tobacco pt-4">
+            <button
+              type="button"
+              onClick={() => setOverrideOpen((v) => !v)}
+              className="w-full flex items-center justify-between text-left font-mono text-[10px] uppercase tracking-widest text-caramel hover:text-caramel-light"
+            >
+              <span>Vystavit za jinou firmu (volitelné)</span>
+              <ChevronDown size={14} className={`transition-transform ${overrideOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {overrideOpen && (
+              <div className="mt-3 space-y-3 bg-espresso p-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" name="use_supplier_override" defaultChecked className="w-4 h-4 accent-caramel" />
+                  <span className="text-sepia text-xs">Použít tyto údaje místo defaultního dodavatele (Bartoloměj Rota / Arbiq.cz)</span>
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass} htmlFor="sup_name">Jméno / Firma</label>
+                    <input id="sup_name" name="sup_name" placeholder="např. Harotas s.r.o." className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_ico">IČO</label>
+                    <input id="sup_ico" name="sup_ico" placeholder="21402027" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_dic">DIČ (pokud plátce)</label>
+                    <input id="sup_dic" name="sup_dic" placeholder="CZ…" className={inputClass} />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" name="sup_vat_payer" className="w-4 h-4 accent-caramel" />
+                      <span className="text-sepia text-sm">Plátce DPH</span>
+                    </label>
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_street">Ulice</label>
+                    <input id="sup_street" name="sup_street" placeholder="Školská 689/20" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_city">Město + PSČ</label>
+                    <input id="sup_city" name="sup_city" placeholder="110 00 Praha" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_bank_account">Číslo účtu</label>
+                    <input id="sup_bank_account" name="sup_bank_account" placeholder="123456789/0100" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_bank_name">Banka</label>
+                    <input id="sup_bank_name" name="sup_bank_name" placeholder="Air Bank" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_iban">IBAN (pro QR platbu)</label>
+                    <input id="sup_iban" name="sup_iban" placeholder="CZ44 3030 0000 0031 4041 9018" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_bic">BIC / SWIFT</label>
+                    <input id="sup_bic" name="sup_bic" placeholder="AIRACZPP" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_email">E-mail</label>
+                    <input id="sup_email" name="sup_email" type="email" placeholder="info@firma.cz" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass} htmlFor="sup_phone">Telefon</label>
+                    <input id="sup_phone" name="sup_phone" placeholder="+420 …" className={inputClass} />
+                  </div>
+                </div>
+                <p className="text-sandstone text-[10px] font-mono leading-relaxed">
+                  Override platí jen pro tuhle fakturu. PDF + SPAYD QR vezme tyhle hodnoty místo výchozího dodavatele.
+                  Pro permanentní změnu uprav <code>app_settings.dodavatel</code> v Supabase.
+                </p>
+              </div>
+            )}
+          </div>
+
           {error && <p className="text-rust text-xs font-mono">{error}</p>}
           <div className="flex items-center gap-3">
             <button type="submit" disabled={pending} className="bg-caramel text-espresso px-5 py-2.5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all disabled:opacity-50">
-              {pending ? 'Vytvářím…' : 'Vytvořit fakturu'}
+              {pending ? 'Vytvářím + generuji PDF…' : 'Vytvořit fakturu'}
             </button>
-            <button type="button" onClick={() => { setOpen(false); setSelectedClient(''); }} className="text-sandstone hover:text-moonlight text-xs font-mono uppercase tracking-widest">Zrušit</button>
+            <button type="button" onClick={() => { setOpen(false); setSelectedClient(''); setOverrideOpen(false); }} className="text-sandstone hover:text-moonlight text-xs font-mono uppercase tracking-widest">Zrušit</button>
           </div>
         </form>
       )}
@@ -151,8 +238,38 @@ export default function InvoicesAdminClient({
                 <td className="px-4 py-3 text-sandstone whitespace-nowrap">{formatDate(inv.due_date)}</td>
                 <td className="px-4 py-3"><StatusBadge kind="invoice" value={inv.status} /></td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
+                  {inv.pdf_url ? (
+                    <>
+                      <a
+                        href={`/api/portal/invoices/${inv.id}/pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-caramel hover:text-caramel-light text-xs font-mono uppercase tracking-widest mr-2"
+                        title="Otevřít PDF"
+                      >
+                        <FileText size={13} /> PDF
+                      </a>
+                      <button
+                        onClick={() => handleRegen(inv.id)}
+                        disabled={pending}
+                        className="inline-flex items-center text-sandstone hover:text-caramel mr-3 disabled:opacity-50"
+                        title="Přegenerovat PDF"
+                      >
+                        <RefreshCw size={11} className={pending ? 'animate-spin' : ''} />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handleRegen(inv.id)}
+                      disabled={pending}
+                      className="inline-flex items-center gap-1 text-rust hover:text-caramel-light text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50"
+                      title="PDF chybí — regenerovat"
+                    >
+                      <RefreshCw size={13} className={pending ? 'animate-spin' : ''} /> Regen PDF
+                    </button>
+                  )}
                   {inv.status !== 'zaplaceno' && inv.status !== 'zruseno' && (
-                    <button onClick={() => handlePaid(inv.id)} disabled={pending} className="text-olive hover:text-caramel mr-3 disabled:opacity-50" title="Označit jako zaplacené">
+                    <button onClick={() => handlePaid(inv.id)} disabled={pending} className="text-olive hover:text-caramel mr-2 disabled:opacity-50" title="Označit jako zaplacené">
                       <Check size={14} />
                     </button>
                   )}
