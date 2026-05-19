@@ -16,18 +16,25 @@ export default function RecommendationCard({
   rec,
   onInterested,
   onDismiss,
+  readOnly = false,
 }: {
   rec: RecommendationData;
-  onInterested: (id: string) => Promise<void>;
-  onDismiss: (id: string) => Promise<void>;
+  // Pokud chybí, akce se schovají (preview mode, klient bez práv).
+  // Server component nesmí předávat inline arrow funkce do client komponenty —
+  // Next.js 16 to zakazuje. Pro preview vynech callbacky a předej readOnly.
+  onInterested?: (id: string) => Promise<void>;
+  onDismiss?: (id: string) => Promise<void>;
+  readOnly?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [localStatus, setLocalStatus] = useState(rec.status);
 
-  const actionable = localStatus === 'nova' || localStatus === 'zobrazena';
+  const hasActions = !readOnly && !!onInterested && !!onDismiss;
+  const actionable = hasActions && (localStatus === 'nova' || localStatus === 'zobrazena');
 
   function handle(action: 'interested' | 'dismiss') {
+    if (!onInterested || !onDismiss) return;
     setError(null);
     startTransition(async () => {
       try {

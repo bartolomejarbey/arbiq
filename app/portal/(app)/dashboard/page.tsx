@@ -81,7 +81,7 @@ export default async function DashboardPage() {
             <SectionHeader title="Doporučení od ARBIQ" link="/portal/doporuceni" linkLabel="Všechna doporučení" />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {PREVIEW_RECOMMENDATIONS.map((r) => (
-                <RecommendationCard key={r.id} rec={r as RecommendationData} onInterested={async () => {}} onDismiss={async () => {}} />
+                <RecommendationCard key={r.id} rec={r as RecommendationData} readOnly />
               ))}
             </div>
           </section>
