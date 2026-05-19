@@ -12,21 +12,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  // Preview mode — admin can browse the portal without logging in.
-  // Cookie is set by the "Vstoupit do náhledu" button on the login page.
-  // V preview módu jsou všechny mutating server actions guardované přes
-  // `checkRealViewer()` (lib/supabase/viewer.ts), takže neuspěje žádný
-  // pokus o vytvoření faktury/smlouvy/klienta atd. Pro defense-in-depth
-  // navíc tady redirect mimo admin routes — preview vidí jen demo data
-  // jako klientská/obchodnická zóna, ne admin akce.
+  // Preview/showcase mode — návštěvník bez loginu si může proklikat
+  // celý portál (klient + obchodník + admin views) s vtipnými mock daty
+  // (Sherlock Holmes klientela). Cíl: ukázka co umíme.
+  //
+  // Bezpečnost: VŠECHNY mutating server actions (createInvoice,
+  // regenerateContractDocs, markOverdueInvoices, …) mají guard
+  // `checkRealViewer()` v lib/supabase/viewer.ts → preview cookie
+  // vrátí { ok: false, error: 'V náhledovém režimu nelze měnit data.' }.
+  // Klikatelné akce v UI tedy hodí friendly error místo modifikace DB.
   if (request.cookies.get(PREVIEW_COOKIE)?.value === '1') {
     if (pathname === '/portal' || pathname === '/portal/') {
-      return NextResponse.redirect(new URL('/portal/dashboard', request.url));
-    }
-    // Demo show běží přes /portal/dashboard (klient view) — admin routes by
-    // dráždily k akcím které stejně skončí "preview mode error" hláškou.
-    if (pathname.startsWith('/portal/admin')) {
-      return NextResponse.redirect(new URL('/portal/dashboard', request.url));
+      return NextResponse.redirect(new URL('/portal/admin/statistiky', request.url));
     }
     return NextResponse.next({ request });
   }
