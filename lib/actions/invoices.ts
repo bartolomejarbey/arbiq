@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
+import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
 import { notifyPortalUser } from '@/lib/email/notify';
 import { formatMoney, formatDate } from '@/lib/formatters';
 import { getDodavatel } from '@/lib/config/dodavatel';
@@ -63,6 +64,13 @@ function parseFormItems(formData: FormData): InvoiceItem[] | undefined {
 }
 
 export async function createInvoice(formData: FormData): Promise<InvoiceActionResult> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') {
+    return { ok: false, error: 'Nemáte oprávnění vystavovat faktury.' };
+  }
+
   const supabase = await createClient();
 
   const items = parseFormItems(formData);
@@ -235,22 +243,40 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
   return { ok: true, invoiceId, pdfUrl: pdfStoragePath };
 }
 
-export async function markInvoicePaid(invoiceId: string) {
+export async function markInvoicePaid(invoiceId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+
   const supabase = await createClient();
   const { error } = await supabase
     .from('invoices')
     .update({ status: 'zaplaceno', paid_at: new Date().toISOString().slice(0, 10) })
     .eq('id', invoiceId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('[INVOICE] markPaid failed', error);
+    return { ok: false, error: 'Nepodařilo se označit jako zaplaceno.' };
+  }
   revalidatePath('/portal/admin/faktury');
   revalidatePath('/portal/faktury');
+  return { ok: true };
 }
 
-export async function cancelInvoice(invoiceId: string) {
+export async function cancelInvoice(invoiceId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+
   const supabase = await createClient();
   const { error } = await supabase.from('invoices').update({ status: 'zruseno' }).eq('id', invoiceId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('[INVOICE] cancel failed', error);
+    return { ok: false, error: 'Storno selhalo.' };
+  }
   revalidatePath('/portal/admin/faktury');
+  return { ok: true };
 }
 
 /**
@@ -258,6 +284,16 @@ export async function cancelInvoice(invoiceId: string) {
  * Volá se z /api/portal/invoices/[id]/pdf?regenerate=1.
  */
 export async function regenerateInvoicePdf(invoiceId: string): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  // KRITICKÉ: tato akce volá admin client (bypass RLS) — bez tohoto guardu by
+  // preview/anon visitor mohl POSTem na Next.js server-action endpoint
+  // přegenerovat libovolnou fakturu (extrahovat PDF) + spam upload do bucketu.
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') {
+    return { ok: false, error: 'Nemáte oprávnění regenerovat fakturu.' };
+  }
+
   const admin = createAdminClient();
   const { data: invRow } = await untyped(admin)
     .from('invoices')
@@ -334,18 +370,6 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<{ ok: tru
   }
 }
 
-/**
- * Mark all unpaid invoices past due_date as overdue. Called by cron.
- */
-export async function markOverdueInvoices() {
-  const admin = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
-  const { error } = await admin
-    .from('invoices')
-    .update({ status: 'po_splatnosti' })
-    .eq('status', 'ceka')
-    .lt('due_date', today);
-  if (error) throw new Error(error.message);
-  revalidatePath('/portal/admin/faktury');
-  revalidatePath('/portal/faktury');
-}
+// markOverdueInvoices přesunuto do lib/jobs/invoice-jobs.ts (NE 'use server'),
+// aby ho Next.js nevystavoval jako Server Action callable z prohlížeče.
+// Cron route /api/cron/overdue-invoices ho importuje z toho nového umístění.

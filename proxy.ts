@@ -14,11 +14,18 @@ export async function proxy(request: NextRequest) {
 
   // Preview mode — admin can browse the portal without logging in.
   // Cookie is set by the "Vstoupit do náhledu" button on the login page.
-  // In preview mode the layout uses a hardcoded admin profile; pages render
-  // with empty data because Supabase queries against the placeholder UUID
-  // find nothing.
+  // V preview módu jsou všechny mutating server actions guardované přes
+  // `checkRealViewer()` (lib/supabase/viewer.ts), takže neuspěje žádný
+  // pokus o vytvoření faktury/smlouvy/klienta atd. Pro defense-in-depth
+  // navíc tady redirect mimo admin routes — preview vidí jen demo data
+  // jako klientská/obchodnická zóna, ne admin akce.
   if (request.cookies.get(PREVIEW_COOKIE)?.value === '1') {
     if (pathname === '/portal' || pathname === '/portal/') {
+      return NextResponse.redirect(new URL('/portal/dashboard', request.url));
+    }
+    // Demo show běží přes /portal/dashboard (klient view) — admin routes by
+    // dráždily k akcím které stejně skončí "preview mode error" hláškou.
+    if (pathname.startsWith('/portal/admin')) {
       return NextResponse.redirect(new URL('/portal/dashboard', request.url));
     }
     return NextResponse.next({ request });

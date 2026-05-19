@@ -17,12 +17,22 @@ export async function GET(
 
   const { data: row } = await untyped(supabase)
     .from('contracts')
-    .select('id, contract_number, docx_url')
+    .select('id, contract_number, docx_url, client_id')
     .eq('id', id)
     .single();
   if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const r = row as unknown as { id: string; contract_number: string; docx_url: string | null };
+  const r = row as unknown as { id: string; contract_number: string; docx_url: string | null; client_id: string };
+
+  // Defense-in-depth: ověř ownership i přes RLS na contracts SELECT. Pokud by
+  // se RLS někdy uvolnilo, tahle kontrola zabrání bulk extrakci přes ID guessing.
+  const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  const role = (prof as { role?: string } | null)?.role;
+  const ownsContract = user.id === r.client_id;
+  if (!(role === 'admin' || role === 'obchodnik' || ownsContract)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   if (!r.docx_url) return NextResponse.json({ error: 'DOCX unavailable' }, { status: 404 });
 
   try {

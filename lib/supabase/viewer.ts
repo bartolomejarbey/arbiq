@@ -59,3 +59,31 @@ export async function requireViewer(): Promise<Viewer> {
   if (!v) redirect('/portal/login');
   return v;
 }
+
+/**
+ * Safe wrapper pro mutating server actions: vrátí ok:false místo throwu pokud
+ * není reálný přihlášený uživatel nebo je preview mode.
+ *
+ * Použij ve VŠECH mutation server actions místo `requireViewer()` aby:
+ *   - preview visitor dostal hezkou hlášku místo crashe
+ *   - hromadný cron / public scrape nemohl spotřebovat number sequences nebo
+ *     volat admin client cesty
+ */
+export async function checkRealViewer(): Promise<
+  { ok: true; viewer: Viewer } | { ok: false; error: string }
+> {
+  const v = await getViewer();
+  if (!v) return { ok: false, error: 'Nepřihlášený uživatel.' };
+  if (v.isPreview) return { ok: false, error: 'V náhledovém režimu nelze měnit data.' };
+  return { ok: true, viewer: v };
+}
+
+/** Ověří roli reálného přihlášeného uživatele. Vrací jeho profile.role. */
+export async function getViewerRole(): Promise<'klient' | 'obchodnik' | 'admin' | null> {
+  const v = await getViewer();
+  if (!v || v.isPreview) return null;
+  const supabase = await createClient();
+  const { data } = await supabase.from('profiles').select('role').eq('id', v.id).single();
+  const role = (data as { role?: string } | null)?.role;
+  return role === 'admin' || role === 'obchodnik' || role === 'klient' ? role : null;
+}

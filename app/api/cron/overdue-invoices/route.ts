@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { markOverdueInvoices } from '@/lib/actions/invoices';
+import { markOverdueInvoices } from '@/lib/jobs/invoice-jobs';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +20,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
-    await markOverdueInvoices();
-    return NextResponse.json({ ok: true, ran_at: new Date().toISOString() });
+    const result = await markOverdueInvoices();
+    return NextResponse.json({ ok: true, updated: result.updated, ran_at: new Date().toISOString() });
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'failed' }, { status: 500 });
+    console.error('[CRON overdue-invoices]', err);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

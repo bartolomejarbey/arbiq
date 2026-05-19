@@ -48,8 +48,8 @@ export default function ObchodniPodminkyPage() {
         <section>
           <h2 className="font-display italic font-black text-moonlight text-2xl mb-3">4. Cena a platební podmínky</h2>
           <ul className="list-disc pl-6 space-y-2">
-            <li>Ceny uvádíme bez DPH (Poskytovatel je plátcem DPH).</li>
-            <li>Pro projekty nad 30 000 Kč zpravidla účtujeme <strong className="text-moonlight">zálohu 30–50 %</strong> před zahájením prací, zbytek po předání nebo v dohodnutých milnících.</li>
+            <li>Poskytovatel <strong className="text-moonlight">není plátcem DPH</strong>. Ceny jsou uváděny jako konečné.</li>
+            <li>Pro projekty nad 5 000 Kč zpravidla účtujeme <strong className="text-moonlight">zálohu 50 %</strong> před zahájením prací, zbytek po předání nebo v dohodnutých milnících.</li>
             <li>Splatnost faktur je <strong className="text-moonlight">14 dní</strong>, pokud není sjednáno jinak.</li>
             <li>Při prodlení s platbou účtujeme úrok z prodlení dle občanského zákoníku a smluvní pokutu 0,05 % z dlužné částky za každý den prodlení.</li>
             <li>Pokud Rentgen ústí ve spolupráci, jeho cena (1 500 Kč) je odečtena z první faktury.</li>

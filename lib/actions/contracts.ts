@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
+import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
 import { notifyPortalUser } from '@/lib/email/notify';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument } from '@/lib/storage/documents';
@@ -55,9 +56,14 @@ function parseBullets(formData: FormData): string[] | undefined {
 }
 
 export async function createContract(formData: FormData): Promise<ContractActionResult> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') {
+    return { ok: false, error: 'Nemáte oprávnění vystavovat smlouvy.' };
+  }
+  const user = { id: check.viewer.id };
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: 'Nepřihlášený uživatel.' };
 
   let parsed: z.infer<typeof ContractSchema>;
   try {
@@ -260,6 +266,16 @@ type ContractRow = {
 export async function regenerateContractDocs(contractId: string): Promise<
   { ok: true; pdfPath?: string; docxPath?: string; warning?: string } | { ok: false; error: string }
 > {
+  // KRITICKÉ: bypassuje RLS přes admin client — bez tohoto guardu by preview/anon
+  // visitor mohl POSTem na Next-Action endpoint vytáhnout libovolnou smlouvu
+  // (extrakce PDF/DOCX, spam upload do storage).
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') {
+    return { ok: false, error: 'Nemáte oprávnění regenerovat smlouvu.' };
+  }
+
   const admin = createAdminClient();
 
   const { data: ctrRow, error: ctrErr } = await untyped(admin)
@@ -380,19 +396,37 @@ export async function regenerateContractDocs(contractId: string): Promise<
   return { ok: true, pdfPath, docxPath };
 }
 
-export async function markContractSigned(contractId: string) {
+export async function markContractSigned(contractId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+
   const supabase = await createClient();
   const { error } = await untyped(supabase)
     .from('contracts')
     .update({ status: 'podepsano', signed_at_customer: new Date().toISOString().slice(0, 10) })
     .eq('id', contractId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('[CONTRACT] markSigned failed', error);
+    return { ok: false, error: 'Nepodařilo se označit jako podepsanou.' };
+  }
   revalidatePath('/portal/admin/smlouvy');
+  return { ok: true };
 }
 
-export async function cancelContract(contractId: string) {
+export async function cancelContract(contractId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+
   const supabase = await createClient();
   const { error } = await untyped(supabase).from('contracts').update({ status: 'zruseno' }).eq('id', contractId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('[CONTRACT] cancel failed', error);
+    return { ok: false, error: 'Storno selhalo.' };
+  }
   revalidatePath('/portal/admin/smlouvy');
+  return { ok: true };
 }

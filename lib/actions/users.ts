@@ -122,13 +122,18 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
   }
 
   if (parsed.send_invite && process.env.RESEND_API_KEY) {
-    const loginUrl = `${process.env.APP_URL ?? 'http://localhost:3000'}/portal/login`;
+    const appUrl = process.env.APP_URL;
+    if (!appUrl || appUrl.startsWith('http://localhost')) {
+      console.error('createUser: APP_URL chybí nebo localhost — invite email vynechán');
+    } else {
+    const loginUrl = `${appUrl}/portal/login`;
     await sendEmail({
       to: parsed.email,
       subject: 'Přístup do ARBIQ portálu',
       replyTo: process.env.RESEND_REPLY_TO,
       body: PortalInviteEmail({ name: parsed.full_name, email: parsed.email, password, loginUrl }),
     }).catch((e) => console.error('portal-invite email failed', e));
+    }
   }
 
   revalidatePath('/portal/admin/uzivatele');

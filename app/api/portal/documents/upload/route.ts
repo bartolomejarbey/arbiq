@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isPreviewMode } from '@/lib/supabase/viewer';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,10 @@ const ALLOWED_TYPES = new Set([
 ]);
 
 export async function POST(request: Request) {
+  if (await isPreviewMode()) {
+    return NextResponse.json({ error: 'V náhledovém režimu nelze nahrávat soubory.' }, { status: 403 });
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -47,16 +52,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Neplatný project_id.' }, { status: 400 });
   }
 
+  // Ověř že obchodník má daný projekt přiřazen (admin má všechny).
+  // RLS na projects.SELECT s policy "obchodnik reads assigned" by toto zachytil,
+  // ale defense-in-depth + lepší error.
+  if (role === 'obchodnik') {
+    const { data: proj } = await supabase
+      .from('projects')
+      .select('id, obchodnik_id')
+      .eq('id', projectId)
+      .single();
+    const projRow = proj as { id: string; obchodnik_id: string | null } | null;
+    if (!projRow || (projRow.obchodnik_id && projRow.obchodnik_id !== user.id)) {
+      return NextResponse.json({ error: 'Forbidden — projekt není přiřazen.' }, { status: 403 });
+    }
+  }
+
   const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, '_').slice(-120);
   const path = `${projectId}/${Date.now()}-${safeName}`;
 
-  // Use admin client to bypass any storage RLS edge cases (we already validated)
   const admin = createAdminClient();
   const { error: uploadErr } = await admin.storage
     .from('documents')
     .upload(path, file, { contentType: file.type, upsert: false });
   if (uploadErr) {
-    return NextResponse.json({ error: uploadErr.message }, { status: 500 });
+    console.error('[DOCUMENTS UPLOAD] storage upload failed', uploadErr);
+    return NextResponse.json({ error: 'Nahrání selhalo.' }, { status: 500 });
   }
 
   const { error: insertErr } = await admin.from('documents').insert({
@@ -68,9 +88,9 @@ export async function POST(request: Request) {
     file_size: file.size,
   });
   if (insertErr) {
-    // Roll back the upload
+    console.error('[DOCUMENTS UPLOAD] insert failed', insertErr);
     await admin.storage.from('documents').remove([path]).catch(() => undefined);
-    return NextResponse.json({ error: insertErr.message }, { status: 500 });
+    return NextResponse.json({ error: 'Záznam dokumentu selhal.' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true, path });

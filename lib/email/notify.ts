@@ -29,7 +29,13 @@ export async function notifyPortalUser(opts: NotifyOptions): Promise<void> {
     const profile = data as { email?: string; email_notifications_enabled?: boolean } | null;
     if (!profile?.email || profile.email_notifications_enabled === false) return;
 
-    const baseUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    // APP_URL musí být nastavený — jinak by klient dostal email s nefunkčním
+    // localhost odkazem. Tichá fail-safe je preferovaná před broken email.
+    const baseUrl = process.env.APP_URL;
+    if (!baseUrl || baseUrl.startsWith('http://localhost')) {
+      console.error('notifyPortalUser: APP_URL chybí nebo je localhost — email vynechán');
+      return;
+    }
     const ctaUrl = `${baseUrl}${opts.ctaPath}`;
 
     await sendEmail({

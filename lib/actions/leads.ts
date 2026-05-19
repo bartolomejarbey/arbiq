@@ -306,7 +306,11 @@ export async function convertLeadToClient(formData: FormData): Promise<ConvertRe
 
   // Best-effort invite email
   if (process.env.RESEND_API_KEY) {
-    const loginUrl = `${process.env.APP_URL ?? 'http://localhost:3000'}/portal/login`;
+    const appUrl = process.env.APP_URL;
+    if (!appUrl || appUrl.startsWith('http://localhost')) {
+      console.error('convertLeadToClient: APP_URL chybí nebo localhost — invite email vynechán');
+    } else {
+    const loginUrl = `${appUrl}/portal/login`;
     await sendEmail({
       to: parsed.email,
       subject: 'Vítejte v klientské zóně ARBIQ',
@@ -318,6 +322,7 @@ export async function convertLeadToClient(formData: FormData): Promise<ConvertRe
         loginUrl,
       }),
     }).catch((e) => console.error('portal-invite email failed', e));
+    }
   }
 
   revalidatePath('/portal/crm/leady');
