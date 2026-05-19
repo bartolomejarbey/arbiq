@@ -26,8 +26,10 @@ export type SpaydInput = {
   specificSymbol?: string;
   /** Zpráva pro příjemce (max ~60 znaků). */
   message?: string;
-  /** Datum splatnosti (YYYY-MM-DD). */
-  dueDate?: string;
+  // POZOR: SPAYD pole `DT` (datum splatnosti) ZÁMĚRNĚ nepoužíváme.
+  // Některé mobilní banky ho interpretují jako „naplánovat platbu na
+  // tento den" a klient pak platí až poslední den splatnosti místo
+  // hned po naskenování. Necháme bez DT — banka pošle ihned.
 };
 
 const ACCENT_MAP: Record<string, string> = {
@@ -59,7 +61,7 @@ export function buildSpaydPayload(input: SpaydInput): string {
   if (input.constantSymbol) parts.push(`X-KS:${input.constantSymbol.replace(/\D/g, '').slice(0, 10)}`);
   if (input.specificSymbol) parts.push(`X-SS:${input.specificSymbol.replace(/\D/g, '').slice(0, 10)}`);
   if (input.message) parts.push(`MSG:${spaydSafe(input.message).slice(0, 60)}`);
-  if (input.dueDate) parts.push(`DT:${input.dueDate.replace(/-/g, '')}`);
+  // `DT:` (datum splatnosti) záměrně vynecháno — viz komentář v SpaydInput.
 
   return parts.join('*');
 }

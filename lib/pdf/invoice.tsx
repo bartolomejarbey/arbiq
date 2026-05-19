@@ -96,7 +96,8 @@ export async function renderInvoicePdf(opts: {
         variableSymbol,
         constantSymbol: invoice.constantSymbol ?? undefined,
         message: `Faktura ${invoice.invoiceNumber}`,
-        dueDate: invoice.dueDate,
+        // dueDate ZÁMĚRNĚ nepředáváme — banka by jinak platbu naplánovala
+        // na ten den místo provedení ihned.
       });
     } catch {
       qrDataUrl = '';

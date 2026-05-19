@@ -233,7 +233,6 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       variableSymbol,
       constantSymbol: parsed.constant_symbol ?? undefined,
       message: `Faktura ${invoiceNumber}`,
-      dueDate: parsed.due_date,
     });
 
     const safeNum = invoiceNumber.replace(/[^A-Za-z0-9-]/g, '_');
