@@ -41,6 +41,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/manifest`,        priority: 0.7, changeFrequency: 'yearly',  lastModified: now },
     { url: `${BASE}/tym`,             priority: 0.7, changeFrequency: 'monthly', lastModified: now },
     { url: `${BASE}/kontakt`,         priority: 0.8, changeFrequency: 'yearly',  lastModified: now },
+    { url: `${BASE}/specializace`,    priority: 0.7, changeFrequency: 'monthly', lastModified: now },
     ...SLUZBY.map((s) => ({
       url: `${BASE}/sluzby/${s}`,
       priority: 0.8,

@@ -64,15 +64,19 @@ export default function ContractsAdminClient({
   }
 
   function handleSigned(id: string) {
-    startTransition(() => {
-      void markContractSigned(id);
+    setError(null);
+    startTransition(async () => {
+      const res = await markContractSigned(id);
+      if (!res.ok) setError(res.error);
     });
   }
 
   function handleCancel(id: string) {
     if (!confirm('Zrušit smlouvu?')) return;
-    startTransition(() => {
-      void cancelContract(id);
+    setError(null);
+    startTransition(async () => {
+      const res = await cancelContract(id);
+      if (!res.ok) setError(res.error);
     });
   }
 

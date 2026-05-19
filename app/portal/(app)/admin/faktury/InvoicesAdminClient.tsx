@@ -58,12 +58,20 @@ export default function InvoicesAdminClient({
   }
 
   function handlePaid(id: string) {
-    startTransition(() => { void markInvoicePaid(id); });
+    setError(null);
+    startTransition(async () => {
+      const res = await markInvoicePaid(id);
+      if (!res.ok) setError(res.error);
+    });
   }
 
   function handleCancel(id: string) {
     if (!confirm('Stornovat fakturu?')) return;
-    startTransition(() => { void cancelInvoice(id); });
+    setError(null);
+    startTransition(async () => {
+      const res = await cancelInvoice(id);
+      if (!res.ok) setError(res.error);
+    });
   }
 
   return (

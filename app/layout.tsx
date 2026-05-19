@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Playfair_Display, Inter, IBM_Plex_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
@@ -10,6 +10,8 @@ import AnalyticsTracker from "@/components/layout/AnalyticsTracker";
 import MetaPixel from "@/components/layout/MetaPixel";
 import ChatWidget from "@/components/chat/ChatWidget";
 import { IntroContextProvider } from "@/lib/intro-context";
+import JsonLd from "@/components/seo/JsonLd";
+import { organizationSchema, websiteSchema, localBusinessSchema } from "@/lib/seo/structured-data";
 
 const playfair = Playfair_Display({
   subsets: ["latin", "latin-ext"],
@@ -45,6 +47,24 @@ const SITE_URL = process.env.APP_URL ?? "https://arbiq.cz";
 const SITE_DESCRIPTION =
   "Vyšetřujeme, proč váš digitální business nefunguje, a opravujeme to. Web, audit, nástroje, konzultace. Jeden detektiv, jeden případ, jeden výsledek.";
 
+const OG_IMAGE = {
+  url: `${SITE_URL}/og-default.png`,
+  width: 1200,
+  height: 630,
+  alt: "ARBIQ — Detektivní agentura pro digitální business",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#18120e" },
+    { media: "(prefers-color-scheme: light)", color: "#FAF6EF" },
+  ],
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -53,9 +73,23 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: "ARBIQ",
-  authors: [{ name: "ARBIQ", url: SITE_URL }],
-  keywords: ["digitální agentura", "weby na míru", "audit", "marketing", "Praha", "ARBIQ"],
+  authors: [{ name: "Bartoloměj Rota", url: `${SITE_URL}/tym` }],
+  creator: "ARBIQ (Harotas s.r.o.)",
+  publisher: "ARBIQ (Harotas s.r.o.)",
+  keywords: [
+    "digitální agentura Praha",
+    "weby na míru",
+    "Next.js vývoj",
+    "AI viditelnost",
+    "GEO optimalizace",
+    "marketing automatizace",
+    "audit webu",
+    "Rentgen webu",
+    "CRM na míru",
+    "ARBIQ",
+  ],
   alternates: { canonical: "/" },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     locale: "cs_CZ",
@@ -63,17 +97,33 @@ export const metadata: Metadata = {
     siteName: "ARBIQ",
     title: "ARBIQ — Detektivní agentura pro digitální business",
     description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: "ARBIQ — Detektivní agentura pro digitální business",
     description: SITE_DESCRIPTION,
+    images: [OG_IMAGE.url],
   },
   robots: {
     index: true,
     follow: true,
     googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
   },
+  verification: {
+    // Vyplnit po přidání domény do Search Console / Bing Webmaster / Seznam Wmt:
+    //   nastavit env vars GOOGLE_SITE_VERIFICATION, BING_SITE_VERIFICATION, SEZNAM_SITE_VERIFICATION
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    other: {
+      ...(process.env.BING_SITE_VERIFICATION && {
+        "msvalidate.01": process.env.BING_SITE_VERIFICATION,
+      }),
+      ...(process.env.SEZNAM_SITE_VERIFICATION && {
+        "seznam-wmt": process.env.SEZNAM_SITE_VERIFICATION,
+      }),
+    },
+  },
+  category: "business",
 };
 
 export default function RootLayout({
@@ -85,6 +135,7 @@ export default function RootLayout({
       className={`${playfair.variable} ${inter.variable} ${ibmPlexMono.variable} ${newsreader.variable}`}
     >
       <body className="flex flex-col min-h-screen grain-overlay">
+        <JsonLd data={[organizationSchema, websiteSchema, localBusinessSchema]} />
         <IntroContextProvider>
           <ChromeGate target="header"><Header /></ChromeGate>
           <main className="flex-1">{children}</main>
