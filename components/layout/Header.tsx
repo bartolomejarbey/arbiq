@@ -16,10 +16,13 @@ const sluzbyLinks = [
   { href: "/sluzby/geo-ai-viditelnost", label: "GEO — AI viditelnost" },
 ];
 
-const navLinks = [
-  { href: "/pripady", label: "Případy" },
-  { href: "/aplikace", label: "Aplikace" },
+const tymLinks = [
   { href: "/tym", label: "Tým" },
+  { href: "/kariera", label: "Kariéra — hledáme obchodníka" },
+];
+
+// Sekvence v desktop navu: Případy → Služby (dropdown) → Aplikace → Tým (dropdown) → Rentgen → Manifest → Kontakt
+const navAfterTym = [
   { href: "/rentgen", label: "Rentgen" },
   { href: "/manifest", label: "Manifest" },
   { href: "/kontakt", label: "Kontakt" },
@@ -28,13 +31,19 @@ const navLinks = [
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [tymDropdownOpen, setTymDropdownOpen] = useState(false);
   const [mobileSluzbyOpen, setMobileSluzbyOpen] = useState(false);
+  const [mobileTymOpen, setMobileTymOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const tymRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (tymRef.current && !tymRef.current.contains(e.target as Node)) {
+        setTymDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -105,7 +114,50 @@ export default function Header() {
             )}
           </div>
 
-          {navLinks.slice(1).map((link) => (
+          <Link
+            href="/aplikace"
+            className="text-sepia hover:text-caramel font-mono text-[11px] uppercase tracking-[0.2em] transition-colors"
+          >
+            Aplikace
+          </Link>
+
+          {/* Tým dropdown (Tým + Kariéra) */}
+          <div
+            ref={tymRef}
+            className="relative"
+            onMouseEnter={() => setTymDropdownOpen(true)}
+            onMouseLeave={() => setTymDropdownOpen(false)}
+          >
+            <button
+              onClick={() => setTymDropdownOpen(!tymDropdownOpen)}
+              className="text-sepia hover:text-caramel font-mono text-[11px] uppercase tracking-[0.2em] transition-colors flex items-center gap-1"
+            >
+              Tým
+              <ChevronDown
+                size={12}
+                className={`transition-transform duration-200 ${tymDropdownOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {tymDropdownOpen && (
+              <div className="absolute top-full left-0 pt-2">
+                <div className="bg-espresso/95 backdrop-blur-xl border border-caramel/15 shadow-[0_10px_40px_rgba(0,0,0,0.5)] min-w-[260px]">
+                  {tymLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="block px-5 py-3 text-sepia hover:text-caramel hover:bg-caramel/5 font-mono text-[11px] uppercase tracking-[0.15em] transition-colors border-b border-caramel/5 last:border-b-0"
+                      onClick={() => setTymDropdownOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {navAfterTym.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -177,7 +229,43 @@ export default function Header() {
               )}
             </div>
 
-            {navLinks.slice(1).map((link) => (
+            <Link
+              href="/aplikace"
+              className="text-sepia hover:text-caramel font-mono text-sm uppercase tracking-widest py-2"
+              onClick={() => setMobileOpen(false)}
+            >
+              Aplikace
+            </Link>
+
+            {/* Mobile Tým accordion */}
+            <div>
+              <button
+                onClick={() => setMobileTymOpen(!mobileTymOpen)}
+                className="text-sepia hover:text-caramel font-mono text-sm uppercase tracking-widest py-2 flex items-center gap-2 w-full"
+              >
+                Tým
+                <ChevronDown
+                  size={14}
+                  className={`transition-transform duration-200 ${mobileTymOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {mobileTymOpen && (
+                <div className="pl-4 flex flex-col gap-2 mt-2">
+                  {tymLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="text-sepia/70 hover:text-caramel font-mono text-xs uppercase tracking-widest py-1.5"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {navAfterTym.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

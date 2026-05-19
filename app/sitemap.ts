@@ -40,6 +40,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/aplikace`,        priority: 0.8, changeFrequency: 'monthly', lastModified: now },
     { url: `${BASE}/manifest`,        priority: 0.7, changeFrequency: 'yearly',  lastModified: now },
     { url: `${BASE}/tym`,             priority: 0.7, changeFrequency: 'monthly', lastModified: now },
+    { url: `${BASE}/kariera`,         priority: 0.75, changeFrequency: 'weekly', lastModified: now },
     { url: `${BASE}/kontakt`,         priority: 0.8, changeFrequency: 'yearly',  lastModified: now },
     { url: `${BASE}/specializace`,    priority: 0.7, changeFrequency: 'monthly', lastModified: now },
     ...SLUZBY.map((s) => ({
