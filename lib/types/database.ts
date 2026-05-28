@@ -1287,6 +1287,7 @@ export type Database = {
           id: string
           is_active: boolean
           notes: string | null
+          parent_client_id: string | null
           phone: string | null
           representative_name: string | null
           role: string
@@ -1308,6 +1309,7 @@ export type Database = {
           id: string
           is_active?: boolean
           notes?: string | null
+          parent_client_id?: string | null
           phone?: string | null
           representative_name?: string | null
           role?: string
@@ -1329,6 +1331,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           notes?: string | null
+          parent_client_id?: string | null
           phone?: string | null
           representative_name?: string | null
           role?: string
@@ -1340,6 +1343,13 @@ export type Database = {
           {
             foreignKeyName: "profiles_assigned_obchodnik_fkey"
             columns: ["assigned_obchodnik"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_parent_client_id_fkey"
+            columns: ["parent_client_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

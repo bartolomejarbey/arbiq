@@ -13,6 +13,9 @@ type ProfileRow = {
   role: 'klient' | 'obchodnik' | 'admin';
   is_active: boolean;
   assigned_obchodnik: string | null;
+  parent_client_id: string | null;
+  parent: { full_name: string; company: string | null } | null;
+  company: string | null;
   created_at: string;
 };
 
@@ -23,18 +26,25 @@ export default async function UzivateleAdminPage() {
 
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, is_active, assigned_obchodnik, created_at')
+    .select('id, full_name, email, role, is_active, assigned_obchodnik, parent_client_id, company, parent:profiles!profiles_parent_client_id_fkey(full_name, company), created_at')
     .order('role', { ascending: true })
     .order('full_name', { ascending: true });
 
   const users = ((data ?? []) as unknown as ProfileRow[]);
   const obchodnici = users.filter((u) => u.role === 'obchodnik' || u.role === 'admin');
+  const existingClients = users
+    .filter((u) => u.role === 'klient' && u.parent_client_id === null)
+    .map((u) => ({ id: u.id, full_name: u.full_name, company: u.company }));
 
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Uživatelé" subtitle="Správa všech přístupů do portálu." />
       <div className="px-8 py-8 space-y-8">
-        <UsersClient users={users} obchodnici={obchodnici.map((o) => ({ id: o.id, full_name: o.full_name }))} />
+        <UsersClient
+          users={users}
+          obchodnici={obchodnici.map((o) => ({ id: o.id, full_name: o.full_name }))}
+          existingClients={existingClients}
+        />
       </div>
     </div>
   );

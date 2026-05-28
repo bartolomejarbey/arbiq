@@ -7,8 +7,15 @@ import { useRouter } from 'next/navigation';
 import { createPortalUser } from '@/lib/actions/users';
 
 export type ObchodnikOption = { id: string; full_name: string | null; email: string };
+export type ExistingClientOption = { id: string; full_name: string; company: string | null };
 
-export default function CreateClientDialog({ obchodnici }: { obchodnici: ObchodnikOption[] }) {
+export default function CreateClientDialog({
+  obchodnici,
+  existingClients = [],
+}: {
+  obchodnici: ObchodnikOption[];
+  existingClients?: ExistingClientOption[];
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [withProject, setWithProject] = useState(true);
@@ -94,6 +101,19 @@ export default function CreateClientDialog({ obchodnici }: { obchodnici: Obchodn
                 ))}
               </select>
             </Field>
+
+            {existingClients.length > 0 && (
+              <Field label="Patří k existující osobě (další firma téhož klienta)" htmlFor="parent_client_id">
+                <select id="parent_client_id" name="parent_client_id" defaultValue="" disabled={pending} className={inputClass}>
+                  <option value="">— samostatná osoba —</option>
+                  {existingClients.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name}{p.company ? ` · ${p.company}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
 
             <label className="flex items-center gap-3 pt-2 cursor-pointer">
               <input

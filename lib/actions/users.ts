@@ -28,6 +28,7 @@ const CreateUserSchema = z.object({
   company: z.string().trim().max(160).optional().default(''),
   ico: z.string().trim().max(20).optional().default(''),
   assigned_obchodnik: z.string().uuid().optional(),
+  parent_client_id: z.string().uuid().optional(),
   send_invite: z.boolean().default(true),
   create_initial_project: z.boolean().default(false),
   initial_project_name: z.string().trim().max(160).optional().default(''),
@@ -53,6 +54,7 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
       company: String(formData.get('company') ?? ''),
       ico: String(formData.get('ico') ?? ''),
       assigned_obchodnik: String(formData.get('assigned_obchodnik') ?? '') || undefined,
+      parent_client_id: String(formData.get('parent_client_id') ?? '') || undefined,
       send_invite: formData.get('send_invite') === 'on' || formData.get('send_invite') === 'true',
       create_initial_project: formData.get('create_initial_project') === 'on' || formData.get('create_initial_project') === 'true',
       initial_project_name: String(formData.get('initial_project_name') ?? ''),
@@ -85,6 +87,7 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
   const newUserId = created.user.id;
 
   const obchodnikForClient = parsed.role === 'klient' ? parsed.assigned_obchodnik ?? null : null;
+  const parentClientId = parsed.role === 'klient' ? parsed.parent_client_id ?? null : null;
 
   await admin
     .from('profiles')
@@ -95,6 +98,7 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
       company: parsed.company || null,
       ico: parsed.ico || null,
       assigned_obchodnik: obchodnikForClient,
+      parent_client_id: parentClientId,
     })
     .eq('id', newUserId);
 

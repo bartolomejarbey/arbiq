@@ -13,8 +13,13 @@ type Profile = {
   role: 'klient' | 'obchodnik' | 'admin';
   is_active: boolean;
   assigned_obchodnik: string | null;
+  parent_client_id: string | null;
+  parent: { full_name: string; company: string | null } | null;
+  company: string | null;
   created_at: string;
 };
+
+type ExistingClientOption = { id: string; full_name: string; company: string | null };
 
 const roleLabels: Record<string, string> = {
   klient: 'Klient',
@@ -29,9 +34,11 @@ const labelClass = 'font-mono text-[10px] uppercase tracking-widest text-sandsto
 export default function UsersClient({
   users,
   obchodnici,
+  existingClients,
 }: {
   users: Profile[];
   obchodnici: { id: string; full_name: string }[];
+  existingClients: ExistingClientOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +146,19 @@ export default function UsersClient({
               </div>
             )}
           </div>
+          {createdRole === 'klient' && existingClients.length > 0 && (
+            <div>
+              <label className={labelClass} htmlFor="parent_client_id">Patří k existující osobě (další firma téhož klienta)</label>
+              <select id="parent_client_id" name="parent_client_id" className={inputClass} defaultValue="">
+                <option value="">— samostatná osoba —</option>
+                {existingClients.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.full_name}{p.company ? ` · ${p.company}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <input id="send_invite" name="send_invite" type="checkbox" defaultChecked className="w-4 h-4 accent-caramel" />
             <label htmlFor="send_invite" className="text-sepia text-sm">Poslat uvítací e-mail s heslem</label>
@@ -168,7 +188,14 @@ export default function UsersClient({
           <tbody>
             {users.map((u, i) => (
               <tr key={u.id} className={`border-b border-tobacco/50 ${i % 2 === 1 ? 'bg-coffee/40' : ''}`}>
-                <td className="px-4 py-3 text-moonlight">{u.full_name}</td>
+                <td className="px-4 py-3 text-moonlight">
+                  {u.full_name}
+                  {u.parent && (
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-caramel/80 mt-0.5">
+                      ↳ patří k {u.parent.full_name}
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-sepia">{u.email}</td>
                 <td className="px-4 py-3 text-sepia">{roleLabels[u.role]}</td>
                 <td className="px-4 py-3">

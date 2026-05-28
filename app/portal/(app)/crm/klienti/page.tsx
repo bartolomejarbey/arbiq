@@ -4,7 +4,7 @@ import { requireViewer } from "@/lib/supabase/viewer";
 import { PREVIEW_KLIENTI_FOR_CRM } from '@/lib/preview-data';
 import PageHeader from '@/components/portal/PageHeader';
 import EmptyState from '@/components/portal/EmptyState';
-import CreateClientDialog, { type ObchodnikOption } from '@/components/portal/CreateClientDialog';
+import CreateClientDialog, { type ObchodnikOption, type ExistingClientOption } from '@/components/portal/CreateClientDialog';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +16,8 @@ type ClientRow = {
   company: string | null;
   is_active: boolean;
   created_at: string;
+  parent_client_id: string | null;
+  parent: { full_name: string; company: string | null } | null;
   projects: { id: string; total_value: number | null; status: string }[] | null;
 };
 
@@ -24,6 +26,7 @@ export default async function KlientiPage() {
 
   let clients: ClientRow[];
   let obchodnici: ObchodnikOption[] = [];
+  let existingClients: ExistingClientOption[] = [];
   let isAdmin = false;
   if (viewer.isPreview) {
     clients = PREVIEW_KLIENTI_FOR_CRM as unknown as ClientRow[];
@@ -32,7 +35,7 @@ export default async function KlientiPage() {
     const [clientsResp, viewerProfileResp, obchResp] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, full_name, email, company, is_active, created_at, projects(id, total_value, status)')
+        .select('id, full_name, email, company, is_active, created_at, parent_client_id, parent:profiles!profiles_parent_client_id_fkey(full_name, company), projects(id, total_value, status)')
         .eq('role', 'klient')
         .order('full_name', { ascending: true }),
       supabase.from('profiles').select('role').eq('id', viewer.id).single(),
@@ -47,6 +50,10 @@ export default async function KlientiPage() {
     isAdmin = (viewerProfileResp.data as { role?: string } | null)?.role === 'admin';
     if (isAdmin) {
       obchodnici = ((obchResp.data ?? []) as unknown as ObchodnikOption[]);
+      // Existující "top-level" osoby pro propojení další firmy.
+      existingClients = clients
+        .filter((c) => c.parent_client_id === null)
+        .map((c) => ({ id: c.id, full_name: c.full_name, company: c.company }));
     }
   }
 
@@ -56,7 +63,7 @@ export default async function KlientiPage() {
         eyebrow={viewer.isPreview ? "CRM · DEMO" : "CRM"}
         title="Klienti"
         subtitle={viewer.isPreview ? "Vaši přiřazení klienti — fiktivní krimi-univerzum." : "Vaši přiřazení klienti a jejich projekty."}
-        actions={isAdmin ? <CreateClientDialog obchodnici={obchodnici} /> : undefined}
+        actions={isAdmin ? <CreateClientDialog obchodnici={obchodnici} existingClients={existingClients} /> : undefined}
       />
       <div className="px-8 py-8">
         {clients.length === 0 ? (
@@ -83,6 +90,11 @@ export default async function KlientiPage() {
                         <Link href={`/portal/crm/klient/${c.id}`} className="text-moonlight hover:text-caramel">
                           {c.full_name}
                         </Link>
+                        {c.parent && (
+                          <div className="font-mono text-[10px] uppercase tracking-widest text-caramel/80 mt-0.5">
+                            ↳ patří k {c.parent.full_name}
+                          </div>
+                        )}
                         <div className="text-sandstone text-xs">{c.email}</div>
                       </td>
                       <td className="px-6 py-4 text-sepia">{c.company ?? '—'}</td>
