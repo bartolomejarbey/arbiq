@@ -26,7 +26,7 @@ export async function GET(
     .eq('id', id)
     .single();
   if (!invRow) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const inv = invRow as unknown as { id: string; pdf_url: string | null; invoice_number: string; kind: string; client_id: string };
+  const inv = invRow as unknown as { id: string; pdf_url: string | null; invoice_number: string; kind: string; client_id: string | null };
 
   // Regenerace (jen admin/obchodnik). RLS to už chrání, ale defensivně check.
   const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).single();

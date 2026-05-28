@@ -5,6 +5,7 @@ import { Plus, X } from 'lucide-react';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortalUser } from '@/lib/actions/users';
+import IcoLookup from '@/components/portal/IcoLookup';
 
 export type ObchodnikOption = { id: string; full_name: string | null; email: string };
 export type ExistingClientOption = { id: string; full_name: string; company: string | null };
@@ -20,6 +21,11 @@ export default function CreateClientDialog({
   const [error, setError] = useState<string | null>(null);
   const [withProject, setWithProject] = useState(true);
   const [pending, startTransition] = useTransition();
+  const [ico, setIco] = useState('');
+  const [company, setCompany] = useState('');
+  const [dic, setDic] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
   const router = useRouter();
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -84,14 +90,39 @@ export default function CreateClientDialog({
               </Field>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-[1fr_180px_auto] gap-2 items-end">
               <Field label="Firma" htmlFor="company">
-                <input id="company" name="company" type="text" maxLength={160} disabled={pending} className={inputClass} />
+                <input id="company" name="company" type="text" maxLength={160} disabled={pending} value={company} onChange={(e) => setCompany(e.target.value)} className={inputClass} />
               </Field>
               <Field label="IČO" htmlFor="ico">
-                <input id="ico" name="ico" type="text" maxLength={20} disabled={pending} className={inputClass} />
+                <input id="ico" name="ico" type="text" maxLength={20} disabled={pending} value={ico} onChange={(e) => setIco(e.target.value)} className={inputClass} />
               </Field>
+              <IcoLookup
+                ico={ico}
+                onResult={(d) => {
+                  setIco(d.ico);
+                  if (d.name) setCompany(d.name);
+                  if (d.dic) setDic(d.dic);
+                  if (d.street) setStreet(d.street);
+                  if (d.city) setCity(d.city);
+                }}
+                className="pb-0.5"
+              />
             </div>
+
+            {(dic || street || city) && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-espresso p-3 border border-tobacco/50">
+                <Field label="DIČ" htmlFor="dic">
+                  <input id="dic" name="dic" type="text" maxLength={20} disabled={pending} value={dic} onChange={(e) => setDic(e.target.value)} className={inputClass} />
+                </Field>
+                <Field label="Ulice + č.p." htmlFor="street">
+                  <input id="street" name="street" type="text" maxLength={200} disabled={pending} value={street} onChange={(e) => setStreet(e.target.value)} className={inputClass} />
+                </Field>
+                <Field label="Město + PSČ" htmlFor="city">
+                  <input id="city" name="city" type="text" maxLength={200} disabled={pending} value={city} onChange={(e) => setCity(e.target.value)} className={inputClass} />
+                </Field>
+              </div>
+            )}
 
             <Field label="Přiřadit obchodníka" htmlFor="assigned_obchodnik">
               <select id="assigned_obchodnik" name="assigned_obchodnik" defaultValue="" disabled={pending} className={inputClass}>

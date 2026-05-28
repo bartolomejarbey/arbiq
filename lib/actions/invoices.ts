@@ -50,8 +50,20 @@ const ItemSchema = z.object({
   unit_price: z.number().nonnegative(),
 });
 
+const CustomerOverrideSchema = z.object({
+  full_name: z.string().trim().min(1).max(200),
+  company: z.string().trim().max(200).optional().nullable(),
+  email: z.string().trim().email().max(200).optional().nullable().or(z.literal('').transform(() => null)),
+  phone: z.string().trim().max(40).optional().nullable(),
+  ico: z.string().trim().max(20).optional().nullable(),
+  dic: z.string().trim().max(20).optional().nullable(),
+  street: z.string().trim().max(200).optional().nullable(),
+  city: z.string().trim().max(200).optional().nullable(),
+});
+
 const CreateInvoiceSchema = z.object({
-  client_id: z.string().uuid(),
+  client_id: z.string().uuid().optional(),
+  customer_override: CustomerOverrideSchema.optional(),
   project_id: z.string().uuid().optional(),
   contract_id: z.string().uuid().optional(),
   invoice_number: z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9._\/-]+$/, 'Číslo smí obsahovat jen písmena, číslice, ._-/').optional(),
@@ -69,6 +81,17 @@ const CreateInvoiceSchema = z.object({
 });
 
 export type InvoiceActionResult = { ok: true; invoiceId: string; pdfUrl?: string | null } | { ok: false; error: string };
+
+function parseCustomerOverrideForm(formData: FormData): Record<string, string> | undefined {
+  if (formData.get('no_client') !== 'on' && formData.get('no_client') !== 'true') return undefined;
+  const fields = ['full_name', 'company', 'email', 'phone', 'ico', 'dic', 'street', 'city'] as const;
+  const out: Record<string, string> = {};
+  for (const f of fields) {
+    const v = formData.get(`cust_${f}`);
+    if (typeof v === 'string' && v.trim().length > 0) out[f] = v.trim();
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
 
 function parseFormItems(formData: FormData): InvoiceItem[] | undefined {
   const raw = formData.get('items');
@@ -104,10 +127,12 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
   const supabase = await createClient();
 
   const items = parseFormItems(formData);
+  const customerOverrideRaw = parseCustomerOverrideForm(formData);
   let parsed: z.infer<typeof CreateInvoiceSchema>;
   try {
     parsed = CreateInvoiceSchema.parse({
-      client_id: String(formData.get('client_id') ?? ''),
+      client_id: String(formData.get('client_id') ?? '') || undefined,
+      customer_override: customerOverrideRaw,
       project_id: String(formData.get('project_id') ?? '') || undefined,
       contract_id: String(formData.get('contract_id') ?? '') || undefined,
       invoice_number: (String(formData.get('invoice_number') ?? '').trim()) || undefined,
@@ -127,6 +152,10 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       ok: false,
       error: err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'Neplatná data.',
     };
+  }
+
+  if (!parsed.client_id && !parsed.customer_override) {
+    return { ok: false, error: 'Vyber klienta nebo vyplň údaje odběratele ručně.' };
   }
 
   // Spočítej amount z items, fallback na pole amount.
@@ -168,12 +197,13 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
   const variableSymbol = parsed.variable_symbol ?? invoiceNumber.replace(/\D/g, '');
 
   const supplierOverride = parseSupplierOverrideForm(formData);
+  const isOneOff = !parsed.client_id;
 
   // 1) INSERT záznamu (zatím bez pdf_url)
   const { data: insRow, error: insErr } = await untyped(supabase)
     .from('invoices')
     .insert({
-      client_id: parsed.client_id,
+      client_id: parsed.client_id ?? null,
       project_id: parsed.project_id ?? null,
       contract_id: parsed.contract_id ?? null,
       invoice_number: invoiceNumber,
@@ -189,6 +219,7 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       currency: 'CZK',
       items: finalItems as unknown as object,
       supplier_override: supplierOverride,
+      customer_override: parsed.customer_override ?? null,
     })
     .select('id, issued_at')
     .single();
@@ -199,28 +230,41 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
   const invoiceId = (insRow as { id: string }).id;
   const issuedAt = (insRow as { issued_at: string }).issued_at;
 
-  // 2) Načti klientův profil + dodavatele pro PDF.
+  // 2) Načti odběratele (klient profil nebo customer_override) + dodavatele.
   const admin = createAdminClient();
-  const [{ data: clientRow }, baseDodavatel] = await Promise.all([
-    untyped(admin)
-      .from('profiles')
-      .select('id, full_name, email, phone, company, ico, dic, street, city')
-      .eq('id', parsed.client_id)
-      .single(),
-    getDodavatel(),
-  ]);
+  const baseDodavatel = await getDodavatel();
   const dodavatel = applySupplierOverride(baseDodavatel, supplierOverride);
 
-  const customer: InvoiceCustomer = {
-    full_name: (clientRow as { full_name?: string | null } | null)?.full_name ?? 'Klient',
-    email: (clientRow as { email?: string | null } | null)?.email ?? null,
-    phone: (clientRow as { phone?: string | null } | null)?.phone ?? null,
-    company: (clientRow as { company?: string | null } | null)?.company ?? null,
-    ico: (clientRow as { ico?: string | null } | null)?.ico ?? null,
-    dic: (clientRow as { dic?: string | null } | null)?.dic ?? null,
-    street: (clientRow as { street?: string | null } | null)?.street ?? null,
-    city: (clientRow as { city?: string | null } | null)?.city ?? null,
-  };
+  let customer: InvoiceCustomer;
+  if (isOneOff) {
+    const co = parsed.customer_override!;
+    customer = {
+      full_name: co.full_name,
+      email: co.email ?? null,
+      phone: co.phone ?? null,
+      company: co.company ?? null,
+      ico: co.ico ?? null,
+      dic: co.dic ?? null,
+      street: co.street ?? null,
+      city: co.city ?? null,
+    };
+  } else {
+    const { data: clientRow } = await untyped(admin)
+      .from('profiles')
+      .select('id, full_name, email, phone, company, ico, dic, street, city')
+      .eq('id', parsed.client_id!)
+      .single();
+    customer = {
+      full_name: (clientRow as { full_name?: string | null } | null)?.full_name ?? 'Klient',
+      email: (clientRow as { email?: string | null } | null)?.email ?? null,
+      phone: (clientRow as { phone?: string | null } | null)?.phone ?? null,
+      company: (clientRow as { company?: string | null } | null)?.company ?? null,
+      ico: (clientRow as { ico?: string | null } | null)?.ico ?? null,
+      dic: (clientRow as { dic?: string | null } | null)?.dic ?? null,
+      street: (clientRow as { street?: string | null } | null)?.street ?? null,
+      city: (clientRow as { city?: string | null } | null)?.city ?? null,
+    };
+  }
 
   // 3) Vygeneruj PDF + SPAYD.
   let pdfStoragePath: string | null = null;
@@ -252,17 +296,27 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
 
     const safeNum = invoiceNumber.replace(/[^A-Za-z0-9-]/g, '_');
     const filename = parsed.kind === 'zaloha' ? `Zalohova-faktura-${safeNum}.pdf` : `Faktura-${safeNum}.pdf`;
-    const up = await uploadDocument({
-      clientId: parsed.client_id,
-      projectId: parsed.project_id ?? null,
-      type: 'faktura',
-      filename,
-      contentType: 'application/pdf',
-      body: pdf,
-      invoiceId,
-      title: filename,
-    });
-    pdfStoragePath = up.path;
+    if (isOneOff) {
+      // Bez klienta nemáme kam navázat documents row — upload jen do storage.
+      const path = `_oneoff/${invoiceId}/${Date.now()}-${filename.replace(/[^a-zA-Z0-9._-]+/g, '_')}`;
+      const { error: upErr } = await admin.storage
+        .from('documents')
+        .upload(path, pdf, { contentType: 'application/pdf', upsert: false });
+      if (upErr) throw new Error(`Storage upload failed: ${upErr.message}`);
+      pdfStoragePath = path;
+    } else {
+      const up = await uploadDocument({
+        clientId: parsed.client_id!,
+        projectId: parsed.project_id ?? null,
+        type: 'faktura',
+        filename,
+        contentType: 'application/pdf',
+        body: pdf,
+        invoiceId,
+        title: filename,
+      });
+      pdfStoragePath = up.path;
+    }
   } catch (err) {
     console.error('[INVOICE PDF] generation failed', err);
     // Faktura zůstane bez PDF — admin může regenerovat z API.
@@ -275,15 +329,17 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       .eq('id', invoiceId);
   }
 
-  // 4) Email klientovi (transactional).
-  void notifyPortalUser({
-    recipientId: parsed.client_id,
-    subject: `Nová faktura ${invoiceNumber} (${formatMoney(amount)})`,
-    heading: 'Vystavena nová faktura',
-    intro: `Vystavili jsme Vám fakturu ${invoiceNumber} na ${formatMoney(amount)}, splatnou ${formatDate(parsed.due_date)}.`,
-    ctaLabel: 'Zobrazit fakturu',
-    ctaPath: '/portal/faktury',
-  });
+  // 4) Email klientovi (transactional) — jen pro fakturu napojenou na klienta.
+  if (parsed.client_id) {
+    void notifyPortalUser({
+      recipientId: parsed.client_id,
+      subject: `Nová faktura ${invoiceNumber} (${formatMoney(amount)})`,
+      heading: 'Vystavena nová faktura',
+      intro: `Vystavili jsme Vám fakturu ${invoiceNumber} na ${formatMoney(amount)}, splatnou ${formatDate(parsed.due_date)}.`,
+      ctaLabel: 'Zobrazit fakturu',
+      ctaPath: '/portal/faktury',
+    });
+  }
 
   revalidatePath('/portal/admin/faktury');
   revalidatePath('/portal/faktury');
@@ -344,33 +400,48 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<{ ok: tru
   const admin = createAdminClient();
   const { data: invRow } = await untyped(admin)
     .from('invoices')
-    .select('id, invoice_number, kind, amount, description, issued_at, due_date, variable_symbol, constant_symbol, payment_method, items, client_id, project_id, currency, supplier_override')
+    .select('id, invoice_number, kind, amount, description, issued_at, due_date, variable_symbol, constant_symbol, payment_method, items, client_id, project_id, currency, supplier_override, customer_override')
     .eq('id', invoiceId)
     .single();
   if (!invRow) return { ok: false, error: 'Faktura nenalezena.' };
   const inv = invRow as Record<string, unknown>;
-  const clientId = inv['client_id'] as string;
+  const clientId = (inv['client_id'] as string | null) ?? null;
+  const customerOverride = inv['customer_override'] as Record<string, string | null> | null;
 
-  const [{ data: clientRow }, baseDodavatel] = await Promise.all([
-    untyped(admin)
+  const baseDodavatel = await getDodavatel();
+  const dodavatel = applySupplierOverride(baseDodavatel, inv['supplier_override']);
+
+  let customer: InvoiceCustomer;
+  if (clientId) {
+    const { data: clientRow } = await untyped(admin)
       .from('profiles')
       .select('id, full_name, email, phone, company, ico, dic, street, city')
       .eq('id', clientId)
-      .single(),
-    getDodavatel(),
-  ]);
-  const dodavatel = applySupplierOverride(baseDodavatel, inv['supplier_override']);
-
-  const customer: InvoiceCustomer = {
-    full_name: (clientRow as { full_name?: string | null } | null)?.full_name ?? 'Klient',
-    email: (clientRow as { email?: string | null } | null)?.email ?? null,
-    phone: (clientRow as { phone?: string | null } | null)?.phone ?? null,
-    company: (clientRow as { company?: string | null } | null)?.company ?? null,
-    ico: (clientRow as { ico?: string | null } | null)?.ico ?? null,
-    dic: (clientRow as { dic?: string | null } | null)?.dic ?? null,
-    street: (clientRow as { street?: string | null } | null)?.street ?? null,
-    city: (clientRow as { city?: string | null } | null)?.city ?? null,
-  };
+      .single();
+    customer = {
+      full_name: (clientRow as { full_name?: string | null } | null)?.full_name ?? 'Klient',
+      email: (clientRow as { email?: string | null } | null)?.email ?? null,
+      phone: (clientRow as { phone?: string | null } | null)?.phone ?? null,
+      company: (clientRow as { company?: string | null } | null)?.company ?? null,
+      ico: (clientRow as { ico?: string | null } | null)?.ico ?? null,
+      dic: (clientRow as { dic?: string | null } | null)?.dic ?? null,
+      street: (clientRow as { street?: string | null } | null)?.street ?? null,
+      city: (clientRow as { city?: string | null } | null)?.city ?? null,
+    };
+  } else if (customerOverride) {
+    customer = {
+      full_name: customerOverride.full_name ?? 'Odběratel',
+      email: customerOverride.email ?? null,
+      phone: customerOverride.phone ?? null,
+      company: customerOverride.company ?? null,
+      ico: customerOverride.ico ?? null,
+      dic: customerOverride.dic ?? null,
+      street: customerOverride.street ?? null,
+      city: customerOverride.city ?? null,
+    };
+  } else {
+    return { ok: false, error: 'Faktura nemá klienta ani vyplněného odběratele.' };
+  }
 
   const items = (inv['items'] as InvoiceItem[] | null) ?? [{
     label: (inv['description'] as string | null) ?? 'Faktura',
@@ -398,20 +469,30 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<{ ok: tru
     const pdf = await renderInvoicePdf({ invoice: doc, customer, dodavatel });
     const safeNum = doc.invoiceNumber.replace(/[^A-Za-z0-9-]/g, '_');
     const filename = doc.kind === 'zaloha' ? `Zalohova-faktura-${safeNum}.pdf` : `Faktura-${safeNum}.pdf`;
-    const up = await uploadDocument({
-      clientId,
-      projectId: (inv['project_id'] as string | null) ?? null,
-      type: 'faktura',
-      filename,
-      contentType: 'application/pdf',
-      body: pdf,
-      invoiceId,
-      title: filename,
-    });
-    await untyped(admin).from('invoices').update({ pdf_url: up.path }).eq('id', invoiceId);
+    let path: string;
+    if (clientId) {
+      const up = await uploadDocument({
+        clientId,
+        projectId: (inv['project_id'] as string | null) ?? null,
+        type: 'faktura',
+        filename,
+        contentType: 'application/pdf',
+        body: pdf,
+        invoiceId,
+        title: filename,
+      });
+      path = up.path;
+    } else {
+      path = `_oneoff/${invoiceId}/${Date.now()}-${filename.replace(/[^a-zA-Z0-9._-]+/g, '_')}`;
+      const { error: upErr } = await admin.storage
+        .from('documents')
+        .upload(path, pdf, { contentType: 'application/pdf', upsert: false });
+      if (upErr) throw new Error(`Storage upload failed: ${upErr.message}`);
+    }
+    await untyped(admin).from('invoices').update({ pdf_url: path }).eq('id', invoiceId);
     revalidatePath('/portal/admin/faktury');
     revalidatePath('/portal/faktury');
-    return { ok: true, path: up.path };
+    return { ok: true, path };
   } catch (err) {
     console.error('[INVOICE PDF] regenerate failed', err);
     return { ok: false, error: err instanceof Error ? err.message : 'PDF generation failed' };

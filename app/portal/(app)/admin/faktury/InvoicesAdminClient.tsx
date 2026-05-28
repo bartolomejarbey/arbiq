@@ -5,6 +5,7 @@ import { Plus, Check, Ban, FileText, RefreshCw, ChevronDown } from 'lucide-react
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
 import { createInvoice, markInvoicePaid, cancelInvoice, regenerateInvoicePdf } from '@/lib/actions/invoices';
+import IcoLookup from '@/components/portal/IcoLookup';
 
 type Row = {
   id: string;
@@ -15,8 +16,9 @@ type Row = {
   due_date: string;
   status: string;
   pdf_url: string | null;
-  client_id: string;
+  client_id: string | null;
   client: { full_name: string; email: string } | null;
+  customer_override: { full_name?: string | null; company?: string | null } | null;
   project: { id: string; name: string } | null;
 };
 
@@ -41,21 +43,38 @@ export default function InvoicesAdminClient({
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [overrideOpen, setOverrideOpen] = useState(false);
+  const [noClient, setNoClient] = useState(false);
+  const [cust, setCust] = useState({
+    full_name: '', company: '', ico: '', dic: '', street: '', city: '', email: '', phone: '',
+  });
+  const [sup, setSup] = useState({
+    name: '', ico: '', dic: '', vat_payer: false, street: '', city: '',
+  });
 
   const projectsForClient = useMemo(
     () => projects.filter((p) => !selectedClient || p.client_id === selectedClient),
     [projects, selectedClient],
   );
 
+  function resetAll() {
+    setOpen(false);
+    setSelectedClient('');
+    setNoClient(false);
+    setCust({ full_name: '', company: '', ico: '', dic: '', street: '', city: '', email: '', phone: '' });
+    setSup({ name: '', ico: '', dic: '', vat_payer: false, street: '', city: '' });
+    setOverrideOpen(false);
+  }
+
   function onCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     const form = e.currentTarget;
     const fd = new FormData(form);
+    if (noClient) fd.delete('client_id');
     startTransition(async () => {
       const res = await createInvoice(fd);
       if (!res.ok) setError(res.error);
-      else { form.reset(); setOpen(false); setSelectedClient(''); }
+      else { form.reset(); resetAll(); }
     });
   }
 
@@ -93,22 +112,99 @@ export default function InvoicesAdminClient({
       ) : (
         <form onSubmit={onCreate} className="bg-coffee p-6 space-y-4">
           <h3 className="font-display italic text-xl text-moonlight">Nová faktura</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass} htmlFor="i_client_id">Klient</label>
-              <select id="i_client_id" name="client_id" required className={inputClass} value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
-                <option value="" disabled>— vyberte —</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className={labelClass} htmlFor="i_project_id">Projekt (volitelné)</label>
-              <select id="i_project_id" name="project_id" className={inputClass} defaultValue="">
-                <option value="">— bez projektu —</option>
-                {projectsForClient.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
+
+          <div className="flex items-center gap-3 bg-espresso p-3 border border-tobacco">
+            <input
+              id="no_client_toggle"
+              type="checkbox"
+              name="no_client"
+              checked={noClient}
+              onChange={(e) => setNoClient(e.target.checked)}
+              className="w-4 h-4 accent-caramel"
+            />
+            <label htmlFor="no_client_toggle" className="text-sepia text-sm cursor-pointer select-none">
+              Není klient — vystavit jednorázově (odběratele vyplním ručně)
+            </label>
           </div>
+
+          {!noClient ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass} htmlFor="i_client_id">Klient</label>
+                <select id="i_client_id" name="client_id" required={!noClient} className={inputClass} value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
+                  <option value="" disabled>— vyberte —</option>
+                  {clients.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="i_project_id">Projekt (volitelné)</label>
+                <select id="i_project_id" name="project_id" className={inputClass} defaultValue="">
+                  <option value="">— bez projektu —</option>
+                  {projectsForClient.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-espresso p-4 space-y-3 border border-tobacco">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-caramel">Odběratel (jednorázový)</div>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end">
+                <div>
+                  <label className={labelClass} htmlFor="cust_ico">IČO</label>
+                  <input
+                    id="cust_ico"
+                    name="cust_ico"
+                    value={cust.ico}
+                    onChange={(e) => setCust((s) => ({ ...s, ico: e.target.value }))}
+                    placeholder="21875570"
+                    className={inputClass}
+                  />
+                </div>
+                <IcoLookup
+                  ico={cust.ico}
+                  onResult={(d) => setCust((s) => ({
+                    ...s,
+                    ico: d.ico,
+                    company: d.name ?? s.company,
+                    full_name: s.full_name || (d.name ?? ''),
+                    dic: d.dic ?? s.dic,
+                    street: d.street ?? s.street,
+                    city: d.city ?? s.city,
+                  }))}
+                  className="md:pb-0.5"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass} htmlFor="cust_full_name">Jméno / Kontakt *</label>
+                  <input id="cust_full_name" name="cust_full_name" required={noClient} value={cust.full_name} onChange={(e) => setCust((s) => ({ ...s, full_name: e.target.value }))} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="cust_company">Firma</label>
+                  <input id="cust_company" name="cust_company" value={cust.company} onChange={(e) => setCust((s) => ({ ...s, company: e.target.value }))} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="cust_dic">DIČ</label>
+                  <input id="cust_dic" name="cust_dic" value={cust.dic} onChange={(e) => setCust((s) => ({ ...s, dic: e.target.value }))} placeholder="CZ..." className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="cust_email">E-mail</label>
+                  <input id="cust_email" name="cust_email" type="email" value={cust.email} onChange={(e) => setCust((s) => ({ ...s, email: e.target.value }))} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="cust_street">Ulice + č.p.</label>
+                  <input id="cust_street" name="cust_street" value={cust.street} onChange={(e) => setCust((s) => ({ ...s, street: e.target.value }))} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="cust_city">Město + PSČ</label>
+                  <input id="cust_city" name="cust_city" value={cust.city} onChange={(e) => setCust((s) => ({ ...s, city: e.target.value }))} className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass} htmlFor="cust_phone">Telefon</label>
+                  <input id="cust_phone" name="cust_phone" value={cust.phone} onChange={(e) => setCust((s) => ({ ...s, phone: e.target.value }))} className={inputClass} />
+                </div>
+              </div>
+            </div>
+          )}
           <div>
             <label className={labelClass} htmlFor="i_invoice_number">Číslo faktury (volitelné)</label>
             <input
@@ -155,32 +251,46 @@ export default function InvoicesAdminClient({
                   <input type="checkbox" name="use_supplier_override" defaultChecked className="w-4 h-4 accent-caramel" />
                   <span className="text-sepia text-xs">Použít tyto údaje místo defaultního dodavatele (Bartoloměj Rota / Arbiq.cz)</span>
                 </label>
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end">
+                  <div>
+                    <label className={labelClass} htmlFor="sup_ico">IČO</label>
+                    <input id="sup_ico" name="sup_ico" value={sup.ico} onChange={(e) => setSup((s) => ({ ...s, ico: e.target.value }))} placeholder="21402027" className={inputClass} />
+                  </div>
+                  <IcoLookup
+                    ico={sup.ico}
+                    onResult={(d) => setSup((s) => ({
+                      ...s,
+                      ico: d.ico,
+                      name: d.name ?? s.name,
+                      dic: d.dic ?? s.dic,
+                      vat_payer: d.vat_payer || s.vat_payer,
+                      street: d.street ?? s.street,
+                      city: d.city ?? s.city,
+                    }))}
+                  />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className={labelClass} htmlFor="sup_name">Jméno / Firma</label>
-                    <input id="sup_name" name="sup_name" placeholder="např. Harotas s.r.o." className={inputClass} />
-                  </div>
-                  <div>
-                    <label className={labelClass} htmlFor="sup_ico">IČO</label>
-                    <input id="sup_ico" name="sup_ico" placeholder="21402027" className={inputClass} />
+                    <input id="sup_name" name="sup_name" value={sup.name} onChange={(e) => setSup((s) => ({ ...s, name: e.target.value }))} placeholder="např. Harotas s.r.o." className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="sup_dic">DIČ (pokud plátce)</label>
-                    <input id="sup_dic" name="sup_dic" placeholder="CZ…" className={inputClass} />
+                    <input id="sup_dic" name="sup_dic" value={sup.dic} onChange={(e) => setSup((s) => ({ ...s, dic: e.target.value }))} placeholder="CZ…" className={inputClass} />
                   </div>
                   <div className="flex items-end">
                     <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" name="sup_vat_payer" className="w-4 h-4 accent-caramel" />
+                      <input type="checkbox" name="sup_vat_payer" checked={sup.vat_payer} onChange={(e) => setSup((s) => ({ ...s, vat_payer: e.target.checked }))} className="w-4 h-4 accent-caramel" />
                       <span className="text-sepia text-sm">Plátce DPH</span>
                     </label>
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="sup_street">Ulice</label>
-                    <input id="sup_street" name="sup_street" placeholder="Školská 689/20" className={inputClass} />
+                    <input id="sup_street" name="sup_street" value={sup.street} onChange={(e) => setSup((s) => ({ ...s, street: e.target.value }))} placeholder="Školská 689/20" className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="sup_city">Město + PSČ</label>
-                    <input id="sup_city" name="sup_city" placeholder="110 00 Praha" className={inputClass} />
+                    <input id="sup_city" name="sup_city" value={sup.city} onChange={(e) => setSup((s) => ({ ...s, city: e.target.value }))} placeholder="110 00 Praha" className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="sup_bank_account">Číslo účtu</label>
@@ -220,7 +330,7 @@ export default function InvoicesAdminClient({
             <button type="submit" disabled={pending} className="bg-caramel text-espresso px-5 py-2.5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all disabled:opacity-50">
               {pending ? 'Vytvářím + generuji PDF…' : 'Vytvořit fakturu'}
             </button>
-            <button type="button" onClick={() => { setOpen(false); setSelectedClient(''); setOverrideOpen(false); }} className="text-sandstone hover:text-moonlight text-xs font-mono uppercase tracking-widest">Zrušit</button>
+            <button type="button" onClick={resetAll} className="text-sandstone hover:text-moonlight text-xs font-mono uppercase tracking-widest">Zrušit</button>
           </div>
         </form>
       )}
@@ -242,7 +352,12 @@ export default function InvoicesAdminClient({
             {invoices.map((inv, i) => (
               <tr key={inv.id} className={`border-b border-tobacco/50 hover:bg-tobacco/30 ${i % 2 === 1 ? 'bg-coffee/40' : ''}`}>
                 <td className="px-4 py-3 font-mono text-caramel">{inv.invoice_number}</td>
-                <td className="px-4 py-3 text-sepia">{inv.client?.full_name ?? '—'}</td>
+                <td className="px-4 py-3 text-sepia">
+                  {inv.client?.full_name
+                    ?? inv.customer_override?.company
+                    ?? inv.customer_override?.full_name
+                    ?? <span className="text-sandstone/50 italic">jednorázový</span>}
+                </td>
                 <td className="px-4 py-3 text-sepia max-w-xs truncate">{inv.description ?? '—'}</td>
                 <td className="px-4 py-3 text-right text-moonlight">{formatMoney(inv.amount)}</td>
                 <td className="px-4 py-3 text-sandstone whitespace-nowrap">{formatDate(inv.issued_at)}</td>

@@ -964,11 +964,12 @@ export type Database = {
       invoices: {
         Row: {
           amount: number
-          client_id: string
+          client_id: string | null
           constant_symbol: string | null
           contract_id: string | null
           created_at: string
           currency: string
+          customer_override: Json | null
           description: string | null
           due_date: string
           id: string
@@ -986,11 +987,12 @@ export type Database = {
         }
         Insert: {
           amount: number
-          client_id: string
+          client_id?: string | null
           constant_symbol?: string | null
           contract_id?: string | null
           created_at?: string
           currency?: string
+          customer_override?: Json | null
           description?: string | null
           due_date: string
           id?: string
@@ -1008,11 +1010,12 @@ export type Database = {
         }
         Update: {
           amount?: number
-          client_id?: string
+          client_id?: string | null
           constant_symbol?: string | null
           contract_id?: string | null
           created_at?: string
           currency?: string
+          customer_override?: Json | null
           description?: string | null
           due_date?: string
           id?: string
