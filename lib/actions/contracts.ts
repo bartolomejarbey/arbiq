@@ -15,6 +15,7 @@ import { renderContractDocx } from '@/lib/docx/contract';
 const ContractSchema = z.object({
   client_id: z.string().uuid(),
   project_id: z.string().uuid().optional(),
+  contract_number: z.string().trim().min(1).max(60).regex(/^[A-Za-z0-9._\/-]+$/, 'Číslo smí obsahovat jen písmena, číslice, ._-/').optional(),
   kind: z.enum(['smlouva_o_dilo', 'smlouva_paushal', 'nda', 'dodatek', 'jine']).default('smlouva_o_dilo'),
   title: z.string().min(3).max(200),
   subject: z.string().min(5).max(500),
@@ -70,6 +71,7 @@ export async function createContract(formData: FormData): Promise<ContractAction
     parsed = ContractSchema.parse({
       client_id: String(formData.get('client_id') ?? ''),
       project_id: String(formData.get('project_id') ?? '') || undefined,
+      contract_number: (String(formData.get('contract_number') ?? '').trim()) || undefined,
       kind: String(formData.get('kind') ?? 'smlouva_o_dilo'),
       title: String(formData.get('title') ?? '').trim(),
       subject: String(formData.get('subject') ?? '').trim(),
@@ -95,9 +97,22 @@ export async function createContract(formData: FormData): Promise<ContractAction
     };
   }
 
-  // Vygenerujeme číslo smlouvy
-  const { data: numData } = await untyped(supabase).rpc('next_contract_number');
-  const contractNumber = typeof numData === 'string' ? numData : `SMLA-${new Date().getFullYear()}-${Date.now() % 1000}`;
+  // Číslo smlouvy: pokud admin zadal manuálně, použij + zkontroluj kolizi.
+  let contractNumber: string;
+  if (parsed.contract_number) {
+    const { data: clash } = await untyped(supabase)
+      .from('contracts')
+      .select('id')
+      .eq('contract_number', parsed.contract_number)
+      .maybeSingle();
+    if (clash) {
+      return { ok: false, error: `Smlouva s číslem "${parsed.contract_number}" už existuje.` };
+    }
+    contractNumber = parsed.contract_number;
+  } else {
+    const { data: numData } = await untyped(supabase).rpc('next_contract_number');
+    contractNumber = typeof numData === 'string' ? numData : `SMLA-${new Date().getFullYear()}-${Date.now() % 1000}`;
+  }
 
   // INSERT
   const { data: row, error } = await untyped(supabase)

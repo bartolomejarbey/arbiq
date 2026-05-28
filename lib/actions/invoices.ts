@@ -54,6 +54,7 @@ const CreateInvoiceSchema = z.object({
   client_id: z.string().uuid(),
   project_id: z.string().uuid().optional(),
   contract_id: z.string().uuid().optional(),
+  invoice_number: z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9._\/-]+$/, 'Číslo smí obsahovat jen písmena, číslice, ._-/').optional(),
   kind: z.enum(['zaloha', 'konecna', 'dobropis', 'paushal']).default('konecna'),
   // Plain text popis (kompatibilita) nebo items pole
   amount: z.string().optional(),
@@ -109,6 +110,7 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       client_id: String(formData.get('client_id') ?? ''),
       project_id: String(formData.get('project_id') ?? '') || undefined,
       contract_id: String(formData.get('contract_id') ?? '') || undefined,
+      invoice_number: (String(formData.get('invoice_number') ?? '').trim()) || undefined,
       kind: String(formData.get('kind') ?? 'konecna') as 'zaloha' | 'konecna' | 'dobropis' | 'paushal',
       amount: String(formData.get('amount') ?? ''),
       items,
@@ -148,8 +150,21 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
         unit_price: amount,
       }];
 
-  const { data: numData } = await supabase.rpc('next_invoice_number');
-  const invoiceNumber = typeof numData === 'string' ? numData : `F${Date.now()}`;
+  let invoiceNumber: string;
+  if (parsed.invoice_number) {
+    const { data: clash } = await untyped(supabase)
+      .from('invoices')
+      .select('id')
+      .eq('invoice_number', parsed.invoice_number)
+      .maybeSingle();
+    if (clash) {
+      return { ok: false, error: `Faktura s číslem "${parsed.invoice_number}" už existuje.` };
+    }
+    invoiceNumber = parsed.invoice_number;
+  } else {
+    const { data: numData } = await supabase.rpc('next_invoice_number');
+    invoiceNumber = typeof numData === 'string' ? numData : `F${Date.now()}`;
+  }
   const variableSymbol = parsed.variable_symbol ?? invoiceNumber.replace(/\D/g, '');
 
   const supplierOverride = parseSupplierOverrideForm(formData);

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { Plus, KeyRound, Power } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate } from '@/lib/formatters';
-import { createPortalUser, setUserActive, resetUserPassword } from '@/lib/actions/users';
+import { createPortalUser, setUserActive, resetUserPassword, setAssignedObchodnik } from '@/lib/actions/users';
 
 type Profile = {
   id: string;
@@ -67,6 +67,17 @@ export default function UsersClient({
 
   function onToggleActive(userId: string, current: boolean) {
     startTransition(() => { void setUserActive(userId, !current); });
+  }
+
+  function onReassign(clientId: string, value: string) {
+    setError(null);
+    setSuccess(null);
+    const next = value === '' ? null : value;
+    startTransition(async () => {
+      const res = await setAssignedObchodnik(clientId, next);
+      if (!res.ok) setError(res.error);
+      else setSuccess('Přiřazení uloženo.');
+    });
   }
 
   return (
@@ -148,6 +159,7 @@ export default function UsersClient({
               <Th>Jméno</Th>
               <Th>E-mail</Th>
               <Th>Role</Th>
+              <Th>Přiřazeno</Th>
               <Th>Stav</Th>
               <Th>Vytvořeno</Th>
               <th></th>
@@ -159,6 +171,24 @@ export default function UsersClient({
                 <td className="px-4 py-3 text-moonlight">{u.full_name}</td>
                 <td className="px-4 py-3 text-sepia">{u.email}</td>
                 <td className="px-4 py-3 text-sepia">{roleLabels[u.role]}</td>
+                <td className="px-4 py-3">
+                  {u.role === 'klient' ? (
+                    <select
+                      value={u.assigned_obchodnik ?? ''}
+                      onChange={(e) => onReassign(u.id, e.target.value)}
+                      disabled={pending}
+                      className="bg-espresso border border-tobacco px-2 py-1 text-sepia text-xs focus:border-caramel focus:outline-none disabled:opacity-50 min-w-[160px]"
+                      title="Přepiš přiřazeného obchodníka"
+                    >
+                      <option value="">— bez přiřazení —</option>
+                      {obchodnici.map((o) => (
+                        <option key={o.id} value={o.id}>{o.full_name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="text-sandstone/50 text-xs">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">
                   {u.is_active
                     ? <StatusBadge kind="task" value="done" />

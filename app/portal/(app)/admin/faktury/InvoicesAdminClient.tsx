@@ -109,6 +109,17 @@ export default function InvoicesAdminClient({
               </select>
             </div>
           </div>
+          <div>
+            <label className={labelClass} htmlFor="i_invoice_number">Číslo faktury (volitelné)</label>
+            <input
+              id="i_invoice_number"
+              name="invoice_number"
+              placeholder="auto: FYYYYNNNNN"
+              pattern="[A-Za-z0-9._/\-]+"
+              title="Písmena, číslice, ._-/"
+              className={inputClass}
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className={labelClass} htmlFor="i_amount">Částka (Kč)</label>

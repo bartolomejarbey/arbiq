@@ -166,12 +166,24 @@ export async function resetUserPassword(userId: string): Promise<{ ok: true; pas
   return { ok: true, password };
 }
 
-export async function setAssignedObchodnik(clientId: string, obchodnikId: string | null) {
-  await requireAdmin();
+export async function setAssignedObchodnik(
+  clientId: string,
+  obchodnikId: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireAdmin();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
+  }
   const admin = createAdminClient();
-  await admin.from('profiles').update({ assigned_obchodnik: obchodnikId }).eq('id', clientId);
+  const { error } = await admin
+    .from('profiles')
+    .update({ assigned_obchodnik: obchodnikId })
+    .eq('id', clientId);
+  if (error) return { ok: false, error: error.message };
   revalidatePath('/portal/admin/uzivatele');
   revalidatePath(`/portal/crm/klient/${clientId}`);
+  return { ok: true };
 }
 
 function generatePassword(length = 14): string {

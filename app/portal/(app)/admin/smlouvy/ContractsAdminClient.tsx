@@ -123,15 +123,28 @@ export default function ContractsAdminClient({
             </div>
           </div>
 
-          <div>
-            <label className={labelClass} htmlFor="s_title">Název smlouvy *</label>
-            <input
-              id="s_title"
-              name="title"
-              required
-              placeholder="např. Webová prezentace pro Prosner s.r.o."
-              className={inputClass}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-4">
+            <div>
+              <label className={labelClass} htmlFor="s_title">Název smlouvy *</label>
+              <input
+                id="s_title"
+                name="title"
+                required
+                placeholder="např. Webová prezentace pro Prosner s.r.o."
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass} htmlFor="s_contract_number">Číslo smlouvy (volitelné)</label>
+              <input
+                id="s_contract_number"
+                name="contract_number"
+                placeholder="auto: SMLA-YYYY-NNN"
+                pattern="[A-Za-z0-9._/\-]+"
+                title="Písmena, číslice, ._-/"
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <div>
