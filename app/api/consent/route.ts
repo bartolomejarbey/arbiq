@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createHash } from 'crypto';
+import { clientIpHash, rateLimit } from '@/lib/rate-limit';
 
 const ConsentSchema = z.object({
   anon_id: z.string().min(8).max(64),
@@ -30,6 +31,12 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
+
+  // Rate limit: 30 záznamů souhlasu / min / IP.
+  if (!(await rateLimit(supabase, `consent:${clientIpHash(request, 'consent')}`, 30, 60))) {
+    return NextResponse.json({ ok: true, logged: false }, { status: 429 });
+  }
+
   const { error } = await supabase.from('cookie_consent_log').insert({
     anon_id: parsed.anon_id,
     necessary: parsed.necessary,

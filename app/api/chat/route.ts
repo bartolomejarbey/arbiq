@@ -3,6 +3,7 @@ import { z } from 'zod';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { createHash } from 'crypto';
+import { rateLimit } from '@/lib/rate-limit';
 import { ARBIQ_SYSTEM_PROMPT } from '@/lib/chat/system-prompt';
 
 export const runtime = 'nodejs';
@@ -30,20 +31,6 @@ function hashIp(req: Request): string | null {
   return createHash('sha256').update(`${ip}|${day}|arbiq-chat`).digest('hex').slice(0, 16);
 }
 
-// Per-IP rate limit: 30 messages / hour
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-function checkRateLimit(key: string): { ok: boolean; remaining: number } {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + 60 * 60 * 1000 });
-    return { ok: true, remaining: 29 };
-  }
-  if (entry.count >= 30) return { ok: false, remaining: 0 };
-  entry.count += 1;
-  return { ok: true, remaining: 30 - entry.count };
-}
-
 export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'Chatbot není nakonfigurován.' }, { status: 503 });
@@ -57,16 +44,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: issues }, { status: 400 });
   }
 
+  const supabase = await createClient();
   const ipHash = hashIp(request) ?? 'unknown';
-  const rate = checkRateLimit(ipHash);
-  if (!rate.ok) {
+
+  // Rate limit (serverless-safe DB counter): 30 zpráv / hod / IP.
+  if (!(await rateLimit(supabase, `chat:${ipHash}`, 30, 3600))) {
     return NextResponse.json(
       { error: 'Překročili jste limit zpráv (30/hod). Zkuste za hodinu, nebo nám napište na info@arbiq.cz.' },
       { status: 429 }
     );
   }
-
-  const supabase = await createClient();
 
   // Resolve / create session (sessionId may be undefined or null on first message)
   let sessionId: string | null = parsed.session_id ?? null;
@@ -150,16 +137,15 @@ export async function POST(request: Request) {
       tokens_out: tokensOut,
       model: MODEL,
     });
-    // bump_chat_session RPC exists in DB (migration 0002) but isn't in generated types.
+    // bump_chat_session(s_id uuid) — pozor na přesný název parametru, jinak RPC tiše selže.
     await (supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<unknown>)(
       'bump_chat_session',
-      { p_session_id: sessionId }
+      { s_id: sessionId }
     );
   }
 
   return NextResponse.json({
     session_id: sessionId,
     reply: assistantText,
-    remaining: rate.remaining,
   });
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createHash } from 'crypto';
+import { clientIpHash, rateLimit } from '@/lib/rate-limit';
 
 const TrackSchema = z.object({
   visitor_id: z.string().min(4).max(64),
@@ -31,6 +32,12 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient();
+
+  // Rate limit (serverless-safe): 120 událostí / min / IP.
+  if (!(await rateLimit(supabase, `track:${clientIpHash(request, 'track')}`, 120, 60))) {
+    return NextResponse.json({ ok: false }, { status: 429 });
+  }
+
   const utm = parsed.utm ?? {};
 
   const { error } = await supabase.from('analytics_events').insert({
