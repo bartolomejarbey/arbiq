@@ -10,6 +10,7 @@ import InvoiceTable, { type InvoiceRow } from '@/components/portal/InvoiceTable'
 import NotesTimeline, { type NoteRow } from '@/components/portal/NotesTimeline';
 import ContactHistoryForm from './ContactHistoryForm';
 import ClientEmailsForm from './ClientEmailsForm';
+import ClientReplyForm from './ClientReplyForm';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
@@ -110,6 +111,20 @@ export default async function KlientDetailPage({
     .eq('client_id', id)
     .order('created_at', { ascending: false });
 
+  const { data: emailRows } = await untyped(supabase)
+    .from('client_emails')
+    .select('id, direction, subject, body, created_at')
+    .eq('client_id', id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  const clientEmails = ((emailRows ?? []) as unknown as Array<{
+    id: string;
+    direction: 'inbound' | 'outbound';
+    subject: string | null;
+    body: string | null;
+    created_at: string;
+  }>);
+
   const profile = profileRow as unknown as ClientProfile | null;
   if (!profile) notFound();
 
@@ -187,6 +202,33 @@ export default async function KlientDetailPage({
             billingEmail={profile.billing_email}
             contractEmail={profile.contract_email}
           />
+
+          <section>
+            <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">E-mailová korespondence</h2>
+            <ClientReplyForm clientId={profile.id} clientEmail={profile.email} />
+            {clientEmails.length > 0 && (
+              <div className="space-y-2 mt-4">
+                {clientEmails.map((m) => (
+                  <details key={m.id} className="bg-coffee border-l-2 border-caramel/40">
+                    <summary className="px-5 py-3 cursor-pointer list-none flex items-center justify-between gap-4 hover:bg-tobacco/30">
+                      <div className="min-w-0">
+                        <span className={`font-mono text-[9px] uppercase tracking-widest mr-2 ${m.direction === 'outbound' ? 'text-caramel' : 'text-olive'}`}>
+                          {m.direction === 'outbound' ? 'Od ARBIQ' : 'Od klienta'}
+                        </span>
+                        <span className="text-moonlight text-sm">{m.subject ?? '(bez předmětu)'}</span>
+                      </div>
+                      <span className="text-sandstone text-xs whitespace-nowrap shrink-0">{formatDate(m.created_at)}</span>
+                    </summary>
+                    {m.body && (
+                      <div className="px-5 pb-4 pt-1 text-sepia text-sm whitespace-pre-wrap leading-relaxed border-t border-tobacco/40">
+                        {m.body}
+                      </div>
+                    )}
+                  </details>
+                ))}
+              </div>
+            )}
+          </section>
 
           <section>
             <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Projekty</h2>

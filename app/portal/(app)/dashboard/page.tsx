@@ -9,6 +9,7 @@ import ProjectCard, { type ProjectCardData } from '@/components/portal/ProjectCa
 import RecommendationCard, { type RecommendationData } from '@/components/portal/RecommendationCard';
 import StatsCard from '@/components/portal/StatsCard';
 import EmptyState from '@/components/portal/EmptyState';
+import ZoneMessageForm from './ZoneMessageForm';
 import { formatMoney, daysUntil, formatDate } from '@/lib/formatters';
 import { markRecommendationInterested, dismissRecommendation } from '@/lib/actions/recommendations';
 
@@ -219,6 +220,7 @@ export default async function DashboardPage() {
 
         <section>
           <SectionHeader title="Komunikace s ARBIQ" link="" linkLabel={null} />
+          <ZoneMessageForm />
           {correspondence.length === 0 ? (
             <div className="bg-coffee p-8 border-l-2 border-caramel/40">
               <div className="font-mono text-[10px] uppercase tracking-widest text-caramel mb-2">Zatím prázdné</div>
