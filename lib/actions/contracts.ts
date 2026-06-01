@@ -466,6 +466,14 @@ export async function sendContractToClient(
     status: string;
   };
 
+  // Ownership: obchodník smí poslat jen smlouvu svého přiřazeného klienta.
+  if (role !== 'admin' && c.client_id) {
+    const { data: own } = await untyped(admin).from('profiles').select('assigned_obchodnik').eq('id', c.client_id).single();
+    if ((own as { assigned_obchodnik?: string | null } | null)?.assigned_obchodnik !== check.viewer.id) {
+      return { ok: false, error: 'Tento klient vám není přiřazen.' };
+    }
+  }
+
   // Zajisti PDF.
   let pdfPath = c.pdf_url;
   if (!pdfPath) {

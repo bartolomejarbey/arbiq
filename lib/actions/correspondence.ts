@@ -40,11 +40,15 @@ export async function sendClientReply(clientId: string, formData: FormData): Pro
   const admin = createAdminClient();
   const { data: prof } = await untyped(admin)
     .from('profiles')
-    .select('email, full_name')
+    .select('email, full_name, assigned_obchodnik')
     .eq('id', clientId)
     .single();
-  const p = prof as { email?: string | null; full_name?: string | null } | null;
+  const p = prof as { email?: string | null; full_name?: string | null; assigned_obchodnik?: string | null } | null;
   if (!p?.email) return { ok: false, error: 'Klient nemá vyplněný e-mail.' };
+  // Ownership: obchodník smí odpovědět jen svému přiřazenému klientovi.
+  if (role !== 'admin' && p.assigned_obchodnik !== check.viewer.id) {
+    return { ok: false, error: 'Tento klient vám není přiřazen.' };
+  }
 
   const subject = parsed.subject || 'Zpráva od ARBIQ';
   const firstName = p.full_name?.split(' ')[0] ?? null;

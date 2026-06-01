@@ -11,22 +11,17 @@ export default async function PortalLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const preview = await isPreviewMode();
+  // Reálný přihlášený uživatel má přednost před náhledem (zaseknutá preview
+  // cookie nesmí maskovat reálný účet). Preview (anon) je demo s mock daty.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   let profile: AuthProfile & { is_active: boolean };
+  let preview = false;
 
-  if (preview) {
-    profile = PREVIEW_PROFILE;
-  } else {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      redirect('/portal/login');
-    }
-
+  if (user) {
     const { data: profileRow } = await supabase
       .from('profiles')
       .select('id, full_name, email, role, avatar_url, email_notifications_enabled, is_active')
@@ -39,6 +34,12 @@ export default async function PortalLayout({
     }
 
     profile = profileRow as unknown as AuthProfile & { is_active: boolean };
+  } else if (await isPreviewMode()) {
+    preview = true;
+    profile = PREVIEW_PROFILE;
+  } else {
+    redirect('/portal/login');
+    return null;
   }
 
   return (

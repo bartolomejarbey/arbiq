@@ -543,6 +543,15 @@ export async function sendInvoiceToClient(
     customer_override: { full_name?: string | null; email?: string | null } | null;
   };
 
+  // Ownership: obchodník smí poslat jen fakturu svého přiřazeného klienta
+  // (akce běží přes service-role admin client, RLS by ji nezachytila).
+  if (role !== 'admin' && inv.client_id) {
+    const { data: own } = await untyped(admin).from('profiles').select('assigned_obchodnik').eq('id', inv.client_id).single();
+    if ((own as { assigned_obchodnik?: string | null } | null)?.assigned_obchodnik !== check.viewer.id) {
+      return { ok: false, error: 'Tento klient vám není přiřazen.' };
+    }
+  }
+
   // Zajisti existující PDF (případně dogeneruj).
   let pdfPath = inv.pdf_url;
   if (!pdfPath) {
