@@ -23,6 +23,7 @@ import {
   Calendar,
   FileSignature,
   ArrowLeft,
+  ScrollText,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -57,6 +58,7 @@ const adminNav: NavItem[] = [
   { href: '/portal/admin/analytics',  label: 'Analytics',   icon: Activity },
   { href: '/portal/admin/chats',      label: 'Chaty',       icon: MessageSquare },
   { href: '/portal/admin/consent-log', label: 'Cookie log', icon: Cookie },
+  { href: '/portal/admin/audit',       label: 'Audit log',  icon: ScrollText },
 ];
 
 const settingsItem: NavItem = {

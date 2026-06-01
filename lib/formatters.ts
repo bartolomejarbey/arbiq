@@ -1,5 +1,6 @@
 const dateFmt = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
 const dateShortFmt = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
+const dateTimeFmt = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 const moneyFmt = new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 });
 const numFmt = new Intl.NumberFormat('cs-CZ');
 
@@ -15,6 +16,13 @@ export function formatDateShort(input: string | Date | null | undefined): string
   const d = typeof input === 'string' ? new Date(input) : input;
   if (Number.isNaN(d.getTime())) return '—';
   return dateShortFmt.format(d);
+}
+
+export function formatDateTime(input: string | Date | null | undefined): string {
+  if (!input) return '—';
+  const d = typeof input === 'string' ? new Date(input) : input;
+  if (Number.isNaN(d.getTime())) return '—';
+  return dateTimeFmt.format(d);
 }
 
 export function formatMoney(amount: number | string | null | undefined): string {

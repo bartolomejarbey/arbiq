@@ -11,6 +11,7 @@ import NotesTimeline, { type NoteRow } from '@/components/portal/NotesTimeline';
 import ContactHistoryForm from './ContactHistoryForm';
 import ClientEmailsForm from './ClientEmailsForm';
 import ClientReplyForm from './ClientReplyForm';
+import GdprActions from './GdprActions';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
@@ -202,6 +203,8 @@ export default async function KlientDetailPage({
             billingEmail={profile.billing_email}
             contractEmail={profile.contract_email}
           />
+
+          <GdprActions clientId={profile.id} />
 
           <section>
             <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">E-mailová korespondence</h2>
