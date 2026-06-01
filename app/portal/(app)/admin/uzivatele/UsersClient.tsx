@@ -73,7 +73,12 @@ export default function UsersClient({
   }
 
   function onToggleActive(userId: string, current: boolean) {
-    startTransition(() => { void setUserActive(userId, !current); });
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      const res = await setUserActive(userId, !current);
+      if (!res.ok) setError(res.error);
+    });
   }
 
   function onInvite(userId: string) {

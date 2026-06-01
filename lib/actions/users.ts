@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
 import { sendEmail } from '@/lib/email/send';
 import { logClientEmail } from '@/lib/email/correspondence';
+import { logAdminAction } from '@/lib/audit';
 import { PortalInviteEmail } from '@/lib/email/templates/portal-invite';
 
 async function requireAdmin() {
@@ -43,8 +44,9 @@ const CreateUserSchema = z.object({
 export type UserActionResult = { ok: true; userId: string; projectId?: string } | { ok: false; error: string };
 
 export async function createPortalUser(formData: FormData): Promise<UserActionResult> {
+  let createCaller: { user: { id: string } };
   try {
-    await requireAdmin();
+    createCaller = await requireAdmin();
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
   }
@@ -151,26 +153,63 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
     }
   }
 
+  await logAdminAction({ actorId: createCaller.user.id, action: 'user.create', targetId: newUserId, targetType: 'profile', detail: { role: parsed.role } });
   revalidatePath('/portal/admin/uzivatele');
   revalidatePath('/portal/crm/klienti');
   revalidatePath('/portal/crm/dashboard');
   return { ok: true, userId: newUserId, projectId };
 }
 
-export async function setUserActive(userId: string, isActive: boolean) {
-  await requireAdmin();
-  const admin = createAdminClient();
-  await admin.from('profiles').update({ is_active: isActive }).eq('id', userId);
+export async function setUserActive(
+  userId: string,
+  isActive: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let caller: { user: { id: string } };
+  try {
+    caller = await requireAdmin();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
+  }
+
+  // Self-lockout guard: nelze deaktivovat sám sebe ani posledního aktivního admina.
   if (!isActive) {
-    // Sign them out by invalidating sessions
+    if (userId === caller.user.id) {
+      return { ok: false, error: 'Nemůžete deaktivovat sami sebe.' };
+    }
+    const admin0 = createAdminClient();
+    const { data: target } = await admin0.from('profiles').select('role').eq('id', userId).single();
+    if ((target as { role?: string } | null)?.role === 'admin') {
+      const { count } = await admin0
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'admin')
+        .eq('is_active', true);
+      if ((count ?? 0) <= 1) {
+        return { ok: false, error: 'Nelze deaktivovat posledního aktivního admina.' };
+      }
+    }
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.from('profiles').update({ is_active: isActive }).eq('id', userId);
+  if (error) return { ok: false, error: error.message };
+  if (!isActive) {
     await admin.auth.admin.signOut(userId, 'global').catch(() => undefined);
   }
+  await logAdminAction({
+    actorId: caller.user.id,
+    action: isActive ? 'user.activate' : 'user.deactivate',
+    targetId: userId,
+    targetType: 'profile',
+  });
   revalidatePath('/portal/admin/uzivatele');
+  return { ok: true };
 }
 
 export async function resetUserPassword(userId: string): Promise<{ ok: true; password: string } | { ok: false; error: string }> {
+  let caller: { user: { id: string } };
   try {
-    await requireAdmin();
+    caller = await requireAdmin();
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
   }
@@ -178,6 +217,7 @@ export async function resetUserPassword(userId: string): Promise<{ ok: true; pas
   const password = generatePassword();
   const { error } = await admin.auth.admin.updateUserById(userId, { password });
   if (error) return { ok: false, error: error.message };
+  await logAdminAction({ actorId: caller.user.id, action: 'user.reset_password', targetId: userId, targetType: 'profile' });
   return { ok: true, password };
 }
 
@@ -189,8 +229,9 @@ export async function resetUserPassword(userId: string): Promise<{ ok: true; pas
 export async function inviteClientToZone(
   userId: string,
 ): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
+  let inviteCaller: { user: { id: string } };
   try {
-    await requireAdmin();
+    inviteCaller = await requireAdmin();
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
   }
@@ -245,6 +286,7 @@ export async function inviteClientToZone(
     body: 'Byly Vám zaslány přihlašovací údaje do klientské zóny ARBIQ (e-mail s heslem).',
   });
 
+  await logAdminAction({ actorId: inviteCaller.user.id, action: 'user.invite_to_zone', targetId: userId, targetType: 'profile' });
   revalidatePath('/portal/admin/uzivatele');
   return { ok: true, sentTo: p.email };
 }
@@ -253,8 +295,9 @@ export async function setAssignedObchodnik(
   clientId: string,
   obchodnikId: string | null,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  let assignCaller: { user: { id: string } };
   try {
-    await requireAdmin();
+    assignCaller = await requireAdmin();
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
   }
@@ -264,6 +307,7 @@ export async function setAssignedObchodnik(
     .update({ assigned_obchodnik: obchodnikId })
     .eq('id', clientId);
   if (error) return { ok: false, error: error.message };
+  await logAdminAction({ actorId: assignCaller.user.id, action: 'client.reassign', targetId: clientId, targetType: 'profile', detail: { obchodnik_id: obchodnikId } });
   revalidatePath('/portal/admin/uzivatele');
   revalidatePath(`/portal/crm/klient/${clientId}`);
   return { ok: true };
