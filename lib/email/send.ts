@@ -25,6 +25,8 @@ export type EmailPayload = {
   replyTo?: string | string[];
   /** When true, also BCC the admin defined in RESEND_BCC_ADMIN. */
   bccAdmin?: boolean;
+  /** Přílohy (např. faktura PDF). content = Buffer/Uint8Array binárního souboru. */
+  attachments?: Array<{ filename: string; content: Buffer | Uint8Array }>;
 };
 
 /** Fallback z domény arbiq.cz (verified v Resend) — nepadá ani když RESEND_FROM
@@ -65,6 +67,10 @@ export async function sendEmail(payload: EmailPayload) {
     subject: payload.subject,
     html,
     text,
+    attachments: payload.attachments?.map((a) => ({
+      filename: a.filename,
+      content: Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content),
+    })),
   });
 
   if (result.error) {

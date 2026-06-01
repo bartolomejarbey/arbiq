@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { Plus, Check, Ban, FileText, RefreshCw, ChevronDown } from 'lucide-react';
+import { Plus, Check, Ban, FileText, RefreshCw, ChevronDown, Send } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
-import { createInvoice, markInvoicePaid, cancelInvoice, regenerateInvoicePdf } from '@/lib/actions/invoices';
+import { createInvoice, markInvoicePaid, cancelInvoice, regenerateInvoicePdf, sendInvoiceToClient } from '@/lib/actions/invoices';
 import IcoLookup from '@/components/portal/IcoLookup';
 
 type Row = {
@@ -16,6 +16,7 @@ type Row = {
   due_date: string;
   status: string;
   pdf_url: string | null;
+  shared_at: string | null;
   client_id: string | null;
   client: { full_name: string; email: string } | null;
   customer_override: { full_name?: string | null; company?: string | null } | null;
@@ -41,6 +42,7 @@ export default function InvoicesAdminClient({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string>('');
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [noClient, setNoClient] = useState(false);
@@ -97,9 +99,21 @@ export default function InvoicesAdminClient({
 
   function handleRegen(id: string) {
     setError(null);
+    setNotice(null);
     startTransition(async () => {
       const res = await regenerateInvoicePdf(id);
       if (!res.ok) setError(`Regenerace PDF selhala: ${res.error}`);
+    });
+  }
+
+  function handleSend(id: string) {
+    if (!confirm('Poslat fakturu klientovi jako PDF přílohu e-mailu? Zároveň se zpřístupní v jeho zóně.')) return;
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await sendInvoiceToClient(id);
+      if (!res.ok) setError(res.error);
+      else setNotice(`Faktura odeslána na ${res.sentTo}.`);
     });
   }
 
@@ -335,6 +349,12 @@ export default function InvoicesAdminClient({
         </form>
       )}
 
+      {(notice || (error && !open)) && (
+        <div className={`p-4 text-sm font-mono ${error ? 'bg-rust/10 border border-rust/40 text-rust' : 'bg-olive/10 border border-olive/40 text-olive'}`}>
+          {error ?? notice}
+        </div>
+      )}
+
       <div className="bg-coffee overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -394,6 +414,14 @@ export default function InvoicesAdminClient({
                       <RefreshCw size={13} className={pending ? 'animate-spin' : ''} /> Regen PDF
                     </button>
                   )}
+                  <button
+                    onClick={() => handleSend(inv.id)}
+                    disabled={pending}
+                    className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50 ${inv.shared_at ? 'text-olive hover:text-caramel-light' : 'text-caramel hover:text-caramel-light'}`}
+                    title={inv.shared_at ? `Posláno ${formatDate(inv.shared_at)} — poslat znovu` : 'Poslat klientovi (PDF přílohou e-mailu)'}
+                  >
+                    <Send size={13} /> {inv.shared_at ? 'Posláno' : 'Poslat'}
+                  </button>
                   {inv.status !== 'zaplaceno' && inv.status !== 'zruseno' && (
                     <button onClick={() => handlePaid(inv.id)} disabled={pending} className="text-olive hover:text-caramel mr-2 disabled:opacity-50" title="Označit jako zaplacené">
                       <Check size={14} />

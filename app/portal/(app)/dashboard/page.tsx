@@ -103,7 +103,7 @@ export default async function DashboardPage() {
 
   const [{ data: projectRows }, { data: invoiceRows }, { data: recRows }] = await Promise.all([
     supabase.from('projects').select('id, name, status, progress, estimated_end_date').eq('client_id', user.id).order('created_at', { ascending: false }),
-    supabase.from('invoices').select('id, amount, due_date, status').eq('client_id', user.id),
+    supabase.from('invoices').select('id, amount, due_date, status').eq('client_id', user.id).not('shared_at', 'is', null),
     supabase.from('recommendations').select('id, service_name, description, estimated_price, status').eq('client_id', user.id).neq('status', 'nova').order('created_at', { ascending: false }).limit(3),
   ]);
 
@@ -147,7 +147,7 @@ export default async function DashboardPage() {
       <PageHeader
         eyebrow="Klientská zóna"
         title={<>Dobrý den, {firstName}.</>}
-        subtitle="Tady je stav Vašich případů, faktur a doporučení."
+        subtitle="Tady je stav Vašich případů, orientační termíny dodání, faktury a dokumenty."
       />
 
       <div className="px-8 py-8 space-y-12">
@@ -198,6 +198,17 @@ export default async function DashboardPage() {
               Celkem nezaplaceno: <span className="text-moonlight font-medium">{formatMoney(totalUnpaid)}</span>
               {' '}({invoices.filter((i) => i.status === 'ceka' || i.status === 'po_splatnosti').length} faktura/y)
             </div>
+          </div>
+        </section>
+
+        <section>
+          <SectionHeader title="Komunikace s ARBIQ" link="" linkLabel={null} />
+          <div className="bg-coffee p-8 border-l-2 border-caramel/40">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-caramel mb-2">Připravujeme</div>
+            <p className="text-sepia text-sm leading-relaxed">
+              Brzy zde uvidíte celou historii komunikace s naším týmem — zprávy, předané dokumenty
+              a poznámky k Vašemu případu na jednom místě.
+            </p>
           </div>
         </section>
 

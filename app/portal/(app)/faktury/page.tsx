@@ -13,10 +13,12 @@ export default async function InvoicesPage() {
   const supabase = await createClient();
   const user = viewer;
 
+  // Klient vidí JEN faktury, které mu admin výslovně poslal do zóny (shared_at).
   const { data } = await supabase
     .from('invoices')
     .select('id, invoice_number, amount, description, issued_at, due_date, paid_at, status, pdf_url')
     .eq('client_id', user.id)
+    .not('shared_at', 'is', null)
     .order('issued_at', { ascending: false });
 
   const invoices = ((data ?? []) as unknown as InvoiceRow[]);

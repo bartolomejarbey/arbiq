@@ -6,10 +6,11 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
 import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
-import { notifyPortalUser } from '@/lib/email/notify';
 import { formatMoney, formatDate } from '@/lib/formatters';
+import { sendEmail } from '@/lib/email/send';
+import { InvoiceDeliveryEmail } from '@/lib/email/templates/invoice-delivery';
 import { getDodavatel } from '@/lib/config/dodavatel';
-import { uploadDocument } from '@/lib/storage/documents';
+import { uploadDocument, downloadDocument } from '@/lib/storage/documents';
 import { renderInvoicePdf, type InvoiceDoc, type InvoiceCustomer, type InvoiceItem } from '@/lib/pdf/invoice';
 import { buildSpaydPayload } from '@/lib/payments/spayd';
 import type { Dodavatel } from '@/lib/config/dodavatel';
@@ -329,17 +330,10 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       .eq('id', invoiceId);
   }
 
-  // 4) Email klientovi (transactional) — jen pro fakturu napojenou na klienta.
-  if (parsed.client_id) {
-    void notifyPortalUser({
-      recipientId: parsed.client_id,
-      subject: `Nová faktura ${invoiceNumber} (${formatMoney(amount)})`,
-      heading: 'Vystavena nová faktura',
-      intro: `Vystavili jsme Vám fakturu ${invoiceNumber} na ${formatMoney(amount)}, splatnou ${formatDate(parsed.due_date)}.`,
-      ctaLabel: 'Zobrazit fakturu',
-      ctaPath: '/portal/faktury',
-    });
-  }
+  // 4) ŽÁDNÝ auto-email. Dřív se tu posílal odkaz na /portal/faktury (gated
+  //    zóna) → klient bez účtu skončil na loginu / 404. Fakturu teď admin
+  //    posílá výslovně tlačítkem "Poslat klientovi" → PDF jako příloha
+  //    (sendInvoiceToClient níže). Žádný skrytý reroute do zóny.
 
   revalidatePath('/portal/admin/faktury');
   revalidatePath('/portal/faktury');
@@ -497,6 +491,119 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<{ ok: tru
     console.error('[INVOICE PDF] regenerate failed', err);
     return { ok: false, error: err instanceof Error ? err.message : 'PDF generation failed' };
   }
+}
+
+const INVOICE_KIND_LABEL: Record<string, string> = {
+  zaloha: 'Zálohová faktura',
+  konecna: 'Faktura',
+  dobropis: 'Dobropis',
+  paushal: 'Paušální faktura',
+};
+
+/**
+ * Pošle klientovi fakturu jako PDF PŘÍLOHU e-mailu (žádný odkaz do portálu).
+ * Zároveň nastaví shared_at → faktura se zpřístupní v klientské zóně.
+ * Funguje i pro jednorázové faktury (pošle na customer_override.email).
+ */
+export async function sendInvoiceToClient(
+  invoiceId: string,
+): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') {
+    return { ok: false, error: 'Nemáte oprávnění posílat faktury.' };
+  }
+  if (!process.env.RESEND_API_KEY) {
+    return { ok: false, error: 'E-mailová služba není nakonfigurovaná (RESEND_API_KEY).' };
+  }
+
+  const admin = createAdminClient();
+  const { data: invRow } = await untyped(admin)
+    .from('invoices')
+    .select('id, invoice_number, kind, amount, due_date, pdf_url, client_id, customer_override')
+    .eq('id', invoiceId)
+    .single();
+  if (!invRow) return { ok: false, error: 'Faktura nenalezena.' };
+  const inv = invRow as unknown as {
+    invoice_number: string;
+    kind: string;
+    amount: number;
+    due_date: string;
+    pdf_url: string | null;
+    client_id: string | null;
+    customer_override: { full_name?: string | null; email?: string | null } | null;
+  };
+
+  // Zajisti existující PDF (případně dogeneruj).
+  let pdfPath = inv.pdf_url;
+  if (!pdfPath) {
+    const regen = await regenerateInvoicePdf(invoiceId);
+    if (!regen.ok) return { ok: false, error: `PDF se nepodařilo připravit: ${regen.error}` };
+    pdfPath = regen.path;
+  }
+
+  // Najdi příjemce + jméno.
+  let recipientEmail: string | null = null;
+  let recipientName = 'kliente';
+  if (inv.client_id) {
+    const { data: prof } = await untyped(admin)
+      .from('profiles')
+      .select('email, full_name')
+      .eq('id', inv.client_id)
+      .single();
+    const p = prof as { email?: string | null; full_name?: string | null } | null;
+    recipientEmail = p?.email ?? null;
+    recipientName = p?.full_name?.split(' ')[0] || recipientName;
+  } else if (inv.customer_override) {
+    recipientEmail = inv.customer_override.email ?? null;
+    recipientName = inv.customer_override.full_name?.split(' ')[0] || recipientName;
+  }
+  if (!recipientEmail) {
+    return { ok: false, error: 'Klient/odběratel nemá vyplněný e-mail — fakturu nelze odeslat.' };
+  }
+
+  // Stáhni PDF a pošli jako přílohu.
+  let pdfBuffer: Buffer;
+  try {
+    pdfBuffer = await downloadDocument(pdfPath);
+  } catch (err) {
+    console.error('[INVOICE SEND] download failed', err);
+    return { ok: false, error: 'PDF se nepodařilo stáhnout ze storage.' };
+  }
+
+  const kindLabel = INVOICE_KIND_LABEL[inv.kind] ?? 'Faktura';
+  const safeNum = inv.invoice_number.replace(/[^A-Za-z0-9-]/g, '_');
+  const filename = inv.kind === 'zaloha' ? `Zalohova-faktura-${safeNum}.pdf` : `Faktura-${safeNum}.pdf`;
+
+  try {
+    await sendEmail({
+      to: recipientEmail,
+      subject: `${kindLabel} ${inv.invoice_number} (${formatMoney(Number(inv.amount))})`,
+      replyTo: process.env.RESEND_REPLY_TO,
+      body: InvoiceDeliveryEmail({
+        name: recipientName,
+        invoiceNumber: inv.invoice_number,
+        amount: formatMoney(Number(inv.amount)),
+        dueDate: formatDate(inv.due_date),
+        kindLabel,
+      }),
+      attachments: [{ filename, content: pdfBuffer }],
+    });
+  } catch (err) {
+    console.error('[INVOICE SEND] email failed', err);
+    return { ok: false, error: 'E-mail se nepodařilo odeslat.' };
+  }
+
+  // Sdílení do zóny + označení odeslání.
+  await untyped(admin)
+    .from('invoices')
+    .update({ shared_at: new Date().toISOString() })
+    .eq('id', invoiceId);
+
+  revalidatePath('/portal/admin/faktury');
+  revalidatePath('/portal/faktury');
+  return { ok: true, sentTo: recipientEmail };
 }
 
 // markOverdueInvoices přesunuto do lib/jobs/invoice-jobs.ts (NE 'use server'),

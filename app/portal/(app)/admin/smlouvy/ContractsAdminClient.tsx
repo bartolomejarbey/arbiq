@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { Plus, Check, Ban, FileDown, FileText, RefreshCw } from 'lucide-react';
+import { Plus, Check, Ban, FileDown, FileText, RefreshCw, Send } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
-import { createContract, markContractSigned, cancelContract, regenerateContractDocs } from '@/lib/actions/contracts';
+import { createContract, markContractSigned, cancelContract, regenerateContractDocs, sendContractToClient } from '@/lib/actions/contracts';
 
 type Row = {
   id: string;
@@ -15,6 +15,7 @@ type Row = {
   created_at: string;
   pdf_url: string | null;
   docx_url: string | null;
+  shared_at: string | null;
   client_id: string;
   client: { full_name: string; email: string } | null;
   project: { id: string; name: string } | null;
@@ -39,6 +40,7 @@ export default function ContractsAdminClient({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string>('');
 
   const projectsForClient = useMemo(
@@ -82,9 +84,21 @@ export default function ContractsAdminClient({
 
   function handleRegen(id: string) {
     setError(null);
+    setNotice(null);
     startTransition(async () => {
       const res = await regenerateContractDocs(id);
       if (!res.ok) setError(`Regenerace selhala: ${res.error}`);
+    });
+  }
+
+  function handleSend(id: string) {
+    if (!confirm('Poslat smlouvu klientovi jako PDF přílohu e-mailu? Zároveň se zpřístupní v jeho zóně.')) return;
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await sendContractToClient(id);
+      if (!res.ok) setError(res.error);
+      else setNotice(`Smlouva odeslána na ${res.sentTo}.`);
     });
   }
 
@@ -244,6 +258,12 @@ export default function ContractsAdminClient({
         </form>
       )}
 
+      {(notice || (error && !open)) && (
+        <div className={`p-4 text-sm font-mono ${error ? 'bg-rust/10 border border-rust/40 text-rust' : 'bg-olive/10 border border-olive/40 text-olive'}`}>
+          {error ?? notice}
+        </div>
+      )}
+
       <div className="bg-coffee overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -311,6 +331,14 @@ export default function ContractsAdminClient({
                       <FileDown size={13} /> DOCX
                     </a>
                   )}
+                  <button
+                    onClick={() => handleSend(c.id)}
+                    disabled={pending}
+                    className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50 ${c.shared_at ? 'text-olive hover:text-caramel-light' : 'text-caramel hover:text-caramel-light'}`}
+                    title={c.shared_at ? `Posláno ${formatDate(c.shared_at)} — poslat znovu` : 'Poslat klientovi (PDF přílohou e-mailu)'}
+                  >
+                    <Send size={13} /> {c.shared_at ? 'Posláno' : 'Poslat'}
+                  </button>
                   {c.status !== 'podepsano' && c.status !== 'zruseno' && (
                     <>
                       <button

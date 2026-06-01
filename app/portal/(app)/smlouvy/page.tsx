@@ -24,10 +24,12 @@ export default async function SmlouvyClientPage() {
   const viewer = await requireViewer();
   const supabase = await createClient();
 
+  // Klient vidí JEN smlouvy, které mu admin výslovně poslal do zóny (shared_at).
   const { data } = await untyped(supabase)
     .from('contracts')
     .select('id, contract_number, title, total_price, status, created_at, pdf_url, docx_url')
     .eq('client_id', viewer.id)
+    .not('shared_at', 'is', null)
     .order('created_at', { ascending: false });
 
   const contracts = ((data ?? []) as unknown as Row[]);

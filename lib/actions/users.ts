@@ -179,6 +179,64 @@ export async function resetUserPassword(userId: string): Promise<{ ok: true; pas
   return { ok: true, password };
 }
 
+/**
+ * "Pozvat do zóny": vygeneruje nové heslo a pošle klientovi uvítací e-mail
+ * s přihlašovacími údaji (PortalInviteEmail). Použij když klient invite nikdy
+ * nedostal nebo ho potřebuje znovu.
+ */
+export async function inviteClientToZone(
+  userId: string,
+): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
+  try {
+    await requireAdmin();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
+  }
+  if (!process.env.RESEND_API_KEY) {
+    return { ok: false, error: 'E-mailová služba není nakonfigurovaná (RESEND_API_KEY).' };
+  }
+  const appUrl = process.env.APP_URL;
+  if (!appUrl || appUrl.startsWith('http://localhost')) {
+    return { ok: false, error: 'APP_URL není nastavené — pozvánku nelze poslat (vznikl by localhost odkaz).' };
+  }
+
+  const admin = createAdminClient();
+  const { data: prof } = await admin
+    .from('profiles')
+    .select('email, full_name')
+    .eq('id', userId)
+    .single();
+  const p = prof as { email?: string | null; full_name?: string | null } | null;
+  if (!p?.email) return { ok: false, error: 'Uživatel nemá vyplněný e-mail.' };
+
+  const password = generatePassword();
+  const { error: pwErr } = await admin.auth.admin.updateUserById(userId, { password });
+  if (pwErr) return { ok: false, error: `Nepodařilo se nastavit heslo: ${pwErr.message}` };
+
+  // Ujisti se, že je účet aktivní (jinak by proxy login odmítla).
+  await admin.from('profiles').update({ is_active: true }).eq('id', userId);
+
+  try {
+    await sendEmail({
+      to: p.email,
+      subject: 'Přístup do ARBIQ portálu',
+      replyTo: process.env.RESEND_REPLY_TO,
+      body: PortalInviteEmail({
+        name: p.full_name ?? 'kliente',
+        email: p.email,
+        password,
+        loginUrl: `${appUrl}/portal/login`,
+      }),
+    });
+  } catch (err) {
+    console.error('inviteClientToZone email failed', err);
+    return { ok: false, error: 'E-mail s pozvánkou se nepodařilo odeslat.' };
+  }
+
+  revalidatePath('/portal/admin/uzivatele');
+  return { ok: true, sentTo: p.email };
+}
+
 export async function setAssignedObchodnik(
   clientId: string,
   obchodnikId: string | null,

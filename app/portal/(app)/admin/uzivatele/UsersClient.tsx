@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Plus, KeyRound, Power } from 'lucide-react';
+import { Plus, KeyRound, Power, Send } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate } from '@/lib/formatters';
-import { createPortalUser, setUserActive, resetUserPassword, setAssignedObchodnik } from '@/lib/actions/users';
+import { createPortalUser, setUserActive, resetUserPassword, setAssignedObchodnik, inviteClientToZone } from '@/lib/actions/users';
 
 type Profile = {
   id: string;
@@ -74,6 +74,17 @@ export default function UsersClient({
 
   function onToggleActive(userId: string, current: boolean) {
     startTransition(() => { void setUserActive(userId, !current); });
+  }
+
+  function onInvite(userId: string) {
+    if (!confirm('Poslat klientovi pozvánku do zóny? Vygeneruje se nové heslo a pošle se mu e-mailem.')) return;
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      const res = await inviteClientToZone(userId);
+      if (!res.ok) setError(res.error);
+      else setSuccess(`Pozvánka do zóny odeslána na ${res.sentTo}.`);
+    });
   }
 
   function onReassign(clientId: string, value: string) {
@@ -223,6 +234,16 @@ export default function UsersClient({
                 </td>
                 <td className="px-4 py-3 text-sandstone whitespace-nowrap">{formatDate(u.created_at)}</td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
+                  {u.role === 'klient' && (
+                    <button
+                      onClick={() => onInvite(u.id)}
+                      disabled={pending}
+                      className="text-caramel hover:text-caramel-light inline-flex items-center gap-1 text-xs mr-3 disabled:opacity-50"
+                      title="Pozvat do zóny (pošle login + heslo e-mailem)"
+                    >
+                      <Send size={14} />
+                    </button>
+                  )}
                   <button
                     onClick={() => onResetPassword(u.id)}
                     disabled={pending}

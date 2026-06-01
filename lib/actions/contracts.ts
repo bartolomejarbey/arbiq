@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
 import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
-import { notifyPortalUser } from '@/lib/email/notify';
+import { sendEmail } from '@/lib/email/send';
+import { ContractDeliveryEmail } from '@/lib/email/templates/contract-delivery';
 import { getDodavatel } from '@/lib/config/dodavatel';
-import { uploadDocument } from '@/lib/storage/documents';
+import { uploadDocument, downloadDocument } from '@/lib/storage/documents';
 import { renderContractPdf, type ContractDoc, type ContractCustomer } from '@/lib/pdf/contract';
 import { renderContractDocx } from '@/lib/docx/contract';
 
@@ -236,14 +237,8 @@ export async function createContract(formData: FormData): Promise<ContractAction
     await untyped(admin).from('contracts').update({ pdf_url: pdfPath ?? null, docx_url: docxPath ?? null }).eq('id', contractId);
   }
 
-  void notifyPortalUser({
-    recipientId: parsed.client_id,
-    subject: `Smlouva ${contractNumber} k podpisu`,
-    heading: `Smlouva ${contractNumber}`,
-    intro: `Připravili jsme pro Vás smlouvu „${parsed.title}". Najdete ji v klientské zóně v sekci Dokumenty.`,
-    ctaLabel: 'Otevřít smlouvu',
-    ctaPath: `/portal/smlouvy`,
-  });
+  // ŽÁDNÝ auto-email. Smlouva zůstává skrytá (shared_at=NULL), dokud ji admin
+  // výslovně nepošle klientovi tlačítkem → PDF přílohou (sendContractToClient).
 
   revalidatePath('/portal/admin/smlouvy');
   revalidatePath(`/portal/admin/crm/klient/${parsed.client_id}`);
@@ -428,6 +423,96 @@ export async function markContractSigned(contractId: string): Promise<{ ok: true
   }
   revalidatePath('/portal/admin/smlouvy');
   return { ok: true };
+}
+
+/**
+ * Pošle klientovi smlouvu jako PDF PŘÍLOHU e-mailu (žádný odkaz do portálu).
+ * Nastaví shared_at → smlouva se zpřístupní v klientské zóně. Pokud PDF chybí,
+ * pokusí se ho dogenerovat.
+ */
+export async function sendContractToClient(
+  contractId: string,
+): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') {
+    return { ok: false, error: 'Nemáte oprávnění posílat smlouvy.' };
+  }
+  if (!process.env.RESEND_API_KEY) {
+    return { ok: false, error: 'E-mailová služba není nakonfigurovaná (RESEND_API_KEY).' };
+  }
+
+  const admin = createAdminClient();
+  const { data: ctrRow } = await untyped(admin)
+    .from('contracts')
+    .select('id, contract_number, title, pdf_url, client_id, status')
+    .eq('id', contractId)
+    .single();
+  if (!ctrRow) return { ok: false, error: 'Smlouva nenalezena.' };
+  const c = ctrRow as unknown as {
+    contract_number: string;
+    title: string;
+    pdf_url: string | null;
+    client_id: string;
+    status: string;
+  };
+
+  // Zajisti PDF.
+  let pdfPath = c.pdf_url;
+  if (!pdfPath) {
+    const regen = await regenerateContractDocs(contractId);
+    if (!regen.ok) return { ok: false, error: `PDF se nepodařilo připravit: ${regen.error}` };
+    pdfPath = regen.pdfPath ?? null;
+    if (!pdfPath) return { ok: false, error: 'PDF se nepodařilo připravit.' };
+  }
+
+  const { data: prof } = await untyped(admin)
+    .from('profiles')
+    .select('email, full_name')
+    .eq('id', c.client_id)
+    .single();
+  const p = prof as { email?: string | null; full_name?: string | null } | null;
+  const recipientEmail = p?.email ?? null;
+  const recipientName = p?.full_name?.split(' ')[0] || 'kliente';
+  if (!recipientEmail) {
+    return { ok: false, error: 'Klient nemá vyplněný e-mail — smlouvu nelze odeslat.' };
+  }
+
+  let pdfBuffer: Buffer;
+  try {
+    pdfBuffer = await downloadDocument(pdfPath);
+  } catch (err) {
+    console.error('[CONTRACT SEND] download failed', err);
+    return { ok: false, error: 'PDF se nepodařilo stáhnout ze storage.' };
+  }
+
+  const safeNum = c.contract_number.replace(/[^A-Za-z0-9-]/g, '_');
+  try {
+    await sendEmail({
+      to: recipientEmail,
+      subject: `Smlouva ${c.contract_number} — ${c.title}`,
+      replyTo: process.env.RESEND_REPLY_TO,
+      body: ContractDeliveryEmail({
+        name: recipientName,
+        contractNumber: c.contract_number,
+        title: c.title,
+      }),
+      attachments: [{ filename: `Smlouva-${safeNum}.pdf`, content: pdfBuffer }],
+    });
+  } catch (err) {
+    console.error('[CONTRACT SEND] email failed', err);
+    return { ok: false, error: 'E-mail se nepodařilo odeslat.' };
+  }
+
+  // Sdílení do zóny + posun stavu z konceptu na 'poslano' (nepřepisuj podepsano/zruseno).
+  const update: Record<string, unknown> = { shared_at: new Date().toISOString() };
+  if (c.status === 'koncept') update['status'] = 'poslano';
+  await untyped(admin).from('contracts').update(update).eq('id', contractId);
+
+  revalidatePath('/portal/admin/smlouvy');
+  revalidatePath('/portal/smlouvy');
+  return { ok: true, sentTo: recipientEmail };
 }
 
 export async function cancelContract(contractId: string): Promise<{ ok: true } | { ok: false; error: string }> {
