@@ -79,7 +79,10 @@ export async function GET() {
 }
 
 function csvEscape(value: string | number | null | undefined): string {
-  const s = value === null || value === undefined ? '' : String(value);
+  let s = value === null || value === undefined ? '' : String(value);
+  // Anti-formula-injection: buňka začínající =,+,-,@,tab,CR se v Excelu/Sheets
+  // vyhodnotí jako vzorec (=HYPERLINK ve jménu klienta). Neutralizuj prefixem '.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   if (/[",\r\n]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }

@@ -116,7 +116,11 @@ export async function POST(req: NextRequest) {
       console.error(`${LOG} Logování korespondence selhalo`, err);
     }
 
-    // 5) Příloh — pokud existují, stáhni je přes signed download_url.
+    // 5) Příloh — pohlídej limity (resource exhaustion / Resend limity).
+    const MAX_ATTACHMENTS = 20;
+    const MAX_ATT_BYTES = 10 * 1024 * 1024; // 10 MB / příloha
+    const MAX_TOTAL_BYTES = 24 * 1024 * 1024; // ~24 MB celkem
+    let totalBytes = 0;
     const forwardAttachments: ForwardAttachment[] = [];
     if (event.data.attachments && event.data.attachments.length > 0) {
       const attRes = await resend.emails.receiving.attachments.list({ emailId });
@@ -124,6 +128,10 @@ export async function POST(req: NextRequest) {
         console.error(`${LOG} Nepodařilo se vylistovat přílohy`, attRes.error);
       } else if (attRes.data) {
         for (const att of attRes.data.data) {
+          if (forwardAttachments.length >= MAX_ATTACHMENTS) {
+            console.warn(`${LOG} Překročen limit počtu příloh (${MAX_ATTACHMENTS}) — zbytek vynechán`);
+            break;
+          }
           try {
             const dl = await fetch(att.download_url);
             if (!dl.ok) {
@@ -134,6 +142,15 @@ export async function POST(req: NextRequest) {
               continue;
             }
             const buf = Buffer.from(await dl.arrayBuffer());
+            if (buf.byteLength > MAX_ATT_BYTES) {
+              console.warn(`${LOG} Příloha ${att.filename} přesahuje ${MAX_ATT_BYTES} B — vynechána`);
+              continue;
+            }
+            if (totalBytes + buf.byteLength > MAX_TOTAL_BYTES) {
+              console.warn(`${LOG} Překročen celkový limit příloh — zbytek vynechán`);
+              break;
+            }
+            totalBytes += buf.byteLength;
             forwardAttachments.push({
               content: buf,
               filename: att.filename ?? undefined,
