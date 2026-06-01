@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { untyped } from '@/lib/supabase/untyped';
 import { sendEmail } from '@/lib/email/send';
 import { PortalInviteEmail } from '@/lib/email/templates/portal-invite';
 
@@ -253,6 +254,46 @@ export async function setAssignedObchodnik(
     .eq('id', clientId);
   if (error) return { ok: false, error: error.message };
   revalidatePath('/portal/admin/uzivatele');
+  revalidatePath(`/portal/crm/klient/${clientId}`);
+  return { ok: true };
+}
+
+const ClientEmailsSchema = z.object({
+  billing_email: z.union([z.string().trim().email().max(200), z.literal('')]).transform((v) => v || null),
+  contract_email: z.union([z.string().trim().email().max(200), z.literal('')]).transform((v) => v || null),
+});
+
+/**
+ * Nastaví fakturační a smluvní e-mail klienta (oddělené od hlavního kontaktu).
+ * Použije se jako default při odeslání faktury/smlouvy. Admin i obchodník.
+ */
+export async function updateClientEmails(
+  clientId: string,
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Nepřihlášený uživatel.' };
+  const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  const role = (prof as { role?: string } | null)?.role;
+  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+
+  let parsed: { billing_email: string | null; contract_email: string | null };
+  try {
+    parsed = ClientEmailsSchema.parse({
+      billing_email: String(formData.get('billing_email') ?? '').trim(),
+      contract_email: String(formData.get('contract_email') ?? '').trim(),
+    });
+  } catch (err) {
+    return { ok: false, error: err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'Neplatný e-mail.' };
+  }
+
+  const admin = createAdminClient();
+  const { error } = await untyped(admin)
+    .from('profiles')
+    .update({ billing_email: parsed.billing_email, contract_email: parsed.contract_email })
+    .eq('id', clientId);
+  if (error) return { ok: false, error: error.message };
   revalidatePath(`/portal/crm/klient/${clientId}`);
   return { ok: true };
 }

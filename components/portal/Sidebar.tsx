@@ -22,6 +22,7 @@ import {
   Database,
   Calendar,
   FileSignature,
+  ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -83,19 +84,18 @@ export default function Sidebar() {
   return (
     <aside className="w-60 shrink-0 bg-coffee border-r border-tobacco flex flex-col h-screen sticky top-0">
       <div className="px-6 py-6 border-b border-tobacco">
-        <div className="font-display italic font-black text-moonlight text-2xl tracking-tight">
-          ARBIQ
-        </div>
-        <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-sandstone mt-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/arbiq-logo.png" alt="ARBIQ" className="h-7 w-auto" />
+        <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-sandstone mt-2">
           {profile.role === 'klient' && 'Klientská zóna'}
           {profile.role === 'obchodnik' && 'CRM'}
           {profile.role === 'admin' && 'Admin'}
         </div>
         <Link
           href="/"
-          className="mt-3 inline-flex items-center gap-1 text-sandstone hover:text-caramel font-mono text-[9px] uppercase tracking-widest transition-colors"
+          className="mt-4 inline-flex items-center gap-1.5 border border-tobacco hover:border-caramel text-sepia hover:text-caramel px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-widest transition-colors"
         >
-          <span>←</span> arbiq.cz
+          <ArrowLeft size={11} /> Zpět na web
         </Link>
       </div>
 

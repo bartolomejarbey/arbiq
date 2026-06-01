@@ -505,8 +505,11 @@ const INVOICE_KIND_LABEL: Record<string, string> = {
  * Zároveň nastaví shared_at → faktura se zpřístupní v klientské zóně.
  * Funguje i pro jednorázové faktury (pošle na customer_override.email).
  */
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 export async function sendInvoiceToClient(
   invoiceId: string,
+  overrideEmail?: string,
 ): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
   const check = await checkRealViewer();
   if (!check.ok) return { ok: false, error: check.error };
@@ -516,6 +519,10 @@ export async function sendInvoiceToClient(
   }
   if (!process.env.RESEND_API_KEY) {
     return { ok: false, error: 'E-mailová služba není nakonfigurovaná (RESEND_API_KEY).' };
+  }
+  const override = overrideEmail?.trim();
+  if (override && !EMAIL_RE.test(override)) {
+    return { ok: false, error: 'Neplatná e-mailová adresa příjemce.' };
   }
 
   const admin = createAdminClient();
@@ -543,22 +550,23 @@ export async function sendInvoiceToClient(
     pdfPath = regen.path;
   }
 
-  // Najdi příjemce + jméno.
+  // Najdi příjemce + jméno. Priorita: override > fakturační e-mail klienta > hlavní e-mail.
   let recipientEmail: string | null = null;
   let recipientName = 'kliente';
   if (inv.client_id) {
     const { data: prof } = await untyped(admin)
       .from('profiles')
-      .select('email, full_name')
+      .select('email, full_name, billing_email')
       .eq('id', inv.client_id)
       .single();
-    const p = prof as { email?: string | null; full_name?: string | null } | null;
-    recipientEmail = p?.email ?? null;
+    const p = prof as { email?: string | null; full_name?: string | null; billing_email?: string | null } | null;
+    recipientEmail = p?.billing_email || p?.email || null;
     recipientName = p?.full_name?.split(' ')[0] || recipientName;
   } else if (inv.customer_override) {
     recipientEmail = inv.customer_override.email ?? null;
     recipientName = inv.customer_override.full_name?.split(' ')[0] || recipientName;
   }
+  if (override) recipientEmail = override;
   if (!recipientEmail) {
     return { ok: false, error: 'Klient/odběratel nemá vyplněný e-mail — fakturu nelze odeslat.' };
   }

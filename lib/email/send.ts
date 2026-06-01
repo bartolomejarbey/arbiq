@@ -80,19 +80,26 @@ export async function sendEmail(payload: EmailPayload) {
 }
 
 function wrapInShell(innerHtml: string): string {
+  // Logo načítáme z veřejné domény (e-mail klient potřebuje absolutní URL).
+  // APP_URL preferujeme, ale localhost by v e-mailu nefungoval → fallback na arbiq.cz.
+  const appUrl = process.env.APP_URL;
+  const base = appUrl && !appUrl.startsWith('http://localhost') ? appUrl.replace(/\/$/, '') : 'https://arbiq.cz';
+  const logoUrl = `${base}/arbiq-logo.png`;
+
   return `<!doctype html>
 <html lang="cs">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 </head>
 <body style="margin:0;padding:0;background:#18120e;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#18120e;padding:32px 16px;">
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#241B14;color:#C4B59A;line-height:1.6;">
-        <tr><td style="padding:28px 32px 16px 32px;border-bottom:1px solid #3A2D22;">
-          <div style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:900;color:#D8DDE5;font-size:24px;letter-spacing:0.02em;">ARBIQ</div>
-          <div style="font-family:'Courier New',monospace;color:#8B7B65;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;margin-top:4px;">Detektivni agentura pro vase podnikani</div>
+        <tr><td style="padding:26px 32px 16px 32px;border-bottom:1px solid #3A2D22;">
+          <img src="${logoUrl}" alt="ARBIQ" width="128" style="display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:128px;" />
+          <div style="font-family:'Courier New',monospace;color:#8B7B65;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;margin-top:10px;">Detektivní agentura pro vaše podnikání</div>
         </td></tr>
         <tr><td style="padding:28px 32px;color:#C4B59A;font-size:15px;">
           ${innerHtml}

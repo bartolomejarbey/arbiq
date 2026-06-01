@@ -20,8 +20,8 @@ type Row = {
   pdf_url: string | null;
   shared_at: string | null;
   client_id: string | null;
-  client: { full_name: string; email: string } | null;
-  customer_override: { full_name?: string | null; company?: string | null } | null;
+  client: { full_name: string; email: string; billing_email: string | null } | null;
+  customer_override: { full_name?: string | null; company?: string | null; email?: string | null } | null;
   project: { id: string; name: string } | null;
 };
 
@@ -37,7 +37,7 @@ export default async function FakturyAdminPage() {
   const [{ data: invRows }, { data: clients }, { data: projects }] = await Promise.all([
     supabase
       .from('invoices')
-      .select('id, invoice_number, amount, description, issued_at, due_date, status, pdf_url, shared_at, client_id, customer_override, client:profiles!invoices_client_id_fkey(full_name, email), project:projects(id, name)')
+      .select('id, invoice_number, amount, description, issued_at, due_date, status, pdf_url, shared_at, client_id, customer_override, client:profiles!invoices_client_id_fkey(full_name, email, billing_email), project:projects(id, name)')
       .order('issued_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name').eq('role', 'klient').order('full_name'),
     supabase.from('projects').select('id, name, client_id').order('name'),

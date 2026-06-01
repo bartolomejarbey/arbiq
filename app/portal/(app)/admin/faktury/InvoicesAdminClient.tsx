@@ -18,8 +18,8 @@ type Row = {
   pdf_url: string | null;
   shared_at: string | null;
   client_id: string | null;
-  client: { full_name: string; email: string } | null;
-  customer_override: { full_name?: string | null; company?: string | null } | null;
+  client: { full_name: string; email: string; billing_email: string | null } | null;
+  customer_override: { full_name?: string | null; company?: string | null; email?: string | null } | null;
   project: { id: string; name: string } | null;
 };
 
@@ -106,12 +106,15 @@ export default function InvoicesAdminClient({
     });
   }
 
-  function handleSend(id: string) {
-    if (!confirm('Poslat fakturu klientovi jako PDF přílohu e-mailu? Zároveň se zpřístupní v jeho zóně.')) return;
+  function handleSend(id: string, defaultEmail: string) {
+    const to = window.prompt('Komu poslat fakturu (PDF přílohou)? Adresu můžeš pro toto odeslání změnit:', defaultEmail);
+    if (to === null) return; // zrušeno
+    const trimmed = to.trim();
+    if (!trimmed) { setError('Zadej e-mailovou adresu příjemce.'); return; }
     setError(null);
     setNotice(null);
     startTransition(async () => {
-      const res = await sendInvoiceToClient(id);
+      const res = await sendInvoiceToClient(id, trimmed);
       if (!res.ok) setError(res.error);
       else setNotice(`Faktura odeslána na ${res.sentTo}.`);
     });
@@ -415,7 +418,7 @@ export default function InvoicesAdminClient({
                     </button>
                   )}
                   <button
-                    onClick={() => handleSend(inv.id)}
+                    onClick={() => handleSend(inv.id, inv.client?.billing_email || inv.client?.email || inv.customer_override?.email || '')}
                     disabled={pending}
                     className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50 ${inv.shared_at ? 'text-olive hover:text-caramel-light' : 'text-caramel hover:text-caramel-light'}`}
                     title={inv.shared_at ? `Posláno ${formatDate(inv.shared_at)} — poslat znovu` : 'Poslat klientovi (PDF přílohou e-mailu)'}

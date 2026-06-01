@@ -17,7 +17,7 @@ type Row = {
   docx_url: string | null;
   shared_at: string | null;
   client_id: string;
-  client: { full_name: string; email: string } | null;
+  client: { full_name: string; email: string; contract_email: string | null } | null;
   project: { id: string; name: string } | null;
 };
 
@@ -32,7 +32,7 @@ export default async function SmlouvyAdminPage() {
     untyped(supabase)
       .from('contracts')
       .select(
-        'id, contract_number, title, total_price, status, created_at, pdf_url, docx_url, shared_at, client_id, client:profiles!contracts_client_id_fkey(full_name, email), project:projects(id, name)',
+        'id, contract_number, title, total_price, status, created_at, pdf_url, docx_url, shared_at, client_id, client:profiles!contracts_client_id_fkey(full_name, email, contract_email), project:projects(id, name)',
       )
       .order('created_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name, email').eq('role', 'klient').order('full_name'),

@@ -17,7 +17,7 @@ type Row = {
   docx_url: string | null;
   shared_at: string | null;
   client_id: string;
-  client: { full_name: string; email: string } | null;
+  client: { full_name: string; email: string; contract_email: string | null } | null;
   project: { id: string; name: string } | null;
 };
 
@@ -91,12 +91,15 @@ export default function ContractsAdminClient({
     });
   }
 
-  function handleSend(id: string) {
-    if (!confirm('Poslat smlouvu klientovi jako PDF přílohu e-mailu? Zároveň se zpřístupní v jeho zóně.')) return;
+  function handleSend(id: string, defaultEmail: string) {
+    const to = window.prompt('Komu poslat smlouvu (PDF přílohou)? Adresu můžeš pro toto odeslání změnit:', defaultEmail);
+    if (to === null) return; // zrušeno
+    const trimmed = to.trim();
+    if (!trimmed) { setError('Zadej e-mailovou adresu příjemce.'); return; }
     setError(null);
     setNotice(null);
     startTransition(async () => {
-      const res = await sendContractToClient(id);
+      const res = await sendContractToClient(id, trimmed);
       if (!res.ok) setError(res.error);
       else setNotice(`Smlouva odeslána na ${res.sentTo}.`);
     });
@@ -332,7 +335,7 @@ export default function ContractsAdminClient({
                     </a>
                   )}
                   <button
-                    onClick={() => handleSend(c.id)}
+                    onClick={() => handleSend(c.id, c.client?.contract_email || c.client?.email || '')}
                     disabled={pending}
                     className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50 ${c.shared_at ? 'text-olive hover:text-caramel-light' : 'text-caramel hover:text-caramel-light'}`}
                     title={c.shared_at ? `Posláno ${formatDate(c.shared_at)} — poslat znovu` : 'Poslat klientovi (PDF přílohou e-mailu)'}

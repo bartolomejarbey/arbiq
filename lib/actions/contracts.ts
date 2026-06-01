@@ -430,8 +430,11 @@ export async function markContractSigned(contractId: string): Promise<{ ok: true
  * Nastaví shared_at → smlouva se zpřístupní v klientské zóně. Pokud PDF chybí,
  * pokusí se ho dogenerovat.
  */
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 export async function sendContractToClient(
   contractId: string,
+  overrideEmail?: string,
 ): Promise<{ ok: true; sentTo: string } | { ok: false; error: string }> {
   const check = await checkRealViewer();
   if (!check.ok) return { ok: false, error: check.error };
@@ -441,6 +444,10 @@ export async function sendContractToClient(
   }
   if (!process.env.RESEND_API_KEY) {
     return { ok: false, error: 'E-mailová služba není nakonfigurovaná (RESEND_API_KEY).' };
+  }
+  const override = overrideEmail?.trim();
+  if (override && !EMAIL_RE.test(override)) {
+    return { ok: false, error: 'Neplatná e-mailová adresa příjemce.' };
   }
 
   const admin = createAdminClient();
@@ -469,11 +476,12 @@ export async function sendContractToClient(
 
   const { data: prof } = await untyped(admin)
     .from('profiles')
-    .select('email, full_name')
+    .select('email, full_name, contract_email')
     .eq('id', c.client_id)
     .single();
-  const p = prof as { email?: string | null; full_name?: string | null } | null;
-  const recipientEmail = p?.email ?? null;
+  const p = prof as { email?: string | null; full_name?: string | null; contract_email?: string | null } | null;
+  // Priorita: override > smluvní e-mail klienta > hlavní e-mail.
+  const recipientEmail = override || p?.contract_email || p?.email || null;
   const recipientName = p?.full_name?.split(' ')[0] || 'kliente';
   if (!recipientEmail) {
     return { ok: false, error: 'Klient nemá vyplněný e-mail — smlouvu nelze odeslat.' };

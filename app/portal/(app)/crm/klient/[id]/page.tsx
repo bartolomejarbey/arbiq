@@ -9,6 +9,7 @@ import StatusBadge from '@/components/portal/StatusBadge';
 import InvoiceTable, { type InvoiceRow } from '@/components/portal/InvoiceTable';
 import NotesTimeline, { type NoteRow } from '@/components/portal/NotesTimeline';
 import ContactHistoryForm from './ContactHistoryForm';
+import ClientEmailsForm from './ClientEmailsForm';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,8 @@ type ClientProfile = {
   ico: string | null;
   website_url: string | null;
   is_active: boolean;
+  billing_email: string | null;
+  contract_email: string | null;
 };
 
 type ProjectRow = {
@@ -91,7 +94,7 @@ export default async function KlientDetailPage({
     { data: contractRows },
     { data: documentRows },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, email, phone, company, ico, website_url, is_active').eq('id', id).eq('role', 'klient').single(),
+    supabase.from('profiles').select('id, full_name, email, phone, company, ico, website_url, is_active, billing_email, contract_email').eq('id', id).eq('role', 'klient').single(),
     supabase.from('projects').select('id, name, status, progress, total_value').eq('client_id', id).order('created_at', { ascending: false }),
     supabase.from('invoices').select('id, invoice_number, amount, description, issued_at, due_date, paid_at, status, pdf_url').eq('client_id', id).order('issued_at', { ascending: false }),
     supabase.from('crm_contacts').select('id, type, note, next_followup, created_at, obchodnik:profiles!crm_contacts_obchodnik_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
@@ -178,6 +181,13 @@ export default async function KlientDetailPage({
       />
       <div className="px-8 py-8 grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
+          <ClientEmailsForm
+            clientId={profile.id}
+            mainEmail={profile.email}
+            billingEmail={profile.billing_email}
+            contractEmail={profile.contract_email}
+          />
+
           <section>
             <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Projekty</h2>
             {projects.length === 0 ? (

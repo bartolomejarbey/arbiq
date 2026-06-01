@@ -103,7 +103,7 @@ export default async function DashboardPage() {
 
   const [{ data: projectRows }, { data: invoiceRows }, { data: recRows }] = await Promise.all([
     supabase.from('projects').select('id, name, status, progress, estimated_end_date').eq('client_id', user.id).order('created_at', { ascending: false }),
-    supabase.from('invoices').select('id, amount, due_date, status').eq('client_id', user.id).not('shared_at', 'is', null),
+    supabase.from('invoices').select('id, amount, due_date, status').eq('client_id', user.id),
     supabase.from('recommendations').select('id, service_name, description, estimated_price, status').eq('client_id', user.id).neq('status', 'nova').order('created_at', { ascending: false }).limit(3),
   ]);
 
