@@ -18,6 +18,7 @@ type Project = {
   progress: number;
   estimated_end_date: string | null;
   total_value: number | null;
+  client_update: string | null;
   client: { full_name: string; email: string } | null;
 };
 
@@ -103,8 +104,21 @@ export default function ProjectEditClient({
         </div>
 
         <div>
-          <label className={labelClass} htmlFor="description">Popis</label>
-          <textarea id="description" name="description" defaultValue={project.description ?? ''} rows={4} className={`${inputClass} resize-none`} />
+          <label className={labelClass} htmlFor="description">Popis (interní)</label>
+          <textarea id="description" name="description" defaultValue={project.description ?? ''} rows={3} className={`${inputClass} resize-none`} />
+        </div>
+
+        <div className="border-t border-tobacco pt-4">
+          <label className={`${labelClass} text-caramel`} htmlFor="client_update">Update pro klienta (vidí v zóně)</label>
+          <textarea
+            id="client_update"
+            name="client_update"
+            defaultValue={project.client_update ?? ''}
+            rows={4}
+            placeholder="V jaké fázi jsme teď, co zbývá, orientační čas dodání…"
+            className={`${inputClass} resize-none`}
+          />
+          <p className="text-sandstone text-[10px] font-mono mt-1.5">Tohle uvidí klient v detailu případu. Plánovaný konec nahoře = orientační termín.</p>
         </div>
 
         {error && <p className="text-rust text-xs font-mono">{error}</p>}

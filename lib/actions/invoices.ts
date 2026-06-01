@@ -8,6 +8,7 @@ import { untyped } from '@/lib/supabase/untyped';
 import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
 import { formatMoney, formatDate } from '@/lib/formatters';
 import { sendEmail } from '@/lib/email/send';
+import { logClientEmail } from '@/lib/email/correspondence';
 import { InvoiceDeliveryEmail } from '@/lib/email/templates/invoice-delivery';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument, downloadDocument } from '@/lib/storage/documents';
@@ -603,11 +604,23 @@ export async function sendInvoiceToClient(
     return { ok: false, error: 'E-mail se nepodařilo odeslat.' };
   }
 
-  // Sdílení do zóny + označení odeslání.
+  // Označení odeslání (shared_at = kdy byl PDF odeslán e-mailem).
   await untyped(admin)
     .from('invoices')
     .update({ shared_at: new Date().toISOString() })
     .eq('id', invoiceId);
+
+  // Zaloguj do korespondence klienta (jen faktury napojené na klienta).
+  if (inv.client_id) {
+    void logClientEmail({
+      clientId: inv.client_id,
+      direction: 'outbound',
+      fromEmail: process.env.RESEND_FROM ?? 'noreply@arbiq.cz',
+      toEmail: recipientEmail,
+      subject: `${kindLabel} ${inv.invoice_number} (${formatMoney(Number(inv.amount))})`,
+      body: `${kindLabel} ${inv.invoice_number} na ${formatMoney(Number(inv.amount))} byla odeslána jako PDF příloha. Splatnost ${formatDate(inv.due_date)}.`,
+    });
+  }
 
   revalidatePath('/portal/admin/faktury');
   revalidatePath('/portal/faktury');

@@ -17,6 +17,7 @@ type ProjectRow = {
   start_date: string | null;
   estimated_end_date: string | null;
   total_value: number | null;
+  client_update: string | null;
   client_id: string;
   obchodnik_id: string | null;
   client: { full_name: string; email: string } | null;
@@ -35,7 +36,7 @@ export default async function AdminProjektDetail({
   const [{ data: projectRow }, { data: milestoneRows }] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, description, status, progress, start_date, estimated_end_date, total_value, client_id, obchodnik_id, client:profiles!projects_client_id_fkey(full_name, email)')
+      .select('id, name, description, status, progress, start_date, estimated_end_date, total_value, client_update, client_id, obchodnik_id, client:profiles!projects_client_id_fkey(full_name, email)')
       .eq('id', id)
       .single(),
     supabase.from('milestones').select('id, name, description, status, due_date, completed_at').eq('project_id', id).order('sort_order'),

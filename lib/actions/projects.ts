@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { untyped } from '@/lib/supabase/untyped';
 
 const ProjectStatusValues = ['novy', 'v_priprave', 've_vyvoji', 'k_revizi', 'dokoncen', 'pozastaven', 'zruseny'] as const;
 
@@ -68,6 +69,8 @@ const UpdateProjectSchema = z.object({
   progress: z.coerce.number().min(0).max(100).optional(),
   description: z.string().max(4000).optional(),
   estimated_end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // Update pro klienta — v jaké fázi jsme / co zbývá. '' → null (smazání).
+  client_update: z.string().max(4000).optional().transform((v) => (v === undefined ? undefined : v.trim() || null)),
 });
 
 export async function updateProject(projectId: string, formData: FormData) {
@@ -77,9 +80,10 @@ export async function updateProject(projectId: string, formData: FormData) {
     progress: formData.get('progress') !== null ? formData.get('progress') : undefined,
     description: String(formData.get('description') ?? '') || undefined,
     estimated_end_date: String(formData.get('estimated_end_date') ?? '') || undefined,
+    client_update: formData.get('client_update') !== null ? String(formData.get('client_update')) : undefined,
   };
   const parsed = UpdateProjectSchema.parse(raw);
-  const { error } = await supabase.from('projects').update(parsed).eq('id', projectId);
+  const { error } = await untyped(supabase).from('projects').update(parsed).eq('id', projectId);
   if (error) throw new Error(error.message);
   revalidatePath(`/portal/admin/projekt/${projectId}`);
   revalidatePath(`/portal/projekt/${projectId}`);

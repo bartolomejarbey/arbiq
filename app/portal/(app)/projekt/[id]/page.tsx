@@ -19,6 +19,7 @@ type ProjectRow = {
   progress: number;
   start_date: string | null;
   estimated_end_date: string | null;
+  client_update: string | null;
   client_id: string;
 };
 
@@ -61,7 +62,7 @@ export default async function ProjectDetailPage({
 
   const { data: projectData } = await supabase
     .from('projects')
-    .select('id, name, description, status, progress, start_date, estimated_end_date, client_id')
+    .select('id, name, description, status, progress, start_date, estimated_end_date, client_update, client_id')
     .eq('id', id)
     .single();
   const project = projectData as unknown as ProjectRow | null;
@@ -115,6 +116,20 @@ export default async function ProjectDetailPage({
 
       <div className="px-8 py-8 grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
+          {project.client_update && (
+            <section>
+              <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Aktuální stav případu</h2>
+              <div className="bg-coffee p-6 border-l-2 border-caramel">
+                <p className="text-sepia whitespace-pre-wrap leading-relaxed">{project.client_update}</p>
+                {project.estimated_end_date && (
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-sandstone mt-4">
+                    Orientační termín dodání: <span className="text-caramel">{formatDate(project.estimated_end_date)}</span>
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
           <section>
             <h2 className="font-display italic font-black text-2xl text-moonlight mb-6">Postup</h2>
             <div className="bg-coffee p-6 mb-6">

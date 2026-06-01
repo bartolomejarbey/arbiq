@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
 import { sendEmail } from '@/lib/email/send';
+import { logClientEmail } from '@/lib/email/correspondence';
 import { PortalInviteEmail } from '@/lib/email/templates/portal-invite';
 
 async function requireAdmin() {
@@ -233,6 +234,16 @@ export async function inviteClientToZone(
     console.error('inviteClientToZone email failed', err);
     return { ok: false, error: 'E-mail s pozvánkou se nepodařilo odeslat.' };
   }
+
+  // Zaloguj do korespondence (BEZ hesla v těle).
+  void logClientEmail({
+    clientId: userId,
+    direction: 'outbound',
+    fromEmail: process.env.RESEND_FROM ?? 'noreply@arbiq.cz',
+    toEmail: p.email,
+    subject: 'Přístup do ARBIQ portálu',
+    body: 'Byly Vám zaslány přihlašovací údaje do klientské zóny ARBIQ (e-mail s heslem).',
+  });
 
   revalidatePath('/portal/admin/uzivatele');
   return { ok: true, sentTo: p.email };

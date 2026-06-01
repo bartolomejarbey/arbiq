@@ -2,6 +2,7 @@ import 'server-only';
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { Resend } from 'resend';
+import { findClientByEmail, logClientEmail } from '@/lib/email/correspondence';
 
 // Inbound zpracování zahrnuje fetch těla, stažení příloh a forward — dáme jí dost času.
 export const maxDuration = 60;
@@ -93,6 +94,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch email body' }, { status: 500 });
     }
     const email = emailRes.data;
+
+    // 4b) Napáruj odesílatele na klienta → zaloguj do jeho korespondence v zóně.
+    //     Best-effort, nesmí shodit forward.
+    try {
+      const senderRaw = email.from ?? event.data.from ?? '';
+      const clientId = await findClientByEmail(senderRaw);
+      if (clientId) {
+        const plainBody = email.text?.trim() || stripHtml(email.html ?? '');
+        await logClientEmail({
+          clientId,
+          direction: 'inbound',
+          fromEmail: senderRaw,
+          toEmail: (email.to && email.to[0]) ?? event.data.to?.[0] ?? null,
+          subject: email.subject ?? null,
+          body: plainBody || null,
+          messageId: email.message_id ?? null,
+        });
+      }
+    } catch (err) {
+      console.error(`${LOG} Logování korespondence selhalo`, err);
+    }
 
     // 5) Příloh — pokud existují, stáhni je přes signed download_url.
     const forwardAttachments: ForwardAttachment[] = [];
@@ -186,6 +208,21 @@ export async function POST(req: NextRequest) {
     console.error(`${LOG} Unhandled error:`, err);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
+}
+
+function stripHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<br\s*\/?>(\s*)/gi, '\n')
+    .replace(/<\/(p|div|tr|li|h[1-6])>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function escapeHtml(input: string): string {

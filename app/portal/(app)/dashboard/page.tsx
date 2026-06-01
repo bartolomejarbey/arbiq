@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { createClient } from "@/lib/supabase/server";
+import { untyped } from "@/lib/supabase/untyped";
 import { requireViewer } from "@/lib/supabase/viewer";
 import PageHeader from '@/components/portal/PageHeader';
 import ProjectCard, { type ProjectCardData } from '@/components/portal/ProjectCard';
 import RecommendationCard, { type RecommendationData } from '@/components/portal/RecommendationCard';
 import StatsCard from '@/components/portal/StatsCard';
 import EmptyState from '@/components/portal/EmptyState';
-import { formatMoney, daysUntil } from '@/lib/formatters';
+import { formatMoney, daysUntil, formatDate } from '@/lib/formatters';
 import { markRecommendationInterested, dismissRecommendation } from '@/lib/actions/recommendations';
 
 export const dynamic = 'force-dynamic';
@@ -127,6 +128,21 @@ export default async function DashboardPage() {
     }
   }
 
+  const { data: emailRows } = await untyped(supabase)
+    .from('client_emails')
+    .select('id, direction, from_email, subject, body, created_at')
+    .eq('client_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(15);
+  const correspondence = ((emailRows ?? []) as unknown as Array<{
+    id: string;
+    direction: 'inbound' | 'outbound';
+    from_email: string | null;
+    subject: string | null;
+    body: string | null;
+    created_at: string;
+  }>);
+
   const upcoming = invoices.find((i) => i.status === 'ceka');
   const overdue = invoices.filter((i) => i.status === 'po_splatnosti');
   const overdueAmount = overdue.reduce((sum, i) => sum + Number(i.amount), 0);
@@ -203,13 +219,36 @@ export default async function DashboardPage() {
 
         <section>
           <SectionHeader title="Komunikace s ARBIQ" link="" linkLabel={null} />
-          <div className="bg-coffee p-8 border-l-2 border-caramel/40">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-caramel mb-2">Připravujeme</div>
-            <p className="text-sepia text-sm leading-relaxed">
-              Brzy zde uvidíte celou historii komunikace s naším týmem — zprávy, předané dokumenty
-              a poznámky k Vašemu případu na jednom místě.
-            </p>
-          </div>
+          {correspondence.length === 0 ? (
+            <div className="bg-coffee p-8 border-l-2 border-caramel/40">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-caramel mb-2">Zatím prázdné</div>
+              <p className="text-sepia text-sm leading-relaxed">
+                Jakmile si s naším týmem vyměníte e-maily nebo Vám pošleme dokument,
+                uvidíte tady celou historii korespondence.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {correspondence.map((m) => (
+                <details key={m.id} className="bg-coffee border-l-2 border-caramel/40 group">
+                  <summary className="px-5 py-3 cursor-pointer list-none flex items-center justify-between gap-4 hover:bg-tobacco/30">
+                    <div className="min-w-0">
+                      <span className={`font-mono text-[9px] uppercase tracking-widest mr-2 ${m.direction === 'outbound' ? 'text-caramel' : 'text-olive'}`}>
+                        {m.direction === 'outbound' ? 'Od ARBIQ' : 'Od Vás'}
+                      </span>
+                      <span className="text-moonlight text-sm">{m.subject ?? '(bez předmětu)'}</span>
+                    </div>
+                    <span className="text-sandstone text-xs whitespace-nowrap shrink-0">{formatDate(m.created_at)}</span>
+                  </summary>
+                  {m.body && (
+                    <div className="px-5 pb-4 pt-1 text-sepia text-sm whitespace-pre-wrap leading-relaxed border-t border-tobacco/40">
+                      {m.body}
+                    </div>
+                  )}
+                </details>
+              ))}
+            </div>
+          )}
         </section>
 
         {recommendations.length > 0 && (

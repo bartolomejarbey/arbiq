@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
 import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
 import { sendEmail } from '@/lib/email/send';
+import { logClientEmail } from '@/lib/email/correspondence';
 import { ContractDeliveryEmail } from '@/lib/email/templates/contract-delivery';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument, downloadDocument } from '@/lib/storage/documents';
@@ -513,10 +514,19 @@ export async function sendContractToClient(
     return { ok: false, error: 'E-mail se nepodařilo odeslat.' };
   }
 
-  // Sdílení do zóny + posun stavu z konceptu na 'poslano' (nepřepisuj podepsano/zruseno).
+  // Označení odeslání + posun stavu z konceptu na 'poslano' (nepřepisuj podepsano/zruseno).
   const update: Record<string, unknown> = { shared_at: new Date().toISOString() };
   if (c.status === 'koncept') update['status'] = 'poslano';
   await untyped(admin).from('contracts').update(update).eq('id', contractId);
+
+  void logClientEmail({
+    clientId: c.client_id,
+    direction: 'outbound',
+    fromEmail: process.env.RESEND_FROM ?? 'noreply@arbiq.cz',
+    toEmail: recipientEmail,
+    subject: `Smlouva ${c.contract_number} — ${c.title}`,
+    body: `Smlouva ${c.contract_number} („${c.title}") byla odeslána jako PDF příloha.`,
+  });
 
   revalidatePath('/portal/admin/smlouvy');
   revalidatePath('/portal/smlouvy');
