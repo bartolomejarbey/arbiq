@@ -2,6 +2,7 @@ import 'server-only';
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isAuthorizedCron } from '@/lib/cron-auth';
 import { pullChanges, initialSync } from '@/lib/services/calendar-sync';
 
 export const runtime = 'nodejs';
@@ -9,9 +10,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
-  const token = req.nextUrl.searchParams.get('token');
-  if (token !== process.env.CRON_SECRET) {
-    return new NextResponse('forbidden', { status: 403 });
+  if (!isAuthorizedCron(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const admin = createAdminClient();

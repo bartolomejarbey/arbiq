@@ -49,14 +49,17 @@ function getUtm(): Record<string, string> {
 
 export function track(event: string, props: Record<string, unknown> = {}): void {
   if (typeof window === 'undefined') return;
-  // Respekt cookie consent — pokud uživatel odmítl analytics, neodesíláme.
+  // GDPR OPT-IN (ČR): odesíláme JEN když uživatel analytics výslovně povolil.
+  // Bez záznamu souhlasu = netrackujeme (fail-closed).
+  let analyticsAllowed = false;
   try {
     const raw = window.localStorage.getItem('arbiq-consent');
     if (raw) {
       const parsed = JSON.parse(raw) as { categories?: { analytics?: boolean } };
-      if (parsed?.categories?.analytics === false) return;
+      analyticsAllowed = parsed?.categories?.analytics === true;
     }
   } catch {}
+  if (!analyticsAllowed) return;
 
   const payload = {
     visitor_id: getVisitorId(),
