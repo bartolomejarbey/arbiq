@@ -42,15 +42,20 @@ export type Viewer = {
  * empty-state UI which is good enough for a visual walkthrough.
  */
 export async function getViewer(): Promise<Viewer | null> {
-  if (await isPreviewMode()) {
-    return { id: PREVIEW_USER.id, email: PREVIEW_USER.email, isPreview: true };
-  }
+  // REÁLNÝ přihlášený uživatel má VŽDY přednost před preview cookie.
+  // Jinak by admin/klient se zaseknutou arbiq_preview cookie byl všude brán
+  // jako demo návštěvník a viděl mock data místo svých.
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
-  return { id: user.id, email: user.email ?? '', isPreview: false };
+  if (user) return { id: user.id, email: user.email ?? '', isPreview: false };
+
+  // Bez reálného loginu → případný náhledový režim.
+  if (await isPreviewMode()) {
+    return { id: PREVIEW_USER.id, email: PREVIEW_USER.email, isPreview: true };
+  }
+  return null;
 }
 
 /** Convenience: redirect to login if no viewer. */

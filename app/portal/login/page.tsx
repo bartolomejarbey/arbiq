@@ -1,7 +1,9 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Eye } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { enterPreview } from '@/lib/actions/preview';
+import { PREVIEW_COOKIE } from '@/lib/supabase/viewer';
 import InviteRequestForm from './InviteRequestForm';
 
 async function loginAction(formData: FormData) {
@@ -17,6 +19,8 @@ async function loginAction(formData: FormData) {
     const params = new URLSearchParams({ error: error.message, next });
     redirect(`/portal/login?${params.toString()}`);
   }
+  // Reálný login vždy ukončí případný zaseknutý náhledový režim.
+  (await cookies()).delete(PREVIEW_COOKIE);
   redirect(next);
 }
 

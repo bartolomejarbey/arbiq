@@ -12,23 +12,24 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
-  // Preview/showcase mode — návštěvník bez loginu si může proklikat
-  // celý portál (klient + obchodník + admin views) s vtipnými mock daty
-  // (Sherlock Holmes klientela). Cíl: ukázka co umíme.
+  const { response, supabase, user } = await updateSession(request);
+
+  // Preview/showcase mode — návštěvník BEZ loginu si může proklikat celý portál
+  // s vtipnými mock daty (Sherlock Holmes klientela). Cíl: ukázka co umíme.
   //
-  // Bezpečnost: VŠECHNY mutating server actions (createInvoice,
-  // regenerateContractDocs, markOverdueInvoices, …) mají guard
-  // `checkRealViewer()` v lib/supabase/viewer.ts → preview cookie
-  // vrátí { ok: false, error: 'V náhledovém režimu nelze měnit data.' }.
-  // Klikatelné akce v UI tedy hodí friendly error místo modifikace DB.
-  if (request.cookies.get(PREVIEW_COOKIE)?.value === '1') {
+  // DŮLEŽITÉ: preview platí JEN když není reálný přihlášený uživatel. Reálný
+  // login má vždy přednost — jinak admin/klient se zaseknutou arbiq_preview
+  // cookie skončí v demo režimu (vidí mock data, ne svá; bez role-gatingu).
+  //
+  // Bezpečnost mutací: všechny mutating server actions mají guard
+  // `checkRealViewer()` → preview vrátí friendly error místo modifikace DB.
+  const isPreview = request.cookies.get(PREVIEW_COOKIE)?.value === '1';
+  if (!user && isPreview) {
     if (pathname === '/portal' || pathname === '/portal/') {
       return NextResponse.redirect(new URL('/portal/admin/statistiky', request.url));
     }
     return NextResponse.next({ request });
   }
-
-  const { response, supabase, user } = await updateSession(request);
 
   if (!user) {
     const loginUrl = new URL('/portal/login', request.url);
