@@ -52,19 +52,11 @@ const teamMembers: Member[] = [
     initial: "V",
   },
   {
-    name: "Fidelio Seidl",
-    role: "Key Account Manager",
-    description: "Váš první kontakt. Zařídí, aby vše klapalo.",
-    skills: ["Klientský servis", "Projektové řízení", "Obchodní jednání"],
-    photo: "/tym/fidelio.jpg",
-    email: "info@arbiq.cz",
-  },
-  {
     name: "Tomáš Košalko",
     role: "Key Account Manager",
     description: "Váš první kontakt. Postará se, aby vše klapalo a vy věděli, na čem jste.",
     skills: ["Klientský servis", "Projektové řízení", "Obchodní jednání"],
-    initial: "T",
+    photo: "/tym/tomas.jpg",
     email: "tomas@arbiq.cz",
     phone: "+420 774 235 613",
   },
@@ -164,7 +156,7 @@ export default function TymPage() {
             <div className="absolute bg-espresso px-6">
               <div className="border-2 border-caramel/60 px-6 py-3">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-caramel">
-                  5 AGENTŮ V POLI
+                  4 AGENTI V POLI
                 </span>
               </div>
             </div>
