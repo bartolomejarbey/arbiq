@@ -2,6 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { untyped } from '@/lib/supabase/untyped';
+import { getViewer } from '@/lib/supabase/viewer';
 
 export async function markRecommendationInterested(recId: string) {
   const supabase = await createClient();
@@ -25,10 +28,15 @@ export async function dismissRecommendation(recId: string) {
  */
 export async function markRecommendationsAsViewed(recIds: string[]) {
   if (recIds.length === 0) return;
-  const supabase = await createClient();
-  await supabase
+  // RLS write policy na recommendations je admin-only → klientův přímý update
+  // tiše selže. Použij service-role SCOPOVANÝ na vlastní doporučení klienta.
+  const viewer = await getViewer();
+  if (!viewer || viewer.isPreview) return;
+  const admin = createAdminClient();
+  await untyped(admin)
     .from('recommendations')
     .update({ status: 'zobrazena' })
     .in('id', recIds)
+    .eq('client_id', viewer.id)
     .eq('status', 'nova');
 }
