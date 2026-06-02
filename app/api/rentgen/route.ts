@@ -6,6 +6,7 @@ import { RentgenConfirmEmail } from '@/lib/email/templates/rentgen-confirm';
 import { RentgenInternalEmail } from '@/lib/email/templates/rentgen-internal';
 import { isLikelySpam, isEmailRateLimited } from '@/lib/spam-protection';
 import { inferSourceTag } from '@/lib/source-tag';
+import { notifyAdmins } from '@/lib/notifications';
 
 const RentgenSchema = z.object({
   name: z.string().min(2).max(120),
@@ -72,6 +73,13 @@ export async function POST(request: Request) {
     .slice(0, 10)
     .replace(/-/g, '');
   const orderId = `RTG-${day}-${id.slice(0, 6).toUpperCase()}`;
+
+  void notifyAdmins({
+    type: 'new_lead',
+    title: `Nová poptávka (rentgen) ${orderId}`,
+    body: parsed.email,
+    link: '/portal/crm/leady',
+  });
 
   await Promise.allSettled([
     sendEmail({

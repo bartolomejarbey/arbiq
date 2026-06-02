@@ -55,7 +55,10 @@ export async function notifyClientStaff(
       .eq('id', clientId)
       .single();
     const obch = (c as { assigned_obchodnik?: string | null } | null)?.assigned_obchodnik;
-    if (obch) recipients.add(obch);
+    if (obch) {
+      const { data: o } = await untyped(admin).from('profiles').select('is_active').eq('id', obch).single();
+      if ((o as { is_active?: boolean } | null)?.is_active) recipients.add(obch);
+    }
     const { data: admins } = await untyped(admin)
       .from('profiles')
       .select('id')

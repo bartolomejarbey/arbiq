@@ -54,6 +54,11 @@ export async function anonymizeClient(
     .eq('client_id', clientId);
   await untyped(admin).from('crm_notes').update({ content: '[anonymizováno]' }).eq('client_id', clientId);
   await untyped(admin).from('crm_contacts').update({ note: '[anonymizováno]' }).eq('client_id', clientId);
+  await untyped(admin).from('crm_tasks').update({ title: '[anonymizováno]', description: '[anonymizováno]' }).eq('client_id', clientId);
+  // Zdrojový lead, ze kterého klient vznikl (PII přežívala výmaz).
+  await untyped(admin).from('landing_leads')
+    .update({ name: '[anonymizováno]', email: '[anonymizováno]', phone: null, popis: '[anonymizováno]', website_url: null })
+    .eq('converted_to_client', clientId);
 
   await logAdminAction({ actorId: check.viewer.id, action: 'client.anonymize', targetId: clientId, targetType: 'profile' });
   revalidatePath(`/portal/crm/klient/${clientId}`);

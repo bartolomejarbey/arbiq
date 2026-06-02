@@ -308,6 +308,11 @@ export async function regenerateContractDocs(contractId: string): Promise<
   }
   const c = ctrRow as unknown as ContractRow;
 
+  // Ownership (admin client bypassuje RLS): obchodník jen svého klienta.
+  if (role !== 'admin' && !(await clientAssignedTo(c.client_id, check.viewer.id))) {
+    return { ok: false, error: 'Tento klient vám není přiřazen.' };
+  }
+
   const [{ data: clientRow }, dodavatel] = await Promise.all([
     untyped(admin)
       .from('profiles')

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sendEmail } from '@/lib/email/send';
 import { KontaktInternalEmail } from '@/lib/email/templates/kontakt-internal';
 import { isLikelySpam, isEmailRateLimited } from '@/lib/spam-protection';
+import { notifyAdmins } from '@/lib/notifications';
 
 /** Form posílá české slugs (obecna/projekt/konzultace/produkt) — zde je mapujeme na EN klíče. */
 const CZ_TO_EN_TYPE: Record<string, 'general' | 'project' | 'consultation' | 'product'> = {
@@ -65,6 +66,13 @@ export async function POST(request: Request) {
     console.error('contact_messages insert failed', error);
     return NextResponse.json({ error: 'Něco se pokazilo.' }, { status: 500 });
   }
+
+  void notifyAdmins({
+    type: 'new_contact',
+    title: `Nová zpráva z kontaktu: ${parsed.name}`,
+    body: parsed.email,
+    link: '/portal/crm/leady',
+  });
 
   // Notifikace pro admina (BCC) — sendEmail si bere RESEND_BCC_ADMIN sám,
   // s fallbackem na bartolomej@arbiq.cz,info@arbiq.cz.

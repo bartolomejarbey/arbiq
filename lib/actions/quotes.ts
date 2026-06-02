@@ -196,6 +196,11 @@ export async function regenerateQuotePdf(quoteId: string): Promise<{ ok: true; p
   if (!qRow) return { ok: false, error: 'Nabídka nenalezena.' };
   const q = qRow as Record<string, unknown>;
 
+  // Ownership (admin client bypassuje RLS → guard v kódu): obchodník jen svého klienta.
+  if (role !== 'admin' && !(await clientAssignedTo(q['client_id'] as string, check.viewer.id))) {
+    return { ok: false, error: 'Tento klient vám není přiřazen.' };
+  }
+
   const [{ data: clientRow }, dodavatel] = await Promise.all([
     untyped(admin)
       .from('profiles')
@@ -323,6 +328,8 @@ export async function convertQuoteToContract(
   const res = await createContract(fd);
   if (!res.ok) return { ok: false, error: `Smlouvu se nepodařilo vytvořit: ${res.error}` };
 
+  // Propojení jen pokud je contract_id stále null (nepřepiš při souběhu — ochrana
+  // před osiřením prvního propojení; UI navíc blokuje tlačítko během odeslání).
   await untyped(admin)
     .from('quotes')
     .update({
@@ -330,7 +337,8 @@ export async function convertQuoteToContract(
       status: q.status === 'koncept' || q.status === 'poslano' ? 'akceptovano' : q.status,
       accepted_at: new Date().toISOString().slice(0, 10),
     })
-    .eq('id', quoteId);
+    .eq('id', quoteId)
+    .is('contract_id', null);
 
   revalidatePath('/portal/admin/nabidky');
   revalidatePath('/portal/admin/smlouvy');
@@ -344,6 +352,13 @@ export async function cancelQuote(quoteId: string): Promise<{ ok: true } | { ok:
   if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
 
   const supabase = await createClient();
+  if (role !== 'admin') {
+    const { data: c } = await untyped(supabase).from('quotes').select('client_id').eq('id', quoteId).single();
+    const cid = (c as { client_id?: string } | null)?.client_id;
+    if (!cid || !(await clientAssignedTo(cid, check.viewer.id))) {
+      return { ok: false, error: 'Tento klient vám není přiřazen.' };
+    }
+  }
   const { error } = await untyped(supabase).from('quotes').update({ status: 'zruseno' }).eq('id', quoteId);
   if (error) return { ok: false, error: 'Nepodařilo se zrušit.' };
   revalidatePath('/portal/admin/nabidky');
