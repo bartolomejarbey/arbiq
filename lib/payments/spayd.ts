@@ -73,6 +73,7 @@ export async function buildSpaydQrDataUrl(input: SpaydInput): Promise<string> {
     errorCorrectionLevel: 'M',
     margin: 1,
     width: 360,
-    color: { dark: '#241B14', light: '#FFFFFF00' },
+    // Pevné bílé pozadí — průhledné (#FFFFFF00) láme některé bankovní QR čtečky.
+    color: { dark: '#241B14', light: '#FFFFFF' },
   });
 }

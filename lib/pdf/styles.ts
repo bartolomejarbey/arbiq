@@ -65,7 +65,17 @@ const CZECH_MONTHS = [
 
 /** Formátuje datum jako "19. května 2026". Bez parametru = dnes. */
 export function formatCzechDate(date?: Date | string): string {
-  const d = date ? (typeof date === 'string' ? new Date(date) : date) : new Date();
+  let d: Date;
+  if (!date) {
+    d = new Date();
+  } else if (typeof date === 'string') {
+    // Date-only 'YYYY-MM-DD' parsuj jako lokální datum (jinak UTC midnight může
+    // posunout den v záporných timezonách).
+    const m = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(date);
+  } else {
+    d = date;
+  }
   return `${d.getDate()}. ${CZECH_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
