@@ -3,7 +3,7 @@
 import DetectiveTag from "@/components/shared/DetectiveTag";
 import RevealOnScroll from "@/components/shared/RevealOnScroll";
 import StaggerGrid from "@/components/shared/StaggerGrid";
-import { Globe, Target, Building2, Code2, Zap, Search, ArrowRight } from "lucide-react";
+import { Globe, Target, Building2, Code2, Zap, Search, Palette, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 const services = [
@@ -43,6 +43,12 @@ const services = [
     description: "Web bez SEO je dopis bez adresy. Děláme Váš web dohledatelný. Poctivě, bez černých technik.",
     href: "/sluzby/seo",
   },
+  {
+    icon: Palette,
+    name: "Grafika",
+    description: "Grafická agentura pod jednou střechou — logo, vizuální identita, sociální sítě, tiskoviny i reklama.",
+    href: "/sluzby/grafika",
+  },
 ];
 
 export default function ServicesGrid() {
@@ -54,7 +60,7 @@ export default function ServicesGrid() {
             <div>
               <DetectiveTag className="mb-4">DETEKTIVOVY NÁSTROJE</DetectiveTag>
               <h2 className="font-display font-black text-moonlight text-4xl md:text-6xl">
-                Jeden detektiv. Šest specializací.
+                Jeden detektiv. Sedm specializací.
               </h2>
             </div>
             <p className="text-sepia/60 max-w-xs text-sm">

@@ -22,6 +22,7 @@ const SLUZBY = [
   'automatizace',
   'seo',
   'geo-ai-viditelnost',
+  'grafika',
 ];
 
 const BLOG_POSTS = [

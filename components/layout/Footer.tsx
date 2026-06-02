@@ -44,6 +44,7 @@ export default function Footer() {
               <li><Link href="/sluzby/systemy-na-miru" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Systémy na míru</Link></li>
               <li><Link href="/sluzby/automatizace" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Automatizace</Link></li>
               <li><Link href="/sluzby/seo" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">SEO</Link></li>
+              <li><Link href="/sluzby/grafika" className="text-sepia hover:text-caramel text-sm font-mono uppercase tracking-wider transition-colors">Grafika</Link></li>
             </ul>
           </div>
 

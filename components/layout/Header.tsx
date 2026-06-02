@@ -14,6 +14,7 @@ const sluzbyLinks = [
   { href: "/sluzby/automatizace", label: "Automatizace firem" },
   { href: "/sluzby/seo", label: "SEO" },
   { href: "/sluzby/geo-ai-viditelnost", label: "GEO — AI viditelnost" },
+  { href: "/sluzby/grafika", label: "Grafika" },
 ];
 
 const tymLinks = [
