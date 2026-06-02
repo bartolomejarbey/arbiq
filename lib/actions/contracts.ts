@@ -8,6 +8,7 @@ import { untyped } from '@/lib/supabase/untyped';
 import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
 import { sendEmail } from '@/lib/email/send';
 import { logClientEmail } from '@/lib/email/correspondence';
+import { clientAssignedTo } from '@/lib/actions/ownership';
 import { ContractDeliveryEmail } from '@/lib/email/templates/contract-delivery';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument, downloadDocument } from '@/lib/storage/documents';
@@ -97,6 +98,12 @@ export async function createContract(formData: FormData): Promise<ContractAction
       ok: false,
       error: err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'Neplatná data.',
     };
+  }
+
+  // Ownership: obchodník smí vystavit smlouvu jen svému přiřazenému klientovi
+  // (jinak by PDF prozradilo fakturační údaje cizího klienta).
+  if (role !== 'admin' && !(await clientAssignedTo(parsed.client_id, user.id))) {
+    return { ok: false, error: 'Tento klient vám není přiřazen.' };
   }
 
   // Číslo smlouvy: pokud admin zadal manuálně, použij + zkontroluj kolizi.

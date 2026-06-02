@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { requireViewer } from '@/lib/supabase/viewer';
+import { requireViewer, getViewerRole } from '@/lib/supabase/viewer';
 import {
   pushEventInsert,
   pushEventUpdate,
@@ -140,6 +140,14 @@ export async function deleteEvent(
     .eq('id', id)
     .single();
   if (fetchErr || !ev) return { ok: false, error: 'event not found' };
+
+  // Ownership PŘED Google push — sdílenou událost lze přečíst přes RLS, ale
+  // smazat (i v Google) smí jen vlastník/admin. Jinak by se cizí událost
+  // odstranila z Google dřív, než RLS zablokuje lokální soft-delete.
+  const delRole = await getViewerRole();
+  if ((ev as { owner_id?: string }).owner_id !== viewer.id && delRole !== 'admin') {
+    return { ok: false, error: 'Tuto událost nemůžete smazat.' };
+  }
 
   pushEventDelete(ev).catch(console.error);
 

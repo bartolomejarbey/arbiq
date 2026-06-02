@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
 import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
+import { clientAssignedTo } from '@/lib/actions/ownership';
 import { notifyPortalUser } from '@/lib/email/notify';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument } from '@/lib/storage/documents';
@@ -78,6 +79,11 @@ export async function createQuote(formData: FormData): Promise<QuoteActionResult
 
   const totalPrice = parsed.items.reduce((s, it) => s + it.quantity * it.unit_price, 0);
   if (totalPrice <= 0) return { ok: false, error: 'Celková cena musí být kladná.' };
+
+  // Ownership: obchodník smí vystavit nabídku jen svému přiřazenému klientovi.
+  if (role !== 'admin' && !(await clientAssignedTo(parsed.client_id, check.viewer.id))) {
+    return { ok: false, error: 'Tento klient vám není přiřazen.' };
+  }
 
   const supabase = await createClient();
   const { data: numData } = await untyped(supabase).rpc('next_quote_number');

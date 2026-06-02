@@ -5,8 +5,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 /** Denně rotující hash IP (nekoreluje napříč dny, dovolí rate-limit klíč). */
 export function clientIpHash(req: Request, salt = 'rl'): string {
-  const xff = req.headers.get('x-forwarded-for');
-  const ip = xff?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? 'unknown';
+  // Preferuj platformou nastavené hlavičky (Vercel) — x-forwarded-for je
+  // user-controlled a dá se spoofnout pro obejití limitu.
+  const ip =
+    req.headers.get('x-vercel-forwarded-for') ??
+    req.headers.get('x-real-ip') ??
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    'unknown';
   const day = new Date().toISOString().slice(0, 10);
   return createHash('sha256').update(`${ip}|${day}|${salt}`).digest('hex').slice(0, 16);
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { getViewerRole } from '@/lib/supabase/viewer';
 
 const ContactSchema = z.object({
   client_id: z.string().uuid(),
@@ -17,6 +18,8 @@ export async function addCrmContact(formData: FormData): Promise<{ ok: true } | 
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Nepřihlášený uživatel.' };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
 
   let parsed: z.infer<typeof ContactSchema>;
   try {

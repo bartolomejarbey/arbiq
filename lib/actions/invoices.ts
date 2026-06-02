@@ -9,6 +9,7 @@ import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
 import { formatMoney, formatDate } from '@/lib/formatters';
 import { sendEmail } from '@/lib/email/send';
 import { logClientEmail } from '@/lib/email/correspondence';
+import { clientAssignedTo } from '@/lib/actions/ownership';
 import { InvoiceDeliveryEmail } from '@/lib/email/templates/invoice-delivery';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument, downloadDocument } from '@/lib/storage/documents';
@@ -122,8 +123,8 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
   const check = await checkRealViewer();
   if (!check.ok) return { ok: false, error: check.error };
   const role = await getViewerRole();
-  if (role !== 'admin' && role !== 'obchodnik') {
-    return { ok: false, error: 'Nemáte oprávnění vystavovat faktury.' };
+  if (role !== 'admin') {
+    return { ok: false, error: 'Faktury smí vystavovat jen administrátor.' };
   }
 
   const supabase = await createClient();
@@ -345,7 +346,7 @@ export async function markInvoicePaid(invoiceId: string): Promise<{ ok: true } |
   const check = await checkRealViewer();
   if (!check.ok) return { ok: false, error: check.error };
   const role = await getViewerRole();
-  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+  if (role !== 'admin') return { ok: false, error: 'Tuto akci smí provést jen administrátor.' };
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -365,7 +366,7 @@ export async function cancelInvoice(invoiceId: string): Promise<{ ok: true } | {
   const check = await checkRealViewer();
   if (!check.ok) return { ok: false, error: check.error };
   const role = await getViewerRole();
-  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+  if (role !== 'admin') return { ok: false, error: 'Tuto akci smí provést jen administrátor.' };
 
   const supabase = await createClient();
   const { error } = await supabase.from('invoices').update({ status: 'zruseno' }).eq('id', invoiceId);
@@ -402,6 +403,14 @@ export async function regenerateInvoicePdf(invoiceId: string): Promise<{ ok: tru
   const inv = invRow as Record<string, unknown>;
   const clientId = (inv['client_id'] as string | null) ?? null;
   const customerOverride = inv['customer_override'] as Record<string, string | null> | null;
+
+  // Obchodník smí regenerovat jen fakturu svého přiřazeného klienta; jednorázové jen admin.
+  if (role !== 'admin') {
+    if (!clientId) return { ok: false, error: 'Jednorázovou fakturu smí spravovat jen administrátor.' };
+    if (!(await clientAssignedTo(clientId, check.viewer.id))) {
+      return { ok: false, error: 'Tento klient vám není přiřazen.' };
+    }
+  }
 
   const baseDodavatel = await getDodavatel();
   const dodavatel = applySupplierOverride(baseDodavatel, inv['supplier_override']);
@@ -543,6 +552,10 @@ export async function sendInvoiceToClient(
     customer_override: { full_name?: string | null; email?: string | null } | null;
   };
 
+  // Jednorázová faktura (bez klienta) = jen admin (obchodník k ní nemá vztah).
+  if (!inv.client_id && role !== 'admin') {
+    return { ok: false, error: 'Jednorázovou fakturu smí odeslat jen administrátor.' };
+  }
   // Ownership: obchodník smí poslat jen fakturu svého přiřazeného klienta
   // (akce běží přes service-role admin client, RLS by ji nezachytila).
   if (role !== 'admin' && inv.client_id) {

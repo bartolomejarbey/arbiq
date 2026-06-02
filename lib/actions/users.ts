@@ -8,6 +8,7 @@ import { untyped } from '@/lib/supabase/untyped';
 import { sendEmail } from '@/lib/email/send';
 import { logClientEmail } from '@/lib/email/correspondence';
 import { logAdminAction } from '@/lib/audit';
+import { clientAssignedTo } from '@/lib/actions/ownership';
 import { PortalInviteEmail } from '@/lib/email/templates/portal-invite';
 
 async function requireAdmin() {
@@ -332,6 +333,9 @@ export async function updateClientEmails(
   const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   const role = (prof as { role?: string } | null)?.role;
   if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+  if (role !== 'admin' && !(await clientAssignedTo(clientId, user.id))) {
+    return { ok: false, error: 'Tento klient vám není přiřazen.' };
+  }
 
   let parsed: { billing_email: string | null; contract_email: string | null };
   try {

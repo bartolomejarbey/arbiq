@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { getViewerRole } from '@/lib/supabase/viewer';
 
 const TaskCreateSchema = z.object({
   title: z.string().min(2).max(200),
@@ -22,6 +23,8 @@ export async function createTask(formData: FormData): Promise<TaskActionResult> 
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Nepřihlášený uživatel.' };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Úkoly smí vytvářet jen tým (obchodník/admin).' };
 
   let parsed: z.infer<typeof TaskCreateSchema>;
   try {
@@ -59,6 +62,8 @@ export async function createTask(formData: FormData): Promise<TaskActionResult> 
 }
 
 export async function setTaskStatus(taskId: string, status: 'todo' | 'in_progress' | 'done' | 'cancelled') {
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') throw new Error('Nemáte oprávnění.');
   const supabase = await createClient();
   const update = {
     status,
@@ -71,6 +76,8 @@ export async function setTaskStatus(taskId: string, status: 'todo' | 'in_progres
 }
 
 export async function deleteTask(taskId: string) {
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') throw new Error('Nemáte oprávnění.');
   const supabase = await createClient();
   const { error } = await supabase.from('crm_tasks').delete().eq('id', taskId);
   if (error) throw new Error(error.message);
