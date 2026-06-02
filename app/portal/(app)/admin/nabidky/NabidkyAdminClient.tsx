@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { Plus, Check, Ban, FileText, RefreshCw, Trash2 } from 'lucide-react';
+import { Plus, Check, Ban, FileText, RefreshCw, Trash2, FileSignature } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
 import {
@@ -9,6 +9,7 @@ import {
   regenerateQuotePdf,
   markQuoteAccepted,
   cancelQuote,
+  convertQuoteToContract,
 } from '@/lib/actions/quotes';
 
 type Row = {
@@ -64,6 +65,7 @@ export default function NabidkyAdminClient({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState('');
   const [items, setItems] = useState<ItemDraft[]>([newItem()]);
 
@@ -141,6 +143,17 @@ export default function NabidkyAdminClient({
     startTransition(async () => {
       const res = await regenerateQuotePdf(id);
       if (!res.ok) setError(`Regenerace selhala: ${res.error}`);
+    });
+  }
+
+  function handleConvert(id: string) {
+    if (!confirm('Převést tuto nabídku na smlouvu o dílo? Předvyplní se z položek nabídky.')) return;
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await convertQuoteToContract(id);
+      if (!res.ok) setError(res.error);
+      else setNotice('Smlouva vytvořena z nabídky — najdete ji v sekci Smlouvy.');
     });
   }
 
@@ -316,6 +329,12 @@ export default function NabidkyAdminClient({
         </form>
       )}
 
+      {(notice || (error && !open)) && (
+        <div className={`p-4 text-sm font-mono ${error ? 'bg-rust/10 border border-rust/40 text-rust' : 'bg-olive/10 border border-olive/40 text-olive'}`}>
+          {error ?? notice}
+        </div>
+      )}
+
       <div className="bg-coffee overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -372,6 +391,16 @@ export default function NabidkyAdminClient({
                       title="Regenerovat PDF"
                     >
                       <RefreshCw size={13} className={pending ? 'animate-spin' : ''} /> Regen PDF
+                    </button>
+                  )}
+                  {q.status !== 'zruseno' && q.status !== 'expirovano' && (
+                    <button
+                      onClick={() => handleConvert(q.id)}
+                      disabled={pending}
+                      className="text-caramel hover:text-caramel-light mr-2 disabled:opacity-50"
+                      title="Převést na smlouvu o dílo"
+                    >
+                      <FileSignature size={14} />
                     </button>
                   )}
                   {q.status !== 'akceptovano' && q.status !== 'zruseno' && (

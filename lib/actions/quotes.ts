@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
 import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
 import { clientAssignedTo } from '@/lib/actions/ownership';
+import { createContract } from '@/lib/actions/contracts';
 import { notifyPortalUser } from '@/lib/email/notify';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument } from '@/lib/storage/documents';
@@ -257,6 +258,15 @@ export async function markQuoteAccepted(quoteId: string): Promise<{ ok: true } |
   if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
 
   const supabase = await createClient();
+  const { data: cur } = await untyped(supabase).from('quotes').select('status, valid_until').eq('id', quoteId).single();
+  const q = cur as { status?: string; valid_until?: string } | null;
+  if (!q) return { ok: false, error: 'Nabídka nenalezena.' };
+  if (q.status === 'akceptovano') return { ok: false, error: 'Nabídka už je akceptovaná.' };
+  if (q.status === 'zruseno' || q.status === 'expirovano') return { ok: false, error: 'Nelze akceptovat zrušenou/propadlou nabídku.' };
+  if (q.valid_until && q.valid_until < new Date().toISOString().slice(0, 10)) {
+    return { ok: false, error: 'Platnost nabídky vypršela — nelze ji akceptovat.' };
+  }
+
   const { error } = await untyped(supabase)
     .from('quotes')
     .update({ status: 'akceptovano', accepted_at: new Date().toISOString().slice(0, 10) })
@@ -264,6 +274,67 @@ export async function markQuoteAccepted(quoteId: string): Promise<{ ok: true } |
   if (error) return { ok: false, error: 'Nepodařilo se označit jako akceptováno.' };
   revalidatePath('/portal/admin/nabidky');
   return { ok: true };
+}
+
+/**
+ * Převede akceptovanou/aktivní nabídku na smlouvu o dílo (předvyplní z položek)
+ * a propojí je (quotes.contract_id). Šetří ruční přepisování.
+ */
+export async function convertQuoteToContract(
+  quoteId: string,
+): Promise<{ ok: true; contractId: string } | { ok: false; error: string }> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin' && role !== 'obchodnik') return { ok: false, error: 'Nemáte oprávnění.' };
+
+  const admin = createAdminClient();
+  const { data: qRow } = await untyped(admin)
+    .from('quotes')
+    .select('client_id, project_id, title, intro_text, items, total_price, status, contract_id')
+    .eq('id', quoteId)
+    .single();
+  const q = qRow as {
+    client_id?: string;
+    project_id?: string | null;
+    title?: string;
+    intro_text?: string | null;
+    items?: Array<{ label?: string }>;
+    total_price?: number;
+    status?: string;
+    contract_id?: string | null;
+  } | null;
+  if (!q || !q.client_id) return { ok: false, error: 'Nabídka nenalezena.' };
+  if (q.contract_id) return { ok: false, error: 'Z této nabídky už byla vytvořena smlouva.' };
+  if (q.status === 'zruseno' || q.status === 'expirovano') return { ok: false, error: 'Nelze převést zrušenou/propadlou nabídku.' };
+  if (role !== 'admin' && !(await clientAssignedTo(q.client_id, check.viewer.id))) {
+    return { ok: false, error: 'Tento klient vám není přiřazen.' };
+  }
+
+  const bullets = (q.items ?? []).map((it) => it.label).filter((l): l is string => !!l && l.length >= 2).join('\n');
+  const fd = new FormData();
+  fd.set('client_id', q.client_id);
+  if (q.project_id) fd.set('project_id', q.project_id);
+  fd.set('title', q.title ?? 'Smlouva o dílo');
+  fd.set('subject', q.intro_text && q.intro_text.length >= 5 ? q.intro_text : `Zhotovení díla dle nabídky ${q.title ?? ''}`.trim());
+  if (bullets) fd.set('scope_bullets', bullets);
+  fd.set('total_price', String(q.total_price ?? 0));
+
+  const res = await createContract(fd);
+  if (!res.ok) return { ok: false, error: `Smlouvu se nepodařilo vytvořit: ${res.error}` };
+
+  await untyped(admin)
+    .from('quotes')
+    .update({
+      contract_id: res.contractId,
+      status: q.status === 'koncept' || q.status === 'poslano' ? 'akceptovano' : q.status,
+      accepted_at: new Date().toISOString().slice(0, 10),
+    })
+    .eq('id', quoteId);
+
+  revalidatePath('/portal/admin/nabidky');
+  revalidatePath('/portal/admin/smlouvy');
+  return { ok: true, contractId: res.contractId };
 }
 
 export async function cancelQuote(quoteId: string): Promise<{ ok: true } | { ok: false; error: string }> {
