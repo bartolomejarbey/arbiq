@@ -26,7 +26,7 @@ async function loginAction(formData: FormData) {
 
 function sanitizeNext(raw: string): string {
   if (!raw.startsWith('/portal') || raw.startsWith('/portal/login')) {
-    return '/portal/dashboard';
+    return '/portal';
   }
   return raw;
 }
@@ -36,7 +36,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const { next = '/portal/dashboard', error } = await searchParams;
+  const { next = '/portal', error } = await searchParams;
   const safeNext = sanitizeNext(next);
 
   return (

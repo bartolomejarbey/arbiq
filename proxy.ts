@@ -62,13 +62,23 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/portal/crm/dashboard', request.url));
   }
 
+  const staffLanding = role === 'obchodnik' ? '/portal/crm/dashboard' : '/portal/admin/statistiky';
+
+  // Klientská zóna (dashboard/faktury/smlouvy/…) je pro KLIENTA. Admin/obchodník
+  // by tam viděl prázdno ("nevidím klienty") → přesměruj na jejich rozcestník.
+  const CLIENT_ONLY = ['/portal/dashboard', '/portal/faktury', '/portal/smlouvy', '/portal/vysledky', '/portal/doporuceni'];
+  if (role !== 'klient' && CLIENT_ONLY.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return NextResponse.redirect(new URL(staffLanding, request.url));
+  }
+
   // Bare /portal -> role-appropriate landing
   if (pathname === '/portal' || pathname === '/portal/') {
-    const landing =
-      role === 'klient' ? '/portal/dashboard' : role === 'obchodnik' ? '/portal/crm/dashboard' : '/portal/admin/statistiky';
+    const landing = role === 'klient' ? '/portal/dashboard' : staffLanding;
     return NextResponse.redirect(new URL(landing, request.url));
   }
 
+  // Self-heal: přihlášený uživatel se zaseknutou náhledovou cookie ji shodí.
+  if (isPreview) response.cookies.delete(PREVIEW_COOKIE);
   return response;
 }
 
