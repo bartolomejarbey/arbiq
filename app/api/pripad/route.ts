@@ -6,6 +6,7 @@ import { LeadConfirmEmail } from '@/lib/email/templates/lead-confirm';
 import { LeadInternalEmail } from '@/lib/email/templates/lead-internal';
 import { isLikelySpam, isEmailRateLimited, HONEYPOT_FIELD } from '@/lib/spam-protection';
 import { inferSourceTag } from '@/lib/source-tag';
+import { notifyAdmins } from '@/lib/notifications';
 
 const PripadSchema = z.object({
   kampan: z.string().min(1).max(80),
@@ -80,6 +81,14 @@ export async function POST(request: Request) {
     console.error('landing_leads insert failed', insertErr);
     return NextResponse.json({ error: 'Nepodařilo se uložit. Zkuste znovu.' }, { status: 500 });
   }
+
+  // In-app notifikace adminům o novém leadu.
+  void notifyAdmins({
+    type: 'new_lead',
+    title: `Nový lead ${caseNumber}`,
+    body: `${parsed.name} · ${parsed.kampan}${parsed.obor ? ` · ${parsed.obor}` : ''}`,
+    link: '/portal/crm/leady',
+  });
 
   // Best-effort emails. Don't fail the request if Resend hiccups.
   await Promise.allSettled([

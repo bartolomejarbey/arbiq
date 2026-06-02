@@ -8,6 +8,7 @@ import { checkRealViewer, getViewerRole } from '@/lib/supabase/viewer';
 import { sendEmail } from '@/lib/email/send';
 import { MessageEmail } from '@/lib/email/templates/message';
 import { logClientEmail } from '@/lib/email/correspondence';
+import { notifyClientStaff } from '@/lib/notifications';
 
 const ReplySchema = z.object({
   subject: z.string().trim().max(200).optional().default(''),
@@ -143,6 +144,14 @@ export async function sendZoneMessage(formData: FormData): Promise<ReplyResult> 
     toEmail: destination,
     subject,
     body: parsed.body,
+  });
+
+  // In-app notifikace týmu (přiřazený obchodník + admini).
+  await notifyClientStaff(check.viewer.id, {
+    type: 'zone_message',
+    title: `Nová zpráva od klienta: ${name}`,
+    body: subject,
+    link: `/portal/crm/klient/${check.viewer.id}`,
   });
 
   revalidatePath('/portal/dashboard');

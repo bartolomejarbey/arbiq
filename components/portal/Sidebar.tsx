@@ -24,6 +24,7 @@ import {
   FileSignature,
   ArrowLeft,
   ScrollText,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -61,13 +62,19 @@ const adminNav: NavItem[] = [
   { href: '/portal/admin/audit',       label: 'Audit log',  icon: ScrollText },
 ];
 
+const notifItem: NavItem = {
+  href: '/portal/notifikace',
+  label: 'Oznámení',
+  icon: Bell,
+};
+
 const settingsItem: NavItem = {
   href: '/portal/nastaveni',
   label: 'Nastavení',
   icon: Settings,
 };
 
-export default function Sidebar() {
+export default function Sidebar({ unreadNotifications = 0 }: { unreadNotifications?: number }) {
   const { profile, signOut } = useAuth();
   const pathname = usePathname() ?? '';
 
@@ -81,7 +88,7 @@ export default function Sidebar() {
       sections.push({ title: 'Admin', items: adminNav });
     }
   }
-  sections.push({ title: null, items: [settingsItem] });
+  sections.push({ title: null, items: [notifItem, settingsItem] });
 
   return (
     <aside className="w-60 shrink-0 bg-coffee border-r border-tobacco flex flex-col h-screen sticky top-0">
@@ -129,6 +136,11 @@ export default function Sidebar() {
                     >
                       <Icon size={16} />
                       <span>{item.label}</span>
+                      {item.href === '/portal/notifikace' && unreadNotifications > 0 && (
+                        <span className="ml-auto bg-caramel text-espresso text-[10px] font-mono font-bold px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                          {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
