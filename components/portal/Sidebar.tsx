@@ -62,6 +62,12 @@ const adminNav: NavItem[] = [
   { href: '/portal/admin/audit',       label: 'Audit log',  icon: ScrollText },
 ];
 
+const assistantItem: NavItem = {
+  href: '/portal/asistent',
+  label: 'Asistent',
+  icon: Sparkles,
+};
+
 const notifItem: NavItem = {
   href: '/portal/notifikace',
   label: 'Oznámení',
@@ -88,7 +94,10 @@ export default function Sidebar({ unreadNotifications = 0 }: { unreadNotificatio
       sections.push({ title: 'Admin', items: adminNav });
     }
   }
-  sections.push({ title: null, items: [notifItem, settingsItem] });
+  sections.push({
+    title: null,
+    items: profile.role === 'klient' ? [notifItem, settingsItem] : [assistantItem, notifItem, settingsItem],
+  });
 
   return (
     <aside className="w-60 shrink-0 bg-coffee border-r border-tobacco flex flex-col h-screen sticky top-0">
