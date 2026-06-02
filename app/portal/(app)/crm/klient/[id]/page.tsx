@@ -12,6 +12,7 @@ import ContactHistoryForm from './ContactHistoryForm';
 import ClientEmailsForm from './ClientEmailsForm';
 import ClientReplyForm from './ClientReplyForm';
 import GdprActions from './GdprActions';
+import RecurringInvoiceForm, { type RecurringRow } from './RecurringInvoiceForm';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
@@ -126,6 +127,13 @@ export default async function KlientDetailPage({
     created_at: string;
   }>);
 
+  const { data: recurringRows } = await untyped(supabase)
+    .from('recurring_invoices')
+    .select('id, amount, description, kind, due_days, payment_method, interval_months, day_of_month, auto_send, active, next_run, last_run')
+    .eq('client_id', id)
+    .order('created_at', { ascending: false });
+  const recurring = ((recurringRows ?? []) as unknown as RecurringRow[]);
+
   const profile = profileRow as unknown as ClientProfile | null;
   if (!profile) notFound();
 
@@ -203,6 +211,8 @@ export default async function KlientDetailPage({
             billingEmail={profile.billing_email}
             contractEmail={profile.contract_email}
           />
+
+          <RecurringInvoiceForm clientId={profile.id} configs={recurring} />
 
           <GdprActions clientId={profile.id} />
 
