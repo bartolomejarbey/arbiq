@@ -96,7 +96,7 @@ export default function Pricing() {
               key={tier.name}
               className={`relative flex flex-col p-6 md:p-10 transition-all ${
                 tier.highlight
-                  ? 'bg-coffee border-2 border-caramel shadow-2xl lg:-translate-y-4'
+                  ? 'bg-coffee border-2 border-caramel lg:-translate-y-4'
                   : 'bg-coffee border border-tobacco'
               }`}
             >
@@ -146,7 +146,7 @@ export default function Pricing() {
                 href={`/kontakt?balicek=${tier.name.toLowerCase().replace(/\s/g, '-')}`}
                 className={`inline-flex items-center justify-center gap-2 px-6 py-4 font-mono text-xs uppercase tracking-widest font-bold transition-all w-full ${
                   tier.highlight
-                    ? 'bg-caramel text-espresso hover:bg-caramel-light shadow-xl'
+                    ? 'bg-caramel text-espresso hover:bg-caramel-light'
                     : 'border border-caramel text-caramel hover:bg-caramel/10'
                 }`}
               >

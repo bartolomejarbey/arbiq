@@ -22,7 +22,7 @@ export default function LeadDetailDrawer({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-espresso/80 backdrop-blur-sm z-40" />
         <Dialog.Content
-          className="fixed right-0 top-0 bottom-0 w-full max-w-xl bg-coffee z-50 overflow-y-auto shadow-2xl"
+          className="fixed right-0 top-0 bottom-0 w-full max-w-xl bg-coffee z-50 overflow-y-auto"
           aria-describedby={undefined}
         >
           <div className="px-8 py-6 border-b border-tobacco flex items-start justify-between gap-4">

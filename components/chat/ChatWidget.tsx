@@ -131,7 +131,7 @@ export default function ChatWidget() {
         <div className="fixed bottom-6 right-6 z-[60] flex items-start gap-1">
           <button
             onClick={() => { setOpen(true); track('chat_open'); }}
-            className="group bg-caramel hover:bg-caramel-light text-espresso flex items-center gap-2 pl-3 pr-4 py-3 shadow-[0_8px_24px_rgba(0,0,0,0.4)] transition-all hover:scale-105 font-mono text-xs uppercase tracking-widest font-bold"
+            className="group bg-caramel hover:bg-caramel-light text-espresso flex items-center gap-2 pl-3 pr-4 py-3 transition-all hover:scale-105 font-mono text-xs uppercase tracking-widest font-bold"
             aria-label="Otevřít chat s Watsonem"
           >
             <MessageSquare size={18} />
@@ -140,7 +140,7 @@ export default function ChatWidget() {
           </button>
           <button
             onClick={dismiss}
-            className="bg-coffee/95 border border-tobacco text-sandstone hover:text-rust hover:border-rust w-7 h-7 flex items-center justify-center transition-all shadow-md"
+            className="bg-coffee/95 border border-tobacco text-sandstone hover:text-rust hover:border-rust w-7 h-7 flex items-center justify-center transition-all"
             aria-label="Skrýt Watson na zbytek session"
             title="Skrýt"
           >
@@ -150,7 +150,7 @@ export default function ChatWidget() {
       )}
 
       {open && (
-        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] w-[calc(100vw-2rem)] md:w-[380px] h-[80vh] md:h-[560px] bg-coffee border border-tobacco shadow-2xl flex flex-col">
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[60] w-[calc(100vw-2rem)] md:w-[380px] h-[80vh] md:h-[560px] bg-coffee border border-tobacco flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-tobacco bg-espresso">
             <div>
               <div className="font-display italic font-black text-moonlight text-base leading-tight">Pomocník Watson</div>

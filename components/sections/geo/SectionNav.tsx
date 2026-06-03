@@ -40,7 +40,7 @@ export default function SectionNav() {
   }, []);
 
   return (
-    <div className="sticky top-[72px] md:top-[112px] z-40 bg-espresso/95 backdrop-blur-xl border-y border-tobacco shadow-[0_8px_20px_rgba(0,0,0,0.3)]">
+    <div className="sticky top-[72px] md:top-[112px] z-40 bg-espresso/95 backdrop-blur-xl border-y border-tobacco">
       <nav
         aria-label="Sekce stránky"
         className="max-w-7xl mx-auto overflow-x-auto scrollbar-none [mask-image:linear-gradient(to_right,black_85%,transparent)] md:[mask-image:none]"

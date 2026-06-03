@@ -27,7 +27,7 @@ export default function RentgenScenarios() {
 
         <StaggerGrid className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10" staggerDelay={0.2}>
           {/* Karta 1: Nespokojeni */}
-          <div className="bg-coffee border border-tobacco p-8 rotate-[1deg] hover:rotate-0 hover:-translate-y-2 transition-all duration-500 shadow-xl group">
+          <div className="bg-coffee border border-tobacco p-8 rotate-[1deg] hover:rotate-0 hover:-translate-y-2 transition-all duration-500 group">
             <div className="mb-6">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-caramel">
                 <path d="M20 4C11.16 4 4 11.16 4 20s7.16 16 16 16 16-7.16 16-16S28.84 4 20 4zm0 2c7.73 0 14 6.27 14 14s-6.27 14-14 14S6 27.73 6 20 12.27 6 20 6z" fill="currentColor" opacity="0.3"/>
@@ -48,7 +48,7 @@ export default function RentgenScenarios() {
           </div>
 
           {/* Karta 2: Spokojeni, jdeme svou cestou */}
-          <div className="bg-coffee border border-tobacco p-8 -rotate-[1deg] hover:rotate-0 hover:-translate-y-2 transition-all duration-500 shadow-xl group">
+          <div className="bg-coffee border border-tobacco p-8 -rotate-[1deg] hover:rotate-0 hover:-translate-y-2 transition-all duration-500 group">
             <div className="mb-6">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-caramel">
                 <path d="M6 20c0-1 1-2 2-3 2-2 5-3 5-3s-1 3-1 5c0 3 2 5 2 5l-2 2s-1-1-3-2c-2-1-3-3-3-4z" fill="currentColor" opacity="0.5"/>
@@ -69,7 +69,7 @@ export default function RentgenScenarios() {
           </div>
 
           {/* Karta 3: Spolupracujeme */}
-          <div className="bg-coffee border border-tobacco p-8 rotate-[2deg] hover:rotate-0 hover:-translate-y-2 transition-all duration-500 shadow-xl group">
+          <div className="bg-coffee border border-tobacco p-8 rotate-[2deg] hover:rotate-0 hover:-translate-y-2 transition-all duration-500 group">
             <div className="mb-6">
               <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="text-caramel">
                 <path d="M8 22l4-4c1-1 3-1 4 0l4 4 4-4c1-1 3-1 4 0l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
@@ -97,7 +97,7 @@ export default function RentgenScenarios() {
         <RevealOnScroll delay={0.3} className="text-center mt-16 space-y-8">
           <Link
             href="/rentgen"
-            className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:scale-[0.98] transition-transform inline-flex items-center gap-2 shadow-xl"
+            className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:scale-[0.98] transition-transform inline-flex items-center gap-2"
           >
             Objednat Rentgen — bez rizika <ArrowRight size={14} />
           </Link>

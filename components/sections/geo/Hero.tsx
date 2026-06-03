@@ -44,7 +44,7 @@ export default function Hero() {
           <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-16 md:mb-20">
             <a
               href="#audit-zdarma"
-              className="bg-caramel text-espresso px-6 md:px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl inline-flex items-center justify-center gap-2"
+              className="bg-caramel text-espresso px-6 md:px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center justify-center gap-2"
             >
               Vyšetříme Váš případ zdarma <ArrowRight size={14} />
             </a>

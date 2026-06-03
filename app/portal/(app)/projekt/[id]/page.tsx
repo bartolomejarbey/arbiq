@@ -82,11 +82,18 @@ export default async function ProjectDetailPage({
   const documents = ((docRows ?? []) as unknown as DocumentRow[]);
   const rawMessages = ((messageRows ?? []) as unknown as MessageRow[]);
 
-  // Generate signed URLs for documents (1h TTL)
+  // Signed URLs jedním batch voláním (dřív N+1 sekvenční smyčka).
   const docUrls: Record<string, string> = {};
-  for (const d of documents) {
-    const { data } = await supabase.storage.from('documents').createSignedUrl(d.file_path, 3600);
-    if (data?.signedUrl) docUrls[d.id] = data.signedUrl;
+  if (documents.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from('documents')
+      .createSignedUrls(documents.map((d) => d.file_path), 3600);
+    if (signed) {
+      documents.forEach((d, i) => {
+        const u = signed[i]?.signedUrl;
+        if (u) docUrls[d.id] = u;
+      });
+    }
   }
 
   const messages: ThreadMessage[] = rawMessages.map((m) => ({

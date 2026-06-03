@@ -117,7 +117,7 @@ export default function Sidebar({ unreadNotifications = 0 }: { unreadNotificatio
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-4">
+      <nav aria-label="Hlavní navigace" className="flex-1 overflow-y-auto py-4">
         {sections.map((section, idx) => (
           <div key={idx} className="mb-4">
             {section.title && (
@@ -137,13 +137,14 @@ export default function Sidebar({ unreadNotifications = 0 }: { unreadNotificatio
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      aria-current={active ? 'page' : undefined}
                       className={`flex items-center gap-3 px-6 py-2.5 text-sm transition-colors ${
                         active
                           ? 'bg-tobacco text-caramel border-l-2 border-caramel'
                           : 'text-sepia hover:text-moonlight hover:bg-tobacco/50 border-l-2 border-transparent'
                       }`}
                     >
-                      <Icon size={16} />
+                      <Icon size={16} aria-hidden="true" />
                       <span>{item.label}</span>
                       {item.href === '/portal/notifikace' && unreadNotifications > 0 && (
                         <span className="ml-auto bg-caramel text-espresso text-[10px] font-mono font-bold px-1.5 py-0.5 min-w-[18px] text-center leading-none">

@@ -74,7 +74,7 @@ export default function VizitkaPage() {
 
         {/* HERO */}
         <header className="flex flex-col items-center text-center space-y-4">
-          <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-caramel/40 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+          <div className="relative w-32 h-32 overflow-hidden border-2 border-caramel/40">
             <Image
               src="/tym/bartolomej.jpg"
               alt="Bartoloměj Rota"
@@ -94,7 +94,7 @@ export default function VizitkaPage() {
         </header>
 
         {/* QR — pro skenování z mé obrazovky → automatický „Add Contact" prompt */}
-        <section className="bg-parchment text-espresso-text p-6 flex flex-col items-center gap-4 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
+        <section className="bg-parchment text-espresso-text p-6 flex flex-col items-center gap-4">
           <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-espresso-text/70">
             <ScanLine size={14} />
             <span>Naskenujte pro uložení</span>

@@ -16,7 +16,7 @@ const services = [
       "Výstupem je písemný report s prioritizovaným seznamem nálezů. Každý nález má popis problému, dopad na Váš business a konkrétní doporučení, jak ho opravit. Žádné mlžení.",
       "Po reportu následuje 30minutová konzultace, kde projdeme výsledky a zodpovíme Vaše otázky. Pokud se rozhodnete pokračovat s námi, cena Rentgenu se Vám odečte od první zakázky.",
     ],
-    price: "[CENA] KČ",
+    price: "1 500 KČ",
     cta: { label: "Objednat Rentgen", href: "/rentgen" },
   },
   {
@@ -32,7 +32,7 @@ const services = [
       "Používáme moderní technologie: Next.js, Tailwind, Vercel. Nebo WordPress, pokud dává smysl. Vždy volíme stack podle projektu, ne podle toho, co je zrovna trendy.",
       "Každý web předáváme s dokumentací a zaškolením. Nechceme, abyste byli na nás závislí. Chceme, abyste si web mohli spravovat sami — a vrátili se jen když budete potřebovat něco nového.",
     ],
-    price: "OD [CENA] KČ",
+    price: "CENA DLE ROZSAHU",
     cta: { label: "Domluvit projekt", href: "/kontakt" },
   },
   {
@@ -48,7 +48,7 @@ const services = [
       "Webiq analyzuje výkon Vašeho webu. Finatiq hlídá finanční zdraví projektu. Pamatiq spravuje poznámky a dokumentaci. Reklamiq optimalizuje reklamní rozpočty.",
       "Každý nástroj je navržen tak, aby ho zvládl používat i netechnický člověk. Žádné dashboardy plné grafů, kterým nikdo nerozumí. Jen jasné odpovědi na jasné otázky.",
     ],
-    price: "OD [CENA] KČ/MĚSÍC",
+    price: "INDIVIDUÁLNÍ NABÍDKA",
     cta: { label: "Prozkoumat nástroje", href: "/kontakt" },
   },
   {
@@ -64,7 +64,7 @@ const services = [
       "Konzultace je hodinový hovor, kde projdeme Váš konkrétní problém. Může to být business model, cenová strategie, technické rozhodnutí, nebo otázka typu \u201Emám to celé zahodit a začít znovu?\u201C.",
       "Neříkáme Vám, co chcete slyšet. Říkáme Vám, co potřebujete slyšet. A pak Vám pomůžeme udělat správné rozhodnutí — i kdyby to znamenalo, že u nás nic nekoupíte.",
     ],
-    price: "[CENA] KČ/HOD",
+    price: "CENA NA MÍRU",
     cta: { label: "Domluvit konzultaci", href: "/kontakt" },
   },
 ];
@@ -77,7 +77,7 @@ export default function SpecializacePage() {
         <h1 className="font-display font-black text-moonlight text-4xl md:text-6xl lg:text-7xl mb-6">
           Co děláme
         </h1>
-        <p className="text-sepia/70 max-w-2xl text-lg">
+        <p className="text-sepia max-w-2xl text-lg">
           Čtyři nástroje v kufříku jednoho detektiva. Každý nabroušen pro jiný typ digitálního zločinu.
         </p>
       </div>
@@ -121,7 +121,7 @@ export default function SpecializacePage() {
                     </span>
                     <Link
                       href={s.cta.href}
-                      className="bg-caramel text-espresso px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl"
+                      className="bg-caramel text-espresso px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all"
                     >
                       {s.cta.label}
                     </Link>

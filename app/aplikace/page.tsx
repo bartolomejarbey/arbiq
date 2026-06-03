@@ -185,7 +185,7 @@ export default function AplikacePage() {
           {liveApps.map((app) => (
             <div
               key={app.name}
-              className="bg-coffee border border-tobacco p-8 hover:border-caramel/40 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300"
+              className="bg-coffee border border-tobacco p-8 hover:border-caramel/40 hover:-translate-y-1 transition-all duration-300"
             >
               <span className="bg-olive/20 text-olive px-3 py-1 font-mono text-[9px] uppercase tracking-widest">
                 {app.highlight}
@@ -235,7 +235,7 @@ export default function AplikacePage() {
               key={app.name}
               type="button"
               onClick={() => setOpenApp({ ...app, highlight: app.highlight ?? COMING_SOON_HIGHLIGHT, comingSoon: !app.highlight })}
-              className="text-left bg-coffee border border-tobacco p-8 hover:border-caramel/40 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 group"
+              className="text-left bg-coffee border border-tobacco p-8 hover:border-caramel/40 hover:-translate-y-1 transition-all duration-300 group"
             >
               <span className={`px-3 py-1 font-mono text-[9px] uppercase tracking-widest ${app.highlight ? "bg-olive/20 text-olive" : "bg-rust/20 text-rust"}`}>
                 {app.highlight ?? COMING_SOON_HIGHLIGHT}

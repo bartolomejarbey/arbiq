@@ -183,7 +183,7 @@ export default function AutomatizacePage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/rentgen"
-              className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl inline-flex items-center gap-2 justify-center"
+              className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center gap-2 justify-center"
             >
               Chci automatizaci na míru <ArrowRight size={14} />
             </Link>

@@ -80,7 +80,7 @@ export default function FirmaPage() {
         <div className="max-w-3xl mx-auto px-6 md:px-12">
           <Link
             href="/kontakt"
-            className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl inline-flex items-center gap-2"
+            className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center gap-2"
           >
             Domluvit první schůzku <ArrowRight size={14} />
           </Link>

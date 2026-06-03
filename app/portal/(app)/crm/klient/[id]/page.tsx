@@ -96,6 +96,9 @@ export default async function KlientDetailPage({
     { data: noteRows },
     { data: contractRows },
     { data: documentRows },
+    { data: quoteRows },
+    { data: emailRows },
+    { data: recurringRows },
   ] = await Promise.all([
     supabase.from('profiles').select('id, full_name, email, phone, company, ico, website_url, is_active, billing_email, contract_email').eq('id', id).eq('role', 'klient').single(),
     supabase.from('projects').select('id, name, status, progress, total_value').eq('client_id', id).order('created_at', { ascending: false }),
@@ -104,21 +107,11 @@ export default async function KlientDetailPage({
     supabase.from('crm_notes').select('id, content, created_at, author_id, author:profiles!crm_notes_author_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
     untyped(supabase).from('contracts').select('id, contract_number, title, total_price, status, created_at, pdf_url, docx_url').eq('client_id', id).order('created_at', { ascending: false }),
     untyped(supabase).from('documents').select('id, type, title, name, storage_path, file_path, created_at, mime_type, invoice_id, contract_id, quote_id').eq('client_id', id).order('created_at', { ascending: false }),
+    untyped(supabase).from('quotes').select('id, quote_number, title, total_price, status, valid_until, created_at, pdf_url').eq('client_id', id).order('created_at', { ascending: false }),
+    untyped(supabase).from('client_emails').select('id, direction, subject, body, created_at').eq('client_id', id).order('created_at', { ascending: false }).limit(50),
+    untyped(supabase).from('recurring_invoices').select('id, amount, description, kind, due_days, payment_method, interval_months, day_of_month, auto_send, active, next_run, last_run').eq('client_id', id).order('created_at', { ascending: false }),
   ]);
 
-  // Quotes (nabídky) — read separately so we keep the long Promise.all unchanged.
-  const { data: quoteRows } = await untyped(supabase)
-    .from('quotes')
-    .select('id, quote_number, title, total_price, status, valid_until, created_at, pdf_url')
-    .eq('client_id', id)
-    .order('created_at', { ascending: false });
-
-  const { data: emailRows } = await untyped(supabase)
-    .from('client_emails')
-    .select('id, direction, subject, body, created_at')
-    .eq('client_id', id)
-    .order('created_at', { ascending: false })
-    .limit(50);
   const clientEmails = ((emailRows ?? []) as unknown as Array<{
     id: string;
     direction: 'inbound' | 'outbound';
@@ -126,12 +119,6 @@ export default async function KlientDetailPage({
     body: string | null;
     created_at: string;
   }>);
-
-  const { data: recurringRows } = await untyped(supabase)
-    .from('recurring_invoices')
-    .select('id, amount, description, kind, due_days, payment_method, interval_months, day_of_month, auto_send, active, next_run, last_run')
-    .eq('client_id', id)
-    .order('created_at', { ascending: false });
   const recurring = ((recurringRows ?? []) as unknown as RecurringRow[]);
 
   const profile = profileRow as unknown as ClientProfile | null;
@@ -203,7 +190,7 @@ export default async function KlientDetailPage({
         subtitle={profile.company ?? undefined}
         actions={profile.is_active ? null : <StatusBadge kind="task" value="cancelled" />}
       />
-      <div className="px-4 md:px-4 md:px-8 py-8 grid grid-cols-1 md:grid-cols-[1fr_220px] lg:grid-cols-3 gap-8 md:gap-12">
+      <div className="px-4 md:px-8 py-8 grid grid-cols-1 md:grid-cols-[1fr_220px] lg:grid-cols-3 gap-8 md:gap-12">
         <div className="lg:col-span-2 space-y-12">
           <ClientEmailsForm
             clientId={profile.id}

@@ -81,7 +81,7 @@ export default function WeboveStrankyPage() {
               <p className="font-display font-black text-4xl text-espresso-text mb-6">6 — 8 000 Kč</p>
               <p className="text-brown-muted text-sm mt-auto leading-relaxed">Vícestránkový web, kontaktní formulář, responzivní design</p>
             </div>
-            <div className="bg-parchment-aged/70 border-2 border-espresso-text/30 p-10 text-center flex flex-col min-h-[18rem] shadow-lg">
+            <div className="bg-parchment-aged/70 border-2 border-espresso-text/30 p-10 text-center flex flex-col min-h-[18rem]">
               <h3 className="font-display font-bold text-2xl text-espresso-text mb-4">E-shop</h3>
               <p className="font-display font-black text-4xl text-espresso-text mb-6">8 — 20 000 Kč</p>
               <p className="text-brown-muted text-sm mt-auto leading-relaxed">Produktový katalog, platby, správa objednávek</p>
@@ -103,7 +103,7 @@ export default function WeboveStrankyPage() {
         <div className="max-w-3xl mx-auto px-6 md:px-12">
           <Link
             href="/rentgen"
-            className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl inline-flex items-center gap-2"
+            className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center gap-2"
           >
             Chci web, který prodává <ArrowRight size={14} />
           </Link>

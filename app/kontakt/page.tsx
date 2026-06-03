@@ -67,7 +67,7 @@ export default function KontaktPage() {
           <h1 className="font-display font-black text-moonlight text-4xl md:text-6xl lg:text-7xl mb-6">
             Máte případ?
           </h1>
-          <p className="text-sepia/70 max-w-2xl text-lg">
+          <p className="text-sepia max-w-2xl text-lg">
             <Typewriter text="Odpovídáme do 24 hodin." />
           </p>
         </div>
@@ -243,7 +243,7 @@ export default function KontaktPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-2xl w-full disabled:opacity-50 disabled:cursor-wait"
+                  className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all w-full disabled:opacity-50 disabled:cursor-wait"
                 >
                   {submitting ? "Odesílám..." : "Odeslat zprávu"}
                 </button>

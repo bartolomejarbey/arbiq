@@ -73,7 +73,7 @@ export default function TymPage() {
             <h1 className="font-display font-black text-moonlight text-4xl md:text-6xl lg:text-7xl mb-6">
               Kdo za tím stojí
             </h1>
-            <p className="text-sepia/70 max-w-2xl text-lg">
+            <p className="text-sepia max-w-2xl text-lg">
               <Typewriter text="Jeden tým. Čtyři specializace. Žádné anonymní e-maily z call centra." />
             </p>
           </RevealOnScroll>
@@ -86,7 +86,7 @@ export default function TymPage() {
           {teamMembers.map((member) => (
             <div
               key={member.name}
-              className="bg-coffee border-l-4 border-caramel p-8 shadow-xl hover:-translate-y-2 hover:border-caramel/40 hover:shadow-2xl transition-all duration-500"
+              className="bg-coffee border-l-4 border-caramel p-8 hover:-translate-y-2 hover:border-caramel/40 transition-all duration-500"
             >
               {/* Photo */}
               {member.photo ? (

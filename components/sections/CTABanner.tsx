@@ -22,7 +22,7 @@ export default function CTABanner() {
           <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
             <Link
               href="/rentgen"
-              className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light hover:shadow-[0_0_40px_rgba(201,152,106,0.3)] transition-all shadow-2xl"
+              className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all"
             >
               Objednat Rentgen
             </Link>

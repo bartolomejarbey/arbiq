@@ -130,7 +130,7 @@ export default function PripadPage({
       </div>
 
       {/* Progress bar — z-[100] aby překrýval fixed nav (z-50) */}
-      <div className="fixed top-0 left-0 right-0 z-[100] bg-espresso backdrop-blur-sm px-6 py-3 border-b border-caramel/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-espresso backdrop-blur-sm px-6 py-3 border-b border-caramel/10">
         <div className="max-w-xl mx-auto">
           <div className="flex items-center justify-between mb-2">
             <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone">
@@ -177,7 +177,7 @@ export default function PripadPage({
                 </p>
                 <button
                   onClick={() => setStep(2)}
-                  className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl inline-flex items-center gap-2 mx-auto"
+                  className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center gap-2 mx-auto"
                 >
                   Otevřít případ <ArrowRight size={14} />
                 </button>
@@ -460,7 +460,7 @@ export default function PripadPage({
                   <button
                     onClick={handleSubmit}
                     disabled={!answers.name || !answers.email || submitting}
-                    className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl w-full disabled:opacity-50"
+                    className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all w-full disabled:opacity-50"
                   >
                     {submitting ? "Otevíráme případ..." : "Odeslat případ"}
                   </button>

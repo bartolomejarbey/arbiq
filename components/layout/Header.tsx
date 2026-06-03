@@ -53,7 +53,7 @@ export default function Header() {
 
   return (
     <motion.header
-      className="fixed top-0 left-0 right-0 z-50 bg-espresso/85 backdrop-blur-xl border-b border-caramel/10 shadow-[0_20px_50px_rgba(0,0,0,0.4)]"
+      className="fixed top-0 left-0 right-0 z-50 bg-espresso/85 backdrop-blur-xl border-b border-caramel/10"
       initial={{ y: -8 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
@@ -99,7 +99,7 @@ export default function Header() {
 
             {dropdownOpen && (
               <div className="absolute top-full left-0 pt-2">
-                <div className="bg-espresso/95 backdrop-blur-xl border border-caramel/15 shadow-[0_10px_40px_rgba(0,0,0,0.5)] min-w-[220px]">
+                <div className="bg-espresso/95 backdrop-blur-xl border border-caramel/15 min-w-[220px]">
                   {sluzbyLinks.map((link) => (
                     <Link
                       key={link.href}
@@ -142,7 +142,7 @@ export default function Header() {
 
             {tymDropdownOpen && (
               <div className="absolute top-full left-0 pt-2">
-                <div className="bg-espresso/95 backdrop-blur-xl border border-caramel/15 shadow-[0_10px_40px_rgba(0,0,0,0.5)] min-w-[260px]">
+                <div className="bg-espresso/95 backdrop-blur-xl border border-caramel/15 min-w-[260px]">
                   {tymLinks.map((link) => (
                     <Link
                       key={link.href}
@@ -173,7 +173,7 @@ export default function Header() {
         <div className="hidden md:flex items-center gap-4 shrink-0">
           <Link
             href="/portal/login"
-            className="inline-flex items-center gap-2 bg-caramel text-espresso px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest font-bold hover:bg-caramel-light hover:shadow-[0_0_20px_rgba(201,152,106,0.4)] transition-all"
+            className="inline-flex items-center gap-2 bg-caramel text-espresso px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest font-bold hover:bg-caramel-light transition-all"
           >
             <LogIn size={14} strokeWidth={2.5} />
             Klientská zóna

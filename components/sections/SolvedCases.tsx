@@ -57,7 +57,7 @@ export default function SolvedCases() {
               href={c.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`block bg-espresso border-l-4 border-caramel ${c.rotation} hover:rotate-0 transition-all duration-500 shadow-xl overflow-hidden group`}
+              className={`block bg-espresso border-l-4 border-caramel ${c.rotation} hover:rotate-0 transition-all duration-500 overflow-hidden group`}
             >
               <div className="relative h-44 border-b border-tobacco overflow-hidden">
                 <Image

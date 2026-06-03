@@ -157,7 +157,7 @@ export default function FinalCTA() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="bg-caramel text-espresso px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl inline-flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="bg-caramel text-espresso px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {submitting ? 'Otevíráme případ…' : 'Zahájit vyšetřování'} <ArrowRight size={14} />
                 </button>

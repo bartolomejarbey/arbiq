@@ -58,7 +58,7 @@ export default function CreateClientDialog({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-espresso/80 backdrop-blur-sm z-40" />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl bg-coffee z-50 shadow-2xl max-h-[90vh] overflow-y-auto"
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl bg-coffee z-50 max-h-[90vh] overflow-y-auto"
           aria-describedby={undefined}
         >
           <div className="px-6 py-5 border-b border-tobacco flex items-start justify-between gap-4">

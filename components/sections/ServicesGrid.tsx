@@ -88,7 +88,7 @@ function ServiceCard({
   return (
     <Link
       href={href}
-      className="group bg-espresso border border-tobacco p-8 hover:border-caramel hover:bg-tobacco/30 hover:shadow-[0_0_40px_rgba(201,152,106,0.15)] hover:-translate-y-2 transition-all duration-300 flex flex-col"
+      className="group bg-espresso border border-tobacco p-8 hover:border-caramel hover:bg-tobacco/30 hover:-translate-y-2 transition-all duration-300 flex flex-col"
     >
       <Icon size={36} className="text-caramel mb-6 group-hover:scale-110 transition-transform duration-300" strokeWidth={1.5} />
       <h3 className="font-display font-bold text-2xl text-moonlight mb-3 group-hover:text-caramel transition-colors">

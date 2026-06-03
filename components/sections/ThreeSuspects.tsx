@@ -57,10 +57,10 @@ export default function ThreeSuspects() {
             return (
               <div
                 key={s.number}
-                className={`relative bg-coffee border border-tobacco p-8 ${s.rotation} hover:rotate-0 hover:border-caramel/40 hover:-translate-y-2 transition-all duration-500 shadow-xl group`}
+                className={`relative bg-coffee border border-tobacco p-8 ${s.rotation} hover:rotate-0 hover:border-caramel/40 hover:-translate-y-2 transition-all duration-500 group`}
               >
                 {s.mostWanted && (
-                  <div className="absolute -top-3 -right-3 bg-rust text-moonlight px-3 py-1 font-mono text-[9px] uppercase tracking-widest -rotate-12 border border-rust/60 shadow-lg">
+                  <div className="absolute -top-3 -right-3 bg-rust text-moonlight px-3 py-1 font-mono text-[9px] uppercase tracking-widest -rotate-12 border border-rust/60">
                     MOST WANTED
                   </div>
                 )}

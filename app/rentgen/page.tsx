@@ -114,7 +114,7 @@ export default function RentgenPage() {
             <div className="flex flex-wrap gap-4">
               <a
                 href="#objednat"
-                className="bg-caramel text-espresso px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl inline-block"
+                className="bg-caramel text-espresso px-8 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-block"
               >
                 Objednat Rentgen
               </a>
@@ -129,7 +129,7 @@ export default function RentgenPage() {
 
           {/* Right: illustration placeholder */}
           <div className="hidden lg:flex items-center justify-center">
-            <div className="w-80 h-96 bg-coffee border border-tobacco flex items-center justify-center rotate-2 shadow-2xl">
+            <div className="w-80 h-96 bg-coffee border border-tobacco flex items-center justify-center rotate-2">
               <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone/40 text-center px-4">
                 Ilustrace<br />Rentgen
               </span>
@@ -364,7 +364,7 @@ export default function RentgenPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-2xl w-full md:w-auto disabled:opacity-50"
+                className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all w-full md:w-auto disabled:opacity-50"
               >
                 {submitting ? "Otevíráme případ..." : "Objednat Rentgen za 1 500 Kč"}
               </button>

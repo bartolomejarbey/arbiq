@@ -126,7 +126,7 @@ export default function SeoPage() {
           <RevealOnScroll>
             <Link
               href="/rentgen"
-              className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all shadow-xl inline-flex items-center gap-2"
+              className="bg-caramel text-espresso px-10 py-5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all inline-flex items-center gap-2"
             >
               Chci být dohledatelný
               <ArrowRight className="w-4 h-4" />

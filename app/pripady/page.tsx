@@ -96,7 +96,7 @@ export default function PripadyPage() {
           <h1 className="font-display font-black text-moonlight text-4xl md:text-6xl lg:text-7xl mb-6">
             Všechny vyřešené případy
           </h1>
-          <p className="text-sepia/70 max-w-2xl text-lg">
+          <p className="text-sepia max-w-2xl text-lg">
             Každý případ začínal otázkou. Každý skončil výsledkem. Tady je kompletní archiv klientů, kterým jsme pomohli.
           </p>
         </div>
@@ -105,7 +105,7 @@ export default function PripadyPage() {
           {cases.map((c) => (
             <div
               key={c.number}
-              className={`bg-espresso border-l-4 border-caramel ${c.rotation} hover:rotate-0 transition-all duration-500 shadow-xl overflow-hidden`}
+              className={`bg-espresso border-l-4 border-caramel ${c.rotation} hover:rotate-0 transition-all duration-500 overflow-hidden`}
             >
               {c.screenshot ? (
                 <div className="relative h-48 border-b border-tobacco">
