@@ -161,6 +161,101 @@ export async function createPortalUser(formData: FormData): Promise<UserActionRe
   return { ok: true, userId: newUserId, projectId };
 }
 
+const UpdateClientSchema = z.object({
+  full_name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().max(40).optional().default(''),
+  company: z.string().trim().max(160).optional().default(''),
+  ico: z.string().trim().max(20).optional().default(''),
+  dic: z.string().trim().max(20).optional().default(''),
+  street: z.string().trim().max(200).optional().default(''),
+  city: z.string().trim().max(200).optional().default(''),
+  assigned_obchodnik: z.union([z.string().uuid(), z.literal('')]).optional(),
+  parent_client_id: z.union([z.string().uuid(), z.literal('')]).optional(),
+});
+
+/**
+ * Úprava existujícího klienta adminem: jméno, e-mail (vč. auth), telefon,
+ * firma (nepovinná), IČO/DIČ, adresa, přiřazený obchodník a parent firma
+ * (model „jedna osoba = víc firem"). Admin-only.
+ */
+export async function updateClientProfile(
+  clientId: string,
+  formData: FormData,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let caller: { user: { id: string } };
+  try {
+    caller = await requireAdmin();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
+  }
+
+  let parsed: z.infer<typeof UpdateClientSchema>;
+  try {
+    parsed = UpdateClientSchema.parse({
+      full_name: String(formData.get('full_name') ?? ''),
+      email: String(formData.get('email') ?? ''),
+      phone: String(formData.get('phone') ?? ''),
+      company: String(formData.get('company') ?? ''),
+      ico: String(formData.get('ico') ?? ''),
+      dic: String(formData.get('dic') ?? ''),
+      street: String(formData.get('street') ?? ''),
+      city: String(formData.get('city') ?? ''),
+      assigned_obchodnik: String(formData.get('assigned_obchodnik') ?? ''),
+      parent_client_id: String(formData.get('parent_client_id') ?? ''),
+    });
+  } catch (err) {
+    return { ok: false, error: err instanceof z.ZodError ? err.issues.map((i) => i.message).join(', ') : 'Neplatná data.' };
+  }
+
+  const parentId = parsed.parent_client_id || null;
+  if (parentId === clientId) {
+    return { ok: false, error: 'Klient nemůže patřit sám pod sebe.' };
+  }
+
+  const admin = createAdminClient();
+  const { data: current } = await admin.from('profiles').select('email, role').eq('id', clientId).single();
+  const cur = current as { email?: string | null; role?: string } | null;
+  if (!cur) return { ok: false, error: 'Klient nenalezen.' };
+
+  // Zabraň dvouúrovňovému řetězení (parent musí být top-level osoba).
+  if (parentId) {
+    const { data: parent } = await admin.from('profiles').select('parent_client_id').eq('id', parentId).single();
+    if ((parent as { parent_client_id?: string | null } | null)?.parent_client_id) {
+      return { ok: false, error: 'Vybraná firma sama patří pod jiného klienta — zvolte hlavní osobu.' };
+    }
+  }
+
+  // Změna e-mailu → nejdřív v auth (kvůli unikátnosti), pak v profilu.
+  if (cur.email && parsed.email.toLowerCase() !== cur.email.toLowerCase()) {
+    const { error: authErr } = await admin.auth.admin.updateUserById(clientId, { email: parsed.email, email_confirm: true });
+    if (authErr) return { ok: false, error: `Změna e-mailu selhala: ${authErr.message}` };
+  }
+
+  const { error } = await admin
+    .from('profiles')
+    .update({
+      full_name: parsed.full_name,
+      email: parsed.email,
+      phone: parsed.phone || null,
+      company: parsed.company || null,
+      ico: parsed.ico || null,
+      dic: parsed.dic || null,
+      street: parsed.street || null,
+      city: parsed.city || null,
+      assigned_obchodnik: parsed.assigned_obchodnik || null,
+      parent_client_id: parentId,
+    })
+    .eq('id', clientId);
+  if (error) return { ok: false, error: error.message };
+
+  await logAdminAction({ actorId: caller.user.id, action: 'client.update', targetId: clientId, targetType: 'profile' });
+  revalidatePath(`/portal/crm/klient/${clientId}`);
+  revalidatePath('/portal/crm/klienti');
+  revalidatePath('/portal/admin/uzivatele');
+  return { ok: true };
+}
+
 export async function setUserActive(
   userId: string,
   isActive: boolean,

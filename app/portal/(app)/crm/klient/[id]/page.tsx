@@ -13,6 +13,8 @@ import ClientEmailsForm from './ClientEmailsForm';
 import ClientReplyForm from './ClientReplyForm';
 import GdprActions from './GdprActions';
 import RecurringInvoiceForm, { type RecurringRow } from './RecurringInvoiceForm';
+import EditClientForm, { type EditClientData } from '@/components/portal/EditClientForm';
+import CreateClientDialog from '@/components/portal/CreateClientDialog';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
@@ -24,10 +26,15 @@ type ClientProfile = {
   phone: string | null;
   company: string | null;
   ico: string | null;
+  dic: string | null;
+  street: string | null;
+  city: string | null;
   website_url: string | null;
   is_active: boolean;
   billing_email: string | null;
   contract_email: string | null;
+  assigned_obchodnik: string | null;
+  parent_client_id: string | null;
 };
 
 type ProjectRow = {
@@ -99,8 +106,12 @@ export default async function KlientDetailPage({
     { data: quoteRows },
     { data: emailRows },
     { data: recurringRows },
+    { data: viewerRoleRow },
+    { data: obchodniciRows },
+    { data: parentRows },
+    { data: childRows },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, email, phone, company, ico, website_url, is_active, billing_email, contract_email').eq('id', id).eq('role', 'klient').single(),
+    supabase.from('profiles').select('id, full_name, email, phone, company, ico, dic, street, city, website_url, is_active, billing_email, contract_email, assigned_obchodnik, parent_client_id').eq('id', id).eq('role', 'klient').single(),
     supabase.from('projects').select('id, name, status, progress, total_value').eq('client_id', id).order('created_at', { ascending: false }),
     supabase.from('invoices').select('id, invoice_number, amount, description, issued_at, due_date, paid_at, status, pdf_url').eq('client_id', id).order('issued_at', { ascending: false }),
     supabase.from('crm_contacts').select('id, type, note, next_followup, created_at, obchodnik:profiles!crm_contacts_obchodnik_id_fkey(full_name)').eq('client_id', id).order('created_at', { ascending: false }),
@@ -110,7 +121,16 @@ export default async function KlientDetailPage({
     untyped(supabase).from('quotes').select('id, quote_number, title, total_price, status, valid_until, created_at, pdf_url').eq('client_id', id).order('created_at', { ascending: false }),
     untyped(supabase).from('client_emails').select('id, direction, subject, body, created_at').eq('client_id', id).order('created_at', { ascending: false }).limit(50),
     untyped(supabase).from('recurring_invoices').select('id, amount, description, kind, due_days, payment_method, interval_months, day_of_month, auto_send, active, next_run, last_run').eq('client_id', id).order('created_at', { ascending: false }),
+    supabase.from('profiles').select('role').eq('id', viewer.id).single(),
+    supabase.from('profiles').select('id, full_name, email').in('role', ['obchodnik', 'admin']).eq('is_active', true).order('full_name'),
+    untyped(supabase).from('profiles').select('id, full_name, company').eq('role', 'klient').is('parent_client_id', null).neq('id', id).order('full_name'),
+    untyped(supabase).from('profiles').select('id, full_name, company, is_active').eq('parent_client_id', id).order('full_name'),
   ]);
+
+  const isAdmin = (viewerRoleRow as { role?: string } | null)?.role === 'admin';
+  const obchodnici = ((obchodniciRows ?? []) as unknown as Array<{ id: string; full_name: string | null; email: string }>);
+  const parentOptions = ((parentRows ?? []) as unknown as Array<{ id: string; full_name: string; company: string | null }>);
+  const childFirms = ((childRows ?? []) as unknown as Array<{ id: string; full_name: string; company: string | null; is_active: boolean }>);
 
   const clientEmails = ((emailRows ?? []) as unknown as Array<{
     id: string;
@@ -182,13 +202,39 @@ export default async function KlientDetailPage({
   const quotes = ((quoteRows ?? []) as unknown as QuoteRow[]);
   const totalQuotes = quotes.reduce((s, q) => s + Number(q.total_price ?? 0), 0);
 
+  const editData: EditClientData = {
+    id: profile.id,
+    full_name: profile.full_name,
+    email: profile.email,
+    phone: profile.phone,
+    company: profile.company,
+    ico: profile.ico,
+    dic: profile.dic,
+    street: profile.street,
+    city: profile.city,
+    assigned_obchodnik: profile.assigned_obchodnik,
+    parent_client_id: profile.parent_client_id,
+  };
+
   return (
     <div>
       <PageHeader
         eyebrow="Klient"
         title={profile.full_name}
         subtitle={profile.company ?? undefined}
-        actions={profile.is_active ? null : <StatusBadge kind="task" value="cancelled" />}
+        actions={
+          <div className="flex items-center gap-2">
+            {!profile.is_active && <StatusBadge kind="task" value="cancelled" />}
+            {isAdmin && <EditClientForm client={editData} obchodnici={obchodnici} parents={parentOptions} />}
+            {isAdmin && profile.parent_client_id === null && (
+              <CreateClientDialog
+                obchodnici={obchodnici}
+                presetParent={{ id: profile.id, full_name: profile.full_name }}
+                triggerLabel="Přidat firmu"
+              />
+            )}
+          </div>
+        }
       />
       <div className="px-4 md:px-8 py-8 grid grid-cols-1 md:grid-cols-[1fr_220px] lg:grid-cols-3 gap-8 md:gap-12">
         <div className="lg:col-span-2 space-y-12">
@@ -202,6 +248,41 @@ export default async function KlientDetailPage({
           <RecurringInvoiceForm clientId={profile.id} configs={recurring} />
 
           <GdprActions clientId={profile.id} />
+
+          {(isAdmin || childFirms.length > 0 || profile.parent_client_id) && (
+            <section>
+              <h2 className="font-display italic font-black text-2xl text-moonlight mb-4 flex items-center gap-3">
+                <FileSignature size={20} className="text-caramel" />
+                <span>Propojené firmy</span>
+              </h2>
+              {profile.parent_client_id && (
+                <p className="text-sandstone text-sm mb-3 bg-coffee p-4 border-l-2 border-caramel/40">
+                  Tato firma patří pod hlavní osobu —{' '}
+                  <Link href={`/portal/crm/klient/${profile.parent_client_id}`} className="text-caramel hover:text-caramel-light">
+                    otevřít hlavní profil
+                  </Link>.
+                </p>
+              )}
+              {childFirms.length > 0 ? (
+                <ul className="space-y-2">
+                  {childFirms.map((f) => (
+                    <li key={f.id} className="bg-coffee p-4 flex items-center justify-between gap-4">
+                      <Link href={`/portal/crm/klient/${f.id}`} className="text-moonlight hover:text-caramel">
+                        {f.full_name}{f.company ? ` · ${f.company}` : ''}
+                      </Link>
+                      {!f.is_active && <StatusBadge kind="task" value="cancelled" />}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                !profile.parent_client_id && (
+                  <p className="text-sandstone text-sm bg-coffee p-4">
+                    Zatím žádné další firmy téže osoby.{isAdmin ? ' Přidejte je tlačítkem „Přidat firmu" nahoře.' : ''}
+                  </p>
+                )
+              )}
+            </section>
+          )}
 
           <section>
             <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">E-mailová korespondence</h2>

@@ -13,9 +13,14 @@ export type ExistingClientOption = { id: string; full_name: string; company: str
 export default function CreateClientDialog({
   obchodnici,
   existingClients = [],
+  presetParent,
+  triggerLabel,
 }: {
   obchodnici: ObchodnikOption[];
   existingClients?: ExistingClientOption[];
+  /** Když je zadáno, nový klient je rovnou „další firma" této osoby (parent zamčen). */
+  presetParent?: { id: string; full_name: string };
+  triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +40,7 @@ export default function CreateClientDialog({
     fd.set('role', 'klient');
     fd.set('send_invite', 'true');
     fd.set('create_initial_project', withProject ? 'true' : '');
+    if (presetParent) fd.set('parent_client_id', presetParent.id);
     startTransition(async () => {
       const res = await createPortalUser(fd);
       if (!res.ok) {
@@ -52,7 +58,7 @@ export default function CreateClientDialog({
       <Dialog.Trigger asChild>
         <button className="inline-flex items-center gap-2 bg-caramel hover:bg-caramel-light text-espresso px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest font-bold transition-all">
           <Plus size={14} strokeWidth={2.5} />
-          Nový klient
+          {triggerLabel ?? 'Nový klient'}
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
@@ -63,7 +69,7 @@ export default function CreateClientDialog({
         >
           <div className="px-6 py-5 border-b border-tobacco flex items-start justify-between gap-4">
             <Dialog.Title className="font-display italic font-black text-xl text-moonlight">
-              Nový klient
+              {presetParent ? `Další firma — ${presetParent.full_name}` : 'Nový klient'}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button className="text-sandstone hover:text-moonlight" aria-label="Zavřít">
@@ -133,7 +139,7 @@ export default function CreateClientDialog({
               </select>
             </Field>
 
-            {existingClients.length > 0 && (
+            {!presetParent && existingClients.length > 0 && (
               <Field label="Patří k existující osobě (další firma téhož klienta)" htmlFor="parent_client_id">
                 <select id="parent_client_id" name="parent_client_id" defaultValue="" disabled={pending} className={inputClass}>
                   <option value="">— samostatná osoba —</option>
