@@ -10,6 +10,7 @@ import { formatMoney, formatDate } from '@/lib/formatters';
 import { sendEmail } from '@/lib/email/send';
 import { logClientEmail } from '@/lib/email/correspondence';
 import { clientAssignedTo } from '@/lib/actions/ownership';
+import { logAdminAction } from '@/lib/audit';
 import { InvoiceDeliveryEmail } from '@/lib/email/templates/invoice-delivery';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument, downloadDocument } from '@/lib/storage/documents';
@@ -715,12 +716,12 @@ export async function createCreditNote(
   const admin = createAdminClient();
   const { data: origRow } = await untyped(admin)
     .from('invoices')
-    .select('id, invoice_number, kind, client_id, project_id, customer_override, items, amount, description, payment_method')
+    .select('id, invoice_number, kind, status, client_id, project_id, customer_override, items, amount, description, payment_method')
     .eq('id', invoiceId)
     .single();
   if (!origRow) return { ok: false, error: 'Faktura nenalezena.' };
   const o = origRow as {
-    invoice_number: string; kind: string; client_id: string | null; project_id: string | null;
+    invoice_number: string; kind: string; status: string; client_id: string | null; project_id: string | null;
     customer_override: Record<string, string | null> | null;
     items: unknown; amount: number; description: string | null; payment_method: string | null;
   };
@@ -755,7 +756,18 @@ export async function createCreditNote(
     return { ok: false, error: 'Faktura nemá odběratele.' };
   }
 
-  return createInvoice(f);
+  const result = await createInvoice(f);
+
+  // Variant 1: dobropis = původní faktura padá. Stornuj ji. Výjimka: už zaplacená
+  // faktura zůstává 'zaplaceno' (peníze reálně přišly) — dobropis ji vynuluje
+  // záporným dokladem, storno paid faktury by zkreslilo účetnictví.
+  if (result.ok && o.status !== 'zaplaceno' && o.status !== 'zruseno') {
+    await untyped(admin).from('invoices').update({ status: 'zruseno' }).eq('id', invoiceId);
+    await logAdminAction({ actorId: check.viewer.id, action: 'invoice.cancel_via_credit_note', targetId: invoiceId, targetType: 'invoice' });
+    revalidatePath('/portal/admin/faktury');
+  }
+
+  return result;
 }
 
 // markOverdueInvoices přesunuto do lib/jobs/invoice-jobs.ts (NE 'use server'),
