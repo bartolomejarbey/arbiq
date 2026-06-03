@@ -69,6 +69,7 @@ const CreateInvoiceSchema = z.object({
   customer_override: CustomerOverrideSchema.optional(),
   project_id: z.string().uuid().optional(),
   contract_id: z.string().uuid().optional(),
+  corrected_invoice_id: z.string().uuid().optional(),
   invoice_number: z.string().trim().min(1).max(40).regex(/^[A-Za-z0-9._\/-]+$/, 'Číslo smí obsahovat jen písmena, číslice, ._-/').optional(),
   kind: z.enum(['zaloha', 'konecna', 'dobropis', 'paushal']).default('konecna'),
   // Plain text popis (kompatibilita) nebo items pole
@@ -138,6 +139,7 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       customer_override: customerOverrideRaw,
       project_id: String(formData.get('project_id') ?? '') || undefined,
       contract_id: String(formData.get('contract_id') ?? '') || undefined,
+      corrected_invoice_id: String(formData.get('corrected_invoice_id') ?? '') || undefined,
       invoice_number: (String(formData.get('invoice_number') ?? '').trim()) || undefined,
       kind: String(formData.get('kind') ?? 'konecna') as 'zaloha' | 'konecna' | 'dobropis' | 'paushal',
       amount: String(formData.get('amount') ?? ''),
@@ -161,26 +163,34 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
     return { ok: false, error: 'Vyber klienta nebo vyplň údaje odběratele ručně.' };
   }
 
-  // Spočítej amount z items, fallback na pole amount.
+  // Spočítej částku z items, fallback na pole amount. Bereme absolutní hodnotu;
+  // znaménko řeší typ dokladu níže (dobropis = záporné).
   const itemsTotal = parsed.items?.reduce((s, it) => s + it.quantity * it.unit_price, 0) ?? 0;
   const amountFromString = parsed.amount
     ? Number(parsed.amount.replace(/\s/g, '').replace(',', '.'))
     : 0;
-  const amount = itemsTotal > 0 ? itemsTotal : amountFromString;
-  if (!Number.isFinite(amount) || amount <= 0) {
+  const absAmount = Math.abs(itemsTotal !== 0 ? itemsTotal : amountFromString);
+  if (!Number.isFinite(absAmount) || absAmount <= 0) {
     return { ok: false, error: 'Neplatná částka.' };
   }
+  const isDobropis = parsed.kind === 'dobropis';
+  // Dobropis = ZÁPORNÁ částka (vrácení/oprava), bez QR a bez výzvy k úhradě.
+  const amount = isDobropis ? -absAmount : absAmount;
 
-  // Pokud nebyly položky zadány, vytvoříme jednu z description + amount.
-  const finalItems: InvoiceItem[] = parsed.items && parsed.items.length > 0
+  // Pokud nebyly položky zadány, vytvoříme jednu z description + částky.
+  const baseItems: InvoiceItem[] = parsed.items && parsed.items.length > 0
     ? parsed.items
     : [{
-        label: parsed.description || (parsed.kind === 'zaloha' ? 'Záloha dle smlouvy' : 'Vystavení faktury'),
+        label: parsed.description || (parsed.kind === 'zaloha' ? 'Záloha dle smlouvy' : isDobropis ? 'Dobropis' : 'Vystavení faktury'),
         description: null,
         quantity: 1,
         unit: 'ks',
-        unit_price: amount,
+        unit_price: absAmount,
       }];
+  // U dobropisu otoč znaménko položek, ať řádky i součet sedí se zápornou částkou.
+  const finalItems: InvoiceItem[] = isDobropis
+    ? baseItems.map((it) => ({ ...it, unit_price: -Math.abs(it.unit_price) }))
+    : baseItems;
 
   let invoiceNumber: string;
   if (parsed.invoice_number) {
@@ -215,7 +225,10 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       description: parsed.description || null,
       issued_at: parsed.issued_at ?? new Date().toISOString().slice(0, 10),
       due_date: parsed.due_date,
-      status: 'ceka',
+      // Dobropis se neinkasuje → rovnou vyrovnaný, ať nesedí v „čeká"/po splatnosti.
+      status: isDobropis ? 'zaplaceno' : 'ceka',
+      paid_at: isDobropis ? (parsed.issued_at ?? new Date().toISOString().slice(0, 10)) : null,
+      corrected_invoice_id: parsed.corrected_invoice_id ?? null,
       variable_symbol: variableSymbol,
       constant_symbol: parsed.constant_symbol ?? null,
       payment_method: parsed.payment_method,
@@ -287,7 +300,7 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       description: parsed.description || null,
     };
     const pdf = await renderInvoicePdf({ invoice: doc, customer, dodavatel });
-    qrPayload = parsed.payment_method === 'cash' ? null : buildSpaydPayload({
+    qrPayload = (parsed.payment_method === 'cash' || isDobropis) ? null : buildSpaydPayload({
       iban: dodavatel.iban,
       bic: dodavatel.bic,
       amount,
@@ -682,6 +695,67 @@ export async function bulkSendInvoices(
     results.push(r.ok ? { id, ok: true, sentTo: r.sentTo } : { id, ok: false, error: r.error });
   }
   return { ok: true, results };
+}
+
+/**
+ * Vystaví dobropis (opravný daňový doklad) k existující faktuře — pro špatně
+ * poslanou fakturu nebo nedodanou službu. Vytvoří NOVÝ doklad kind='dobropis'
+ * se zápornou částkou, navázaný na původní fakturu. Původní fakturu needituje
+ * (na to je samostatné storno). Admin only.
+ */
+export async function createCreditNote(
+  invoiceId: string,
+  reason?: string,
+): Promise<InvoiceActionResult> {
+  const check = await checkRealViewer();
+  if (!check.ok) return { ok: false, error: check.error };
+  const role = await getViewerRole();
+  if (role !== 'admin') return { ok: false, error: 'Dobropis smí vystavit jen administrátor.' };
+
+  const admin = createAdminClient();
+  const { data: origRow } = await untyped(admin)
+    .from('invoices')
+    .select('id, invoice_number, kind, client_id, project_id, customer_override, items, amount, description, payment_method')
+    .eq('id', invoiceId)
+    .single();
+  if (!origRow) return { ok: false, error: 'Faktura nenalezena.' };
+  const o = origRow as {
+    invoice_number: string; kind: string; client_id: string | null; project_id: string | null;
+    customer_override: Record<string, string | null> | null;
+    items: unknown; amount: number; description: string | null; payment_method: string | null;
+  };
+  if (o.kind === 'dobropis') return { ok: false, error: 'Na dobropis nelze vystavit další dobropis.' };
+
+  const f = new FormData();
+  f.set('kind', 'dobropis');
+  f.set('due_date', new Date().toISOString().slice(0, 10));
+  f.set('payment_method', o.payment_method || 'bank');
+  f.set('corrected_invoice_id', invoiceId);
+  f.set('description', `Dobropis k faktuře ${o.invoice_number}${reason ? ` — ${reason}` : ''}`);
+
+  // Položky z původní faktury (createInvoice u dobropisu otočí znaménko na záporné).
+  const items = Array.isArray(o.items) ? (o.items as Array<{ unit_price?: number }>) : [];
+  if (items.length > 0) {
+    f.set('items', JSON.stringify(items.map((it) => ({ ...it, unit_price: Math.abs(Number(it.unit_price ?? 0)) }))));
+  } else {
+    f.set('amount', String(Math.abs(Number(o.amount ?? 0))));
+  }
+
+  if (o.client_id) {
+    f.set('client_id', o.client_id);
+    if (o.project_id) f.set('project_id', o.project_id);
+  } else if (o.customer_override) {
+    f.set('no_client', 'on');
+    const co = o.customer_override;
+    for (const k of ['full_name', 'company', 'email', 'phone', 'ico', 'dic', 'street', 'city'] as const) {
+      const v = co[k];
+      if (typeof v === 'string' && v) f.set(`cust_${k}`, v);
+    }
+  } else {
+    return { ok: false, error: 'Faktura nemá odběratele.' };
+  }
+
+  return createInvoice(f);
 }
 
 // markOverdueInvoices přesunuto do lib/jobs/invoice-jobs.ts (NE 'use server'),

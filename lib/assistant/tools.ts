@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { untyped } from '@/lib/supabase/untyped';
 import { clientAssignedTo } from '@/lib/actions/ownership';
 import { createQuote } from '@/lib/actions/quotes';
-import { createInvoice, sendInvoiceToClient, markInvoicePaid, cancelInvoice } from '@/lib/actions/invoices';
+import { createInvoice, sendInvoiceToClient, markInvoicePaid, cancelInvoice, createCreditNote } from '@/lib/actions/invoices';
 import { createContract, sendContractToClient } from '@/lib/actions/contracts';
 import { createPortalUser, updateClientProfile } from '@/lib/actions/users';
 import { createTask } from '@/lib/actions/tasks';
@@ -20,7 +20,7 @@ export type ToolCtx = { role: AssistantRole; viewerId: string };
 
 /** Nástroje vyhrazené jen adminovi (finanční doklady / správa účtů). */
 const ADMIN_ONLY = new Set([
-  'create_client', 'create_invoice', 'update_client',
+  'create_client', 'create_invoice', 'create_credit_note', 'update_client',
   'mark_invoice_paid', 'cancel_invoice', 'send_recommendation',
 ]);
 
@@ -194,6 +194,14 @@ export const ASSISTANT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
       name: 'mark_invoice_paid',
       description: 'Označí fakturu jako zaplacenou. Jen admin.',
       parameters: { type: 'object', properties: { invoice_id: { type: 'string' } }, required: ['invoice_id'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_credit_note',
+      description: 'Vystaví dobropis (opravný daňový doklad) k existující faktuře — pro špatně poslanou fakturu nebo nedodanou službu. Záporná částka, navázáno na původní fakturu. Jen admin. invoice_id zjistíš z list_invoices / get_client_overview.',
+      parameters: { type: 'object', properties: { invoice_id: { type: 'string' }, reason: { type: 'string' } }, required: ['invoice_id'] },
     },
   },
   {
@@ -400,6 +408,8 @@ export async function executeAssistantTool(name: string, args: Record<string, un
       }
       case 'mark_invoice_paid':
         return out(await markInvoicePaid(String(args.invoice_id ?? '')));
+      case 'create_credit_note':
+        return out(await createCreditNote(String(args.invoice_id ?? ''), typeof args.reason === 'string' ? args.reason : undefined));
       case 'cancel_invoice':
         return out(await cancelInvoice(String(args.invoice_id ?? '')));
       case 'update_project': {

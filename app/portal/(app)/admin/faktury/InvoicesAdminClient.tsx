@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { Plus, Check, Ban, FileText, RefreshCw, ChevronDown, ChevronRight, Send, Download, Loader2, CheckSquare, Square, MinusSquare } from 'lucide-react';
+import { Plus, Check, Ban, FileText, FileMinus, RefreshCw, ChevronDown, ChevronRight, Send, Download, Loader2, CheckSquare, Square, MinusSquare } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
-import { createInvoice, markInvoicePaid, cancelInvoice, regenerateInvoicePdf, sendInvoiceToClient, bulkSendInvoices } from '@/lib/actions/invoices';
+import { createInvoice, markInvoicePaid, cancelInvoice, regenerateInvoicePdf, sendInvoiceToClient, bulkSendInvoices, createCreditNote } from '@/lib/actions/invoices';
 import IcoLookup from '@/components/portal/IcoLookup';
 
 type Row = {
   id: string;
   invoice_number: string;
+  kind: string;
   amount: number;
   description: string | null;
   issued_at: string;
@@ -97,6 +98,18 @@ export default function InvoicesAdminClient({
     startTransition(async () => {
       const res = await cancelInvoice(id);
       if (!res.ok) setError(res.error);
+    });
+  }
+
+  function handleCreditNote(id: string, number: string) {
+    const reason = window.prompt(`Vystavit dobropis k faktuře ${number}?\nDůvod (volitelné — objeví se na dokladu):`, '');
+    if (reason === null) return; // zrušeno
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await createCreditNote(id, reason.trim() || undefined);
+      if (!res.ok) setError(`Dobropis se nepodařilo vystavit: ${res.error}`);
+      else setNotice(`Dobropis k faktuře ${number} vystaven.`);
     });
   }
 
@@ -584,6 +597,9 @@ export default function InvoicesAdminClient({
                           )}
                           {inv.status !== 'zaplaceno' && inv.status !== 'zruseno' && (
                             <button onClick={() => handleCancel(inv.id)} disabled={pending} className="text-sandstone hover:text-rust disabled:opacity-50" title="Stornovat"><Ban size={15} /></button>
+                          )}
+                          {inv.kind !== 'dobropis' && inv.status !== 'zruseno' && (
+                            <button onClick={() => handleCreditNote(inv.id, inv.invoice_number)} disabled={pending} className="text-sandstone hover:text-caramel disabled:opacity-50" title="Vystavit dobropis"><FileMinus size={15} /></button>
                           )}
                         </div>
                       </div>

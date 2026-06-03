@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 type Row = {
   id: string;
   invoice_number: string;
+  kind: string;
   amount: number;
   description: string | null;
   issued_at: string;
@@ -37,7 +38,7 @@ export default async function FakturyAdminPage() {
   const [{ data: invRows }, { data: clients }, { data: projects }] = await Promise.all([
     supabase
       .from('invoices')
-      .select('id, invoice_number, amount, description, issued_at, due_date, status, pdf_url, shared_at, client_id, customer_override, client:profiles!invoices_client_id_fkey(full_name, email, billing_email, company, ico, parent_client_id), project:projects(id, name)')
+      .select('id, invoice_number, kind, amount, description, issued_at, due_date, status, pdf_url, shared_at, client_id, customer_override, client:profiles!invoices_client_id_fkey(full_name, email, billing_email, company, ico, parent_client_id), project:projects(id, name)')
       .order('issued_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name').eq('role', 'klient').order('full_name'),
     supabase.from('projects').select('id, name, client_id').order('name'),

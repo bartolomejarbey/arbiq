@@ -86,7 +86,8 @@ export async function renderInvoicePdf(opts: {
   const variableSymbol = invoice.variableSymbol ?? invoice.invoiceNumber.replace(/\D/g, '');
 
   let qrDataUrl = '';
-  if (invoice.paymentMethod !== 'cash') {
+  // Dobropis se neplatí (je to vrácení/oprava) → žádná QR platba.
+  if (invoice.paymentMethod !== 'cash' && invoice.kind !== 'dobropis') {
     try {
       qrDataUrl = await buildSpaydQrDataUrl({
         iban: dodavatel.iban,
@@ -426,7 +427,7 @@ export async function renderInvoicePdf(opts: {
                   marginBottom: 4,
                 }}
               >
-                K úhradě
+                {invoice.kind === 'dobropis' ? 'Opravná částka' : 'K úhradě'}
               </Text>
               <Text style={{ fontFamily: 'Inter', fontSize: 9.5, color: COLORS.sepia }}>
                 Mezisoučet  {fmtMoney(subtotal, currency)}
