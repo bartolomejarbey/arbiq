@@ -35,7 +35,10 @@ export default async function KlientiPage() {
     const [clientsResp, viewerProfileResp, obchResp] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, full_name, email, company, is_active, created_at, parent_client_id, parent:profiles!profiles_parent_client_id_fkey(full_name, company), projects(id, total_value, status)')
+        // POZOR: žádný self-referenční embed (parent:profiles!…) — PostgREST ho zde
+        // neumí přeložit (PGRST200) a shodil by CELÝ dotaz → prázdný seznam klientů.
+        // projects musí mít explicitní FK hint, protože projects má 2 FK na profiles.
+        .select('id, full_name, email, company, is_active, created_at, parent_client_id, projects:projects!projects_client_id_fkey(id, total_value, status)')
         .eq('role', 'klient')
         .order('full_name', { ascending: true }),
       supabase.from('profiles').select('role').eq('id', viewer.id).single(),
@@ -46,7 +49,29 @@ export default async function KlientiPage() {
         .eq('is_active', true)
         .order('full_name'),
     ]);
+    if (clientsResp.error) {
+      // Nikdy tiše neskrývat chybu dotazu za „prázdný seznam" — to nás stálo 5 kol ladění.
+      console.error('[crm/klienti] načtení klientů selhalo:', clientsResp.error.message);
+    }
     clients = ((clientsResp.data ?? []) as unknown as ClientRow[]);
+
+    // Jména „mateřských" klientů načteme zvlášť (viz pozn. výše o self-embed).
+    const parentIds = [...new Set(clients.map((c) => c.parent_client_id).filter((x): x is string => !!x))];
+    if (parentIds.length > 0) {
+      const { data: parentRows } = await supabase
+        .from('profiles')
+        .select('id, full_name, company')
+        .in('id', parentIds);
+      const pmap = new Map(
+        ((parentRows ?? []) as Array<{ id: string; full_name: string; company: string | null }>)
+          .map((p) => [p.id, { full_name: p.full_name, company: p.company }]),
+      );
+      clients = clients.map((c) => ({
+        ...c,
+        parent: c.parent_client_id ? pmap.get(c.parent_client_id) ?? null : null,
+      }));
+    }
+
     isAdmin = (viewerProfileResp.data as { role?: string } | null)?.role === 'admin';
     if (isAdmin) {
       obchodnici = ((obchResp.data ?? []) as unknown as ObchodnikOption[]);

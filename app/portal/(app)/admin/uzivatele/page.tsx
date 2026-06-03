@@ -24,13 +24,23 @@ export default async function UzivateleAdminPage() {
   const supabase = await createClient();
   const user = viewer;
 
-  const { data } = await supabase
+  // POZOR: žádný self-referenční embed (parent:profiles!…) — PostgREST ho neumí
+  // přeložit (PGRST200) a shodil by celý dotaz → prázdný seznam uživatelů.
+  const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, is_active, assigned_obchodnik, parent_client_id, company, parent:profiles!profiles_parent_client_id_fkey(full_name, company), created_at')
+    .select('id, full_name, email, role, is_active, assigned_obchodnik, parent_client_id, company, created_at')
     .order('role', { ascending: true })
     .order('full_name', { ascending: true });
 
-  const users = ((data ?? []) as unknown as ProfileRow[]);
+  if (error) console.error('[admin/uzivatele] načtení uživatelů selhalo:', error.message);
+
+  let users = ((data ?? []) as unknown as ProfileRow[]);
+  // parent dohledáme v paměti — dotaz vrací všechny profily, takže rodič už je v sadě.
+  const byId = new Map(users.map((u) => [u.id, u]));
+  users = users.map((u) => {
+    const p = u.parent_client_id ? byId.get(u.parent_client_id) : undefined;
+    return { ...u, parent: p ? { full_name: p.full_name, company: p.company } : null };
+  });
   const obchodnici = users.filter((u) => u.role === 'obchodnik' || u.role === 'admin');
   const existingClients = users
     .filter((u) => u.role === 'klient' && u.parent_client_id === null)
