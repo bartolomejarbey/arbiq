@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useTransition, useMemo } from 'react';
-import { Plus, Check, Ban, FileText, RefreshCw, ChevronDown, Send } from 'lucide-react';
+import { Plus, Check, Ban, FileText, RefreshCw, ChevronDown, ChevronRight, Send, Download, Loader2, CheckSquare, Square, MinusSquare } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
-import { createInvoice, markInvoicePaid, cancelInvoice, regenerateInvoicePdf, sendInvoiceToClient } from '@/lib/actions/invoices';
+import { createInvoice, markInvoicePaid, cancelInvoice, regenerateInvoicePdf, sendInvoiceToClient, bulkSendInvoices } from '@/lib/actions/invoices';
 import IcoLookup from '@/components/portal/IcoLookup';
 
 type Row = {
@@ -18,10 +18,13 @@ type Row = {
   pdf_url: string | null;
   shared_at: string | null;
   client_id: string | null;
-  client: { full_name: string; email: string; billing_email: string | null } | null;
+  client: { full_name: string; email: string; billing_email: string | null; company: string | null; ico: string | null; parent_client_id: string | null } | null;
   customer_override: { full_name?: string | null; company?: string | null; email?: string | null } | null;
   project: { id: string; name: string } | null;
 };
+
+type Firma = { firmaId: string; label: string; subLabel: string | null; invoices: Row[]; total: number };
+type PersonGroup = { personId: string; personName: string; firmy: Firma[]; total: number; count: number };
 
 type ClientOpt = { id: string; full_name: string };
 type ProjectOpt = { id: string; name: string; client_id: string };
@@ -113,10 +116,128 @@ export default function InvoicesAdminClient({
     if (!trimmed) { setError('Zadej e-mailovou adresu příjemce.'); return; }
     setError(null);
     setNotice(null);
+    setSendingId(id);
     startTransition(async () => {
       const res = await sendInvoiceToClient(id, trimmed);
       if (!res.ok) setError(res.error);
       else setNotice(`Faktura odeslána na ${res.sentTo}.`);
+      setSendingId(null);
+    });
+  }
+
+  // ── Výběr + seskupení + hromadné akce ──────────────────────────────────
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<null | 'zip' | 'send'>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+
+  const clientName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of clients) m.set(c.id, c.full_name);
+    return m;
+  }, [clients]);
+
+  // person (osoba) → firma → faktury
+  const groups = useMemo<PersonGroup[]>(() => {
+    const persons = new Map<string, { name: string; firmy: Map<string, Firma> }>();
+    for (const inv of invoices) {
+      let personId: string, personName: string, firmaId: string, label: string, subLabel: string | null;
+      if (!inv.client_id) {
+        personId = '__oneoff__';
+        personName = 'Jednorázové faktury';
+        const c = inv.customer_override;
+        label = c?.company || c?.full_name || 'Bez odběratele';
+        subLabel = c?.company && c?.full_name ? c.full_name : null;
+        firmaId = `oneoff:${label}`;
+      } else {
+        const cl = inv.client;
+        const firmaName = cl?.full_name ?? 'Klient';
+        label = cl?.company || firmaName;
+        subLabel = cl?.company ? firmaName : null;
+        firmaId = inv.client_id;
+        if (cl?.parent_client_id) {
+          personId = cl.parent_client_id;
+          personName = clientName.get(cl.parent_client_id) || firmaName;
+        } else {
+          personId = inv.client_id;
+          personName = firmaName;
+        }
+      }
+      let p = persons.get(personId);
+      if (!p) { p = { name: personName, firmy: new Map() }; persons.set(personId, p); }
+      let f = p.firmy.get(firmaId);
+      if (!f) { f = { firmaId, label, subLabel, invoices: [], total: 0 }; p.firmy.set(firmaId, f); }
+      f.invoices.push(inv);
+      f.total += Number(inv.amount);
+    }
+    const arr: PersonGroup[] = [];
+    for (const [personId, p] of persons) {
+      const firmy = [...p.firmy.values()].sort((a, b) => a.label.localeCompare(b.label, 'cs'));
+      arr.push({
+        personId,
+        personName: p.name,
+        firmy,
+        total: firmy.reduce((s, f) => s + f.total, 0),
+        count: firmy.reduce((s, f) => s + f.invoices.length, 0),
+      });
+    }
+    return arr.sort((a, b) =>
+      a.personId === '__oneoff__' ? 1 : b.personId === '__oneoff__' ? -1 : a.personName.localeCompare(b.personName, 'cs'));
+  }, [invoices, clientName]);
+
+  const allIds = useMemo(() => invoices.map((i) => i.id), [invoices]);
+  const selectedTotal = useMemo(
+    () => invoices.filter((i) => selected.has(i.id)).reduce((s, i) => s + Number(i.amount), 0),
+    [invoices, selected],
+  );
+
+  function toggleOne(id: string) {
+    setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+  function setMany(ids: string[], on: boolean) {
+    setSelected((s) => { const n = new Set(s); for (const id of ids) { if (on) n.add(id); else n.delete(id); } return n; });
+  }
+  function checkState(ids: string[]): 'all' | 'some' | 'none' {
+    const sel = ids.reduce((c, id) => c + (selected.has(id) ? 1 : 0), 0);
+    return sel === 0 ? 'none' : sel === ids.length ? 'all' : 'some';
+  }
+  function toggleCollapse(id: string) {
+    setCollapsed((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  }
+
+  async function handleBulkDownload() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    setBulkBusy('zip'); setError(null); setNotice(null);
+    try {
+      const res = await fetch('/api/portal/invoices/bulk-zip', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) { const j = await res.json().catch(() => ({})); setError(j.error || 'Stažení ZIP selhalo.'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `faktury-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      setNotice(`Staženo ${ids.length} faktur jako ZIP.`);
+    } catch { setError('Stažení ZIP selhalo.'); }
+    finally { setBulkBusy(null); }
+  }
+
+  function handleBulkSend() {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    if (!confirm(`Odeslat ${ids.length} faktur klientům (PDF přílohou na jejich fakturační e-mail)?`)) return;
+    setBulkBusy('send'); setError(null); setNotice(null);
+    startTransition(async () => {
+      const res = await bulkSendInvoices(ids);
+      if (!res.ok) { setError(res.error); setBulkBusy(null); return; }
+      const okN = res.results.filter((r) => r.ok).length;
+      const failN = res.results.length - okN;
+      setNotice(`Odesláno ${okN}${failN ? `, ${failN} selhalo` : ''}.`);
+      if (failN) { const fe = res.results.find((r) => !r.ok); if (fe) setError(`Příklad chyby: ${fe.error}`); }
+      setSelected(new Set());
+      setBulkBusy(null);
     });
   }
 
@@ -358,93 +479,136 @@ export default function InvoicesAdminClient({
         </div>
       )}
 
-      <div className="bg-coffee overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-tobacco">
-              <Th>Číslo</Th><Th>Klient</Th><Th>Popis</Th>
-              <th className="text-right font-mono text-[10px] uppercase tracking-widest text-sandstone px-4 py-3">Částka</th>
-              <Th>Vystaveno</Th><Th>Splatnost</Th><Th>Stav</Th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.length === 0 && (
-              <tr><td colSpan={8} className="text-center text-sandstone py-12">Zatím žádné faktury.</td></tr>
-            )}
-            {invoices.map((inv, i) => (
-              <tr key={inv.id} className={`border-b border-tobacco/50 hover:bg-tobacco/30 ${i % 2 === 1 ? 'bg-coffee/40' : ''}`}>
-                <td className="px-4 py-3 font-mono text-caramel">{inv.invoice_number}</td>
-                <td className="px-4 py-3 text-sepia">
-                  {inv.client?.full_name
-                    ?? inv.customer_override?.company
-                    ?? inv.customer_override?.full_name
-                    ?? <span className="text-sandstone/50 italic">jednorázový</span>}
-                </td>
-                <td className="px-4 py-3 text-sepia max-w-xs truncate">{inv.description ?? '—'}</td>
-                <td className="px-4 py-3 text-right text-moonlight">{formatMoney(inv.amount)}</td>
-                <td className="px-4 py-3 text-sandstone whitespace-nowrap">{formatDate(inv.issued_at)}</td>
-                <td className="px-4 py-3 text-sandstone whitespace-nowrap">{formatDate(inv.due_date)}</td>
-                <td className="px-4 py-3"><StatusBadge kind="invoice" value={inv.status} /></td>
-                <td className="px-4 py-3 text-right whitespace-nowrap">
-                  {inv.pdf_url ? (
-                    <>
-                      <a
-                        href={`/api/portal/invoices/${inv.id}/pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-caramel hover:text-caramel-light text-xs font-mono uppercase tracking-widest mr-2"
-                        title="Otevřít PDF"
-                      >
-                        <FileText size={13} /> PDF
-                      </a>
-                      <button
-                        onClick={() => handleRegen(inv.id)}
-                        disabled={pending}
-                        className="inline-flex items-center text-sandstone hover:text-caramel mr-3 disabled:opacity-50"
-                        title="Přegenerovat PDF"
-                      >
-                        <RefreshCw size={11} className={pending ? 'animate-spin' : ''} />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => handleRegen(inv.id)}
-                      disabled={pending}
-                      className="inline-flex items-center gap-1 text-rust hover:text-caramel-light text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50"
-                      title="PDF chybí — regenerovat"
-                    >
-                      <RefreshCw size={13} className={pending ? 'animate-spin' : ''} /> Regen PDF
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleSend(inv.id, inv.client?.billing_email || inv.client?.email || inv.customer_override?.email || '')}
-                    disabled={pending}
-                    className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-widest mr-3 disabled:opacity-50 ${inv.shared_at ? 'text-olive hover:text-caramel-light' : 'text-caramel hover:text-caramel-light'}`}
-                    title={inv.shared_at ? `Posláno ${formatDate(inv.shared_at)} — poslat znovu` : 'Poslat klientovi (PDF přílohou e-mailu)'}
-                  >
-                    <Send size={13} /> {inv.shared_at ? 'Posláno' : 'Poslat'}
-                  </button>
-                  {inv.status !== 'zaplaceno' && inv.status !== 'zruseno' && (
-                    <button onClick={() => handlePaid(inv.id)} disabled={pending} className="text-olive hover:text-caramel mr-2 disabled:opacity-50" title="Označit jako zaplacené">
-                      <Check size={14} />
-                    </button>
-                  )}
-                  {inv.status !== 'zaplaceno' && inv.status !== 'zruseno' && (
-                    <button onClick={() => handleCancel(inv.id)} disabled={pending} className="text-sandstone hover:text-rust disabled:opacity-50" title="Stornovat">
-                      <Ban size={14} />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Hromadné akce — lišta se zobrazí, jakmile něco zaškrtneš */}
+      {selected.size > 0 && (
+        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-3 bg-tobacco border border-caramel/40 px-4 py-3">
+          <span className="font-mono text-xs text-moonlight">{selected.size} vybráno · {formatMoney(selectedTotal)}</span>
+          <div className="flex-1" />
+          <button
+            onClick={handleBulkDownload}
+            disabled={bulkBusy !== null}
+            className="inline-flex items-center gap-2 bg-caramel text-espresso px-3 py-2 font-mono text-[11px] uppercase tracking-widest font-bold hover:bg-caramel-light transition-all disabled:opacity-50"
+          >
+            {bulkBusy === 'zip' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Stáhnout ZIP
+          </button>
+          <button
+            onClick={handleBulkSend}
+            disabled={bulkBusy !== null}
+            className="inline-flex items-center gap-2 border border-caramel text-caramel px-3 py-2 font-mono text-[11px] uppercase tracking-widest font-bold hover:bg-caramel hover:text-espresso transition-all disabled:opacity-50"
+          >
+            {bulkBusy === 'send' ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />} Poslat vybrané
+          </button>
+          <button onClick={() => setSelected(new Set())} className="text-sandstone hover:text-moonlight font-mono text-[11px] uppercase tracking-widest">
+            Zrušit
+          </button>
+        </div>
+      )}
+
+      {invoices.length > 0 && (
+        <div className="flex items-center justify-between px-1 text-[10px] font-mono uppercase tracking-widest">
+          <button onClick={() => setMany(allIds, checkState(allIds) !== 'all')} className="text-sandstone hover:text-caramel">
+            {checkState(allIds) === 'all' ? 'Zrušit výběr' : 'Vybrat vše'}
+          </button>
+          <div className="flex gap-4">
+            <button onClick={() => setCollapsed(new Set(groups.map((g) => g.personId)))} className="text-sandstone hover:text-caramel">Sbalit vše</button>
+            <button onClick={() => setCollapsed(new Set())} className="text-sandstone hover:text-caramel">Rozbalit vše</button>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {invoices.length === 0 && (
+          <p className="bg-coffee p-6 text-center text-sandstone text-sm">Zatím žádné faktury.</p>
+        )}
+        {groups.map((g) => {
+          const gids = g.firmy.flatMap((f) => f.invoices.map((i) => i.id));
+          const gstate = checkState(gids);
+          const isCollapsed = collapsed.has(g.personId);
+          return (
+            <div key={g.personId} className="bg-coffee border border-tobacco">
+              {/* Hlavička osoby/klienta */}
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-tobacco/60">
+                <GroupCheck state={gstate} onClick={() => setMany(gids, gstate !== 'all')} />
+                <button onClick={() => toggleCollapse(g.personId)} className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                  {isCollapsed ? <ChevronRight size={14} className="text-sandstone shrink-0" /> : <ChevronDown size={14} className="text-sandstone shrink-0" />}
+                  <span className="text-moonlight font-medium truncate">{g.personName}</span>
+                  <span className="font-mono text-[10px] text-sandstone shrink-0">{g.count} ks</span>
+                </button>
+                <span className="text-sepia text-sm whitespace-nowrap shrink-0">{formatMoney(g.total)}</span>
+              </div>
+
+              {!isCollapsed && g.firmy.map((f) => {
+                const fids = f.invoices.map((i) => i.id);
+                const fstate = checkState(fids);
+                return (
+                  <div key={f.firmaId} className="border-b border-tobacco/40 last:border-b-0">
+                    {/* Podskupina = firma */}
+                    <div className="flex items-center gap-3 px-4 py-2 pl-8 bg-espresso/30">
+                      <GroupCheck state={fstate} small onClick={() => setMany(fids, fstate !== 'all')} />
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-caramel truncate flex-1 min-w-0">
+                        {f.label}{f.subLabel ? ` · ${f.subLabel}` : ''}
+                      </span>
+                      <span className="text-sandstone text-xs whitespace-nowrap shrink-0">{f.invoices.length} ks · {formatMoney(f.total)}</span>
+                    </div>
+
+                    {f.invoices.map((inv) => (
+                      <div key={inv.id} className="flex items-center gap-3 px-4 py-2.5 pl-12 border-t border-tobacco/20 hover:bg-tobacco/20">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(inv.id)}
+                          onChange={() => toggleOne(inv.id)}
+                          className="w-4 h-4 accent-caramel shrink-0"
+                          aria-label={`Vybrat fakturu ${inv.invoice_number}`}
+                        />
+                        <span className="font-mono text-caramel text-xs w-24 md:w-28 shrink-0 truncate">{inv.invoice_number}</span>
+                        <span className="text-sepia text-sm flex-1 min-w-0 truncate hidden sm:block">{inv.description ?? '—'}</span>
+                        <span className="text-moonlight text-sm w-20 md:w-24 text-right shrink-0">{formatMoney(inv.amount)}</span>
+                        <span className="hidden lg:block text-sandstone text-xs w-24 shrink-0">{formatDate(inv.due_date)}</span>
+                        <span className="shrink-0"><StatusBadge kind="invoice" value={inv.status} /></span>
+                        <div className="flex items-center gap-2.5 shrink-0 ml-auto sm:ml-0">
+                          {inv.pdf_url ? (
+                            <a href={`/api/portal/invoices/${inv.id}/pdf`} target="_blank" rel="noopener noreferrer" className="text-caramel hover:text-caramel-light" title="Otevřít PDF"><FileText size={14} /></a>
+                          ) : (
+                            <button onClick={() => handleRegen(inv.id)} disabled={pending} className="text-rust hover:text-caramel-light disabled:opacity-50" title="PDF chybí — regenerovat"><RefreshCw size={13} className={pending ? 'animate-spin' : ''} /></button>
+                          )}
+                          <button
+                            onClick={() => handleSend(inv.id, inv.client?.billing_email || inv.client?.email || inv.customer_override?.email || '')}
+                            disabled={pending}
+                            className={`disabled:opacity-50 ${inv.shared_at ? 'text-olive hover:text-caramel-light' : 'text-caramel hover:text-caramel-light'}`}
+                            title={inv.shared_at ? `Posláno ${formatDate(inv.shared_at)} — poslat znovu` : 'Poslat klientovi (PDF přílohou)'}
+                          >
+                            {sendingId === inv.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                          </button>
+                          {inv.status !== 'zaplaceno' && inv.status !== 'zruseno' && (
+                            <button onClick={() => handlePaid(inv.id)} disabled={pending} className="text-olive hover:text-caramel disabled:opacity-50" title="Označit jako zaplacené"><Check size={15} /></button>
+                          )}
+                          {inv.status !== 'zaplaceno' && inv.status !== 'zruseno' && (
+                            <button onClick={() => handleCancel(inv.id)} disabled={pending} className="text-sandstone hover:text-rust disabled:opacity-50" title="Stornovat"><Ban size={15} /></button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="text-left font-mono text-[10px] uppercase tracking-widest text-sandstone px-4 py-3">{children}</th>;
+function GroupCheck({ state, onClick, small }: { state: 'all' | 'some' | 'none'; onClick: () => void; small?: boolean }) {
+  const Icon = state === 'all' ? CheckSquare : state === 'some' ? MinusSquare : Square;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Vybrat skupinu"
+      className={`shrink-0 ${state === 'none' ? 'text-sandstone hover:text-caramel' : 'text-caramel hover:text-caramel-light'}`}
+    >
+      <Icon size={small ? 14 : 16} />
+    </button>
+  );
 }

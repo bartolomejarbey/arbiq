@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { enterPreview } from '@/lib/actions/preview';
 import { PREVIEW_COOKIE } from '@/lib/supabase/viewer';
 import InviteRequestForm from './InviteRequestForm';
+import LoginButton from './LoginButton';
 
 async function loginAction(formData: FormData) {
   'use server';
@@ -84,12 +85,7 @@ export default async function LoginPage({
             <p className="text-rust text-sm font-mono">{error}</p>
           )}
 
-          <button
-            type="submit"
-            className="w-full bg-caramel text-espresso px-6 py-4 font-mono text-xs uppercase tracking-widest font-bold hover:bg-caramel-light transition-all"
-          >
-            Přihlásit se
-          </button>
+          <LoginButton />
 
         </form>
 

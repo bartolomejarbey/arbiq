@@ -649,6 +649,23 @@ export async function sendInvoiceToClient(
   return { ok: true, sentTo: recipientEmail };
 }
 
+/**
+ * Hromadné odeslání faktur klientům (PDF přílohou). Volá sendInvoiceToClient
+ * pro každou — ta si sama hlídá oprávnění i ownership, takže je to bezpečné.
+ */
+export async function bulkSendInvoices(
+  ids: string[],
+): Promise<{ ok: true; results: Array<{ id: string; ok: boolean; sentTo?: string; error?: string }> } | { ok: false; error: string }> {
+  if (!Array.isArray(ids) || ids.length === 0) return { ok: false, error: 'Nic nevybráno.' };
+  if (ids.length > 100) return { ok: false, error: 'Max 100 faktur najednou.' };
+  const results: Array<{ id: string; ok: boolean; sentTo?: string; error?: string }> = [];
+  for (const id of ids) {
+    const r = await sendInvoiceToClient(id);
+    results.push(r.ok ? { id, ok: true, sentTo: r.sentTo } : { id, ok: false, error: r.error });
+  }
+  return { ok: true, results };
+}
+
 // markOverdueInvoices přesunuto do lib/jobs/invoice-jobs.ts (NE 'use server'),
 // aby ho Next.js nevystavoval jako Server Action callable z prohlížeče.
 // Cron route /api/cron/overdue-invoices ho importuje z toho nového umístění.
