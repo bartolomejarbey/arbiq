@@ -14,7 +14,7 @@ export default async function UkolyPage() {
     return (
       <div>
         <PageHeader eyebrow="CRM · DEMO" title="Úkoly" subtitle="Vaše to-do. Klikněte na kruh pro označení jako hotové. (Demo data — Sherlockova kancelář.)" />
-        <div className="px-8 py-8 space-y-8">
+        <div className="px-4 md:px-8 py-8 space-y-8">
           <section className="bg-coffee p-6">
             <NewTaskForm />
           </section>
@@ -41,7 +41,7 @@ export default async function UkolyPage() {
   return (
     <div>
       <PageHeader eyebrow="CRM" title="Úkoly" subtitle="Vaše to-do. Klikněte na kruh pro označení jako hotové." />
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-4 md:px-8 py-8 space-y-8">
         <section className="bg-coffee p-6">
           <NewTaskForm />
         </section>

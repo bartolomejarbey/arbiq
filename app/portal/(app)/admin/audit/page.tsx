@@ -41,7 +41,7 @@ export default async function AuditLogPage() {
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Audit log" subtitle="Citlivé administrátorské akce — kdo, co, kdy." />
-      <div className="px-8 py-8">
+      <div className="px-4 md:px-8 py-8">
         {rows.length === 0 ? (
           <p className="text-sandstone text-sm bg-coffee p-8">Zatím žádné záznamy.</p>
         ) : (

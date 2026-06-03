@@ -38,7 +38,7 @@ export default async function ProjektyAdminPage() {
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Projekty" subtitle="Všechny projekty napříč klienty." />
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-4 md:px-8 py-8 space-y-8">
         <section className="bg-coffee p-6">
           <NewProjectForm
             clients={((clients ?? []) as unknown as ClientOpt[])}

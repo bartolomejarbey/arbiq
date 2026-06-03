@@ -41,7 +41,7 @@ export default async function LeadyPage() {
         subtitle="Všechny příchozí leady z reklam, landing pages a manuálně přidaných."
         actions={!viewer.isPreview ? <CreateLeadDialog obchodnici={obchodnici} /> : undefined}
       />
-      <div className="px-8 py-8">
+      <div className="px-4 md:px-8 py-8">
         <LeadTable leads={leads} />
       </div>
     </div>

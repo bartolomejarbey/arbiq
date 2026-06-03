@@ -36,7 +36,7 @@ export default async function SmlouvyClientPage() {
   return (
     <div>
       <PageHeader eyebrow="Klientská zóna" title="Smlouvy" subtitle="Přehled Vašich smluv s ARBIQ — PDF i DOCX ke stažení." />
-      <div className="px-8 py-8">
+      <div className="px-4 md:px-8 py-8">
         {contracts.length === 0 ? (
           <p className="text-sandstone text-sm bg-coffee p-8">Zatím žádné smlouvy.</p>
         ) : (

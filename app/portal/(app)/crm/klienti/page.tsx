@@ -65,7 +65,7 @@ export default async function KlientiPage() {
         subtitle={viewer.isPreview ? "Vaši přiřazení klienti — fiktivní krimi-univerzum." : "Vaši přiřazení klienti a jejich projekty."}
         actions={isAdmin ? <CreateClientDialog obchodnici={obchodnici} existingClients={existingClients} /> : undefined}
       />
-      <div className="px-8 py-8">
+      <div className="px-4 md:px-8 py-8">
         {clients.length === 0 ? (
           <EmptyState title="Zatím nemáte přiřazené klienty" description="Konvertujte lead nebo si nechte přiřadit klienta administrátorem." />
         ) : (

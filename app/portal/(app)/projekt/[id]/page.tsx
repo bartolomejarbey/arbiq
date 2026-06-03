@@ -114,7 +114,7 @@ export default async function ProjectDetailPage({
         actions={<StatusBadge kind="project" value={project.status} />}
       />
 
-      <div className="px-8 py-8 grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="px-4 md:px-8 py-8 grid grid-cols-1 lg:grid-cols-3 gap-12">
         <div className="lg:col-span-2 space-y-12">
           {project.client_update && (
             <section>

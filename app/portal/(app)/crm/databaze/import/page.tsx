@@ -19,7 +19,7 @@ export default async function DatabazeImportPage() {
 
   if (role !== 'obchodnik' && role !== 'admin') {
     return (
-      <div className="px-8 py-12 text-center text-sandstone">
+      <div className="px-4 md:px-8 py-12 text-center text-sandstone">
         Tato sekce je dostupná jen obchodníkům a administrátorům.
       </div>
     );
@@ -40,7 +40,7 @@ export default async function DatabazeImportPage() {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-5xl">
+      <div className="px-4 md:px-8 py-8 max-w-5xl">
         <BulkImportForm />
       </div>
     </div>

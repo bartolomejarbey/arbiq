@@ -17,7 +17,7 @@ export default async function KalendarPage() {
           title="Kalendář"
           subtitle="Demo data."
         />
-        <div className="px-8 py-8">
+        <div className="px-4 md:px-8 py-8">
           <p className="text-sepia/70">Kalendář v demo módu zatím není.</p>
         </div>
       </div>

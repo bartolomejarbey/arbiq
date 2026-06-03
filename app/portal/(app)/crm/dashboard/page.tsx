@@ -22,8 +22,8 @@ export default async function CrmDashboardPage() {
     return (
       <div>
         <PageHeader eyebrow="CRM · DEMO" title="Přehled" subtitle="Ukázka — klienti jsou Sherlock Holmes a spol." />
-        <div className="px-8 py-8 space-y-12">
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="px-4 md:px-8 py-8 space-y-12">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard label="Aktivní klienti" value={PREVIEW_STATS.activeClients} tone="accent" />
             <StatsCard label="Leady ke zpracování" value={newLeads.length} tone={newLeads.length > 0 ? 'danger' : 'default'} />
             <StatsCard label="Otevřené úkoly" value={tasks.length} hint="3 s termínem tento týden" />
@@ -98,8 +98,8 @@ export default async function CrmDashboardPage() {
         subtitle={isAdmin ? 'Vidíte data všech obchodníků.' : 'Vaše leady, klienti a úkoly.'}
       />
 
-      <div className="px-8 py-8 space-y-12">
-        <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="px-4 md:px-8 py-8 space-y-12">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard label="Aktivní klienti" value={activeClients ?? 0} tone="accent" />
           <StatsCard label="Leady ke zpracování" value={newLeads.length} tone={newLeads.length > 0 ? 'danger' : 'default'} />
           <StatsCard label="Otevřené úkoly" value={tasks.length} hint={`${upcomingFollowups} s termínem`} />

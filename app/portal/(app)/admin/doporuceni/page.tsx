@@ -39,7 +39,7 @@ export default async function DoporuceniAdminPage() {
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Doporučení" subtitle="Upsell návrhy, které vidí klient v portálu." />
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-4 md:px-8 py-8 space-y-8">
         <RecommendationsAdminClient clients={clientList} />
 
         <div className="bg-coffee overflow-x-auto">

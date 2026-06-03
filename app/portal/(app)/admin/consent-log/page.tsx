@@ -25,7 +25,7 @@ export default async function ConsentLogPage() {
     return (
       <div>
         <PageHeader eyebrow="Admin · DEMO" title="Cookie consent log" subtitle="GDPR audit trail souhlasů s cookies. (Demo režim — bez dat.)" />
-        <div className="px-8 py-8">
+        <div className="px-4 md:px-8 py-8">
           <p className="text-sandstone text-sm bg-coffee p-6">V demo režimu se reálné záznamy o souhlasech nezobrazují.</p>
         </div>
       </div>
@@ -56,7 +56,7 @@ export default async function ConsentLogPage() {
   return (
     <div>
       <PageHeader eyebrow="Admin · GDPR" title="Cookie consent log" subtitle="Audit trail všech souhlasů s cookies — pro případ kontroly ÚOOÚ." />
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-4 md:px-8 py-8 space-y-8">
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatsCard label="Celkem záznamů" value={total} tone="accent" />
           <StatsCard label="Přijato vše" value={acceptAll} tone="success" />

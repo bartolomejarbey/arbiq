@@ -120,7 +120,7 @@ export default function RecurringInvoiceForm({ clientId, configs }: { clientId: 
             <label className={labelClass} htmlFor="r_description">Popis</label>
             <input id="r_description" name="description" required placeholder="Měsíční správa webu a marketingu" className={inputClass} />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className={labelClass} htmlFor="r_interval">Interval</label>
               <select id="r_interval" name="interval_months" defaultValue="1" className={inputClass}>

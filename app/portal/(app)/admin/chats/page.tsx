@@ -26,7 +26,7 @@ export default async function AdminChatsPage() {
     return (
       <div>
         <PageHeader eyebrow="Admin · DEMO" title="Chaty s asistentem" subtitle="Konverzace návštěvníků s AI asistentem ARBIQ. (Demo režim — bez dat.)" />
-        <div className="px-8 py-8 space-y-8">
+        <div className="px-4 md:px-8 py-8 space-y-8">
           <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <StatsCard label="Sessions (30 d)" value="—" tone="accent" />
             <StatsCard label="Zpráv celkem" value="—" />
@@ -80,7 +80,7 @@ export default async function AdminChatsPage() {
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Chaty s asistentem" subtitle="Konverzace návštěvníků s AI asistentem. Posledních 30 dní." />
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-4 md:px-8 py-8 space-y-8">
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatsCard label="Sessions (30 d)" value={sessCount.toLocaleString('cs')} tone="accent" />
           <StatsCard label="Zpráv celkem" value={msgCount.toLocaleString('cs')} />

@@ -84,7 +84,7 @@ export default function AssistantChat() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)]">
+    <div className="flex flex-col h-[calc(100dvh-180px)] pb-[env(safe-area-inset-bottom)]">
       <div className="flex-1 overflow-y-auto space-y-4 pr-1">
         {messages.length === 0 && (
           <div className="bg-coffee p-6 border-l-2 border-caramel/40">

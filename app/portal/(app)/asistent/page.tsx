@@ -16,7 +16,7 @@ export default async function AsistentPage() {
         title="Asistent"
         subtitle="Napiš přirozeně, co potřebuješ — vytvořím nabídky, faktury, smlouvy, klienty a víc."
       />
-      <div className="px-8 py-6">
+      <div className="px-4 md:px-8 py-6">
         <AssistantChat />
       </div>
     </div>

@@ -26,7 +26,7 @@ export default async function StatistikyPage() {
     return (
       <div>
         <PageHeader eyebrow="Admin · DEMO" title="Statistiky" subtitle="Ukázka co Vám portál zobrazuje. Klienti jsou fiktivní (Sherlock Holmes &amp; spol.)." />
-        <div className="px-8 py-8 space-y-12">
+        <div className="px-4 md:px-8 py-8 space-y-12">
           <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <StatsCard label="Tržby tento měsíc" value={formatMoney(PREVIEW_STATS.revenueThisMonth)} tone="success" />
             <StatsCard label="Tržby celkem" value={formatMoney(PREVIEW_STATS.revenueAllTime)} />
@@ -97,7 +97,7 @@ export default async function StatistikyPage() {
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Statistiky" subtitle="Přehled výkonu firmy." />
-      <div className="px-8 py-8 space-y-12">
+      <div className="px-4 md:px-8 py-8 space-y-12">
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatsCard label="Tržby tento měsíc" value={formatMoney(revenueThisMonth)} tone="success" />
           <StatsCard label="Tržby celkem" value={formatMoney(revenueAllTime)} />

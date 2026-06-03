@@ -53,7 +53,7 @@ export default async function ChatDetailPage({ params }: { params: Promise<{ id:
     return (
       <div>
         <PageHeader eyebrow="Admin" title="Chat nenalezen" />
-        <div className="px-8 py-8">
+        <div className="px-4 md:px-8 py-8">
           <Link href="/portal/admin/chats" className="text-caramel">Zpět</Link>
         </div>
       </div>
@@ -63,7 +63,7 @@ export default async function ChatDetailPage({ params }: { params: Promise<{ id:
   return (
     <div>
       <PageHeader eyebrow="Admin · Chat" title={`Konverzace ${s.id.slice(0, 8)}`} subtitle={`Začátek: ${formatDate(s.started_at)} · ${s.message_count} zpráv`} />
-      <div className="px-8 py-8 space-y-6">
+      <div className="px-4 md:px-8 py-8 space-y-6">
         <Link href="/portal/admin/chats" className="inline-flex items-center gap-2 text-sandstone hover:text-caramel text-sm">
           <ArrowLeft size={14} /> Zpět na seznam
         </Link>

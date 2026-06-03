@@ -29,7 +29,7 @@ export default async function InvoicesPage() {
   return (
     <div>
       <PageHeader eyebrow="Klientská zóna" title="Faktury" subtitle="Přehled vystavených faktur a jejich stavu." />
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-4 md:px-8 py-8 space-y-8">
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatsCard label="Zaplaceno" value={formatMoney(paid)} tone="success" />
           <StatsCard label="Čeká na zaplacení" value={formatMoney(waiting)} tone="accent" />

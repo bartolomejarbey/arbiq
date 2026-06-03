@@ -54,10 +54,10 @@ export default async function PortalLayout({
   return (
     <AuthProvider profile={profile}>
       <div className="flex bg-espresso text-sepia min-h-screen font-body">
-        <div className="hidden lg:block">
+        <div className="hidden md:block">
           <Sidebar unreadNotifications={unreadNotifications} />
         </div>
-        <div className="flex-1 min-w-0 overflow-x-hidden pb-16 lg:pb-0">
+        <div className="flex-1 min-w-0 overflow-x-hidden pb-16 md:pb-0">
           {preview && <PreviewBanner />}
           {children}
         </div>

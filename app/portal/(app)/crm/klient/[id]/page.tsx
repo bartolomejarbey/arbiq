@@ -203,7 +203,7 @@ export default async function KlientDetailPage({
         subtitle={profile.company ?? undefined}
         actions={profile.is_active ? null : <StatusBadge kind="task" value="cancelled" />}
       />
-      <div className="px-8 py-8 grid grid-cols-1 lg:grid-cols-3 gap-12">
+      <div className="px-4 md:px-4 md:px-8 py-8 grid grid-cols-1 md:grid-cols-[1fr_220px] lg:grid-cols-3 gap-8 md:gap-12">
         <div className="lg:col-span-2 space-y-12">
           <ClientEmailsForm
             clientId={profile.id}
@@ -366,7 +366,7 @@ export default async function KlientDetailPage({
 
           <section>
             <h2 className="font-display italic font-black text-2xl text-moonlight mb-4">Faktury</h2>
-            <div className="bg-coffee">
+            <div className="bg-coffee overflow-x-auto">
               <InvoiceTable invoices={invoices} />
             </div>
           </section>

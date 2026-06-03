@@ -46,7 +46,7 @@ export default async function AnalyticsPage() {
     return (
       <div>
         <PageHeader eyebrow="Admin · DEMO" title="Analytics" subtitle="Vlastní lehký tracker (page views, CTA kliky, formuláře). Demo režim — fiktivní data." />
-        <div className="px-8 py-8 space-y-8">
+        <div className="px-4 md:px-8 py-8 space-y-8">
           <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <StatsCard label="Page views (30 d)" value="2 481" tone="accent" />
             <StatsCard label="Unikátní visitors" value="437" />
@@ -124,7 +124,7 @@ export default async function AnalyticsPage() {
   return (
     <div>
       <PageHeader eyebrow="Admin" title="Analytics" subtitle="Vlastní lehký tracker (page views, CTA kliky, formuláře). Posledních 30 dní." />
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-4 md:px-8 py-8 space-y-8">
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatsCard label="Page views (30 d)" value={pageviews.length.toLocaleString('cs')} tone="accent" />
           <StatsCard label="Unikátní visitors" value={uniqueVisitors.toLocaleString('cs')} />

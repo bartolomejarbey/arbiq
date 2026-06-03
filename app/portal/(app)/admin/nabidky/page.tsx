@@ -47,7 +47,7 @@ export default async function NabidkyAdminPage() {
         title="Cenové nabídky"
         subtitle="Sales-oriented PDF nabídka před uzavřením smlouvy. 30denní platnost defaultně."
       />
-      <div className="px-8 py-8 space-y-8">
+      <div className="px-4 md:px-8 py-8 space-y-8">
         <NabidkyAdminClient
           quotes={quotes}
           clients={((clients ?? []) as unknown as ClientOpt[])}

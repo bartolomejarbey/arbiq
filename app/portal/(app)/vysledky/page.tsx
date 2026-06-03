@@ -45,7 +45,7 @@ export default async function VysledkyPage() {
         title="Výsledky"
         subtitle="Klíčové metriky z Vašich kampaní a webu."
       />
-      <div className="px-8 py-8">
+      <div className="px-4 md:px-8 py-8">
         {series.length > 0 ? (
           <MetricsCharts series={series} />
         ) : (

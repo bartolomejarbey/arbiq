@@ -58,7 +58,7 @@ export default async function DashboardPage() {
     return (
       <div>
         <PageHeader eyebrow="Klientská zóna · DEMO" title={<>Dobrý den, Sherlocku.</>} subtitle="Tady je stav Vašich případů. (Vše smyšlené — jen ukázka jak portál funguje.)" />
-        <div className="px-8 py-8 space-y-12">
+        <div className="px-4 md:px-8 py-8 space-y-12">
           <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <StatsCard label="Aktivní případy" value={projectCards.length} tone="accent" />
             <StatsCard label="Nadcházející platba" value={upcoming ? formatMoney(upcoming.amount) : '—'} hint={upcoming ? renderDueHint(upcoming.due_date) : 'Vše vyrovnáno.'} />
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
         subtitle="Tady je stav Vašich případů, orientační termíny dodání, faktury a dokumenty."
       />
 
-      <div className="px-8 py-8 space-y-12">
+      <div className="px-4 md:px-8 py-8 space-y-12">
 
         <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatsCard

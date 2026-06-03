@@ -22,7 +22,7 @@ export default async function NotifikacePage() {
   return (
     <div>
       <PageHeader eyebrow="Portál" title="Oznámení" subtitle="Události, které vyžadují vaši pozornost." />
-      <div className="px-8 py-8">
+      <div className="px-4 md:px-8 py-8">
         <NotificationList initial={items} />
       </div>
     </div>
