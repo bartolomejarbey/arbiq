@@ -113,7 +113,7 @@ export default async function OgImage() {
               letterSpacing: 3,
             }}
           >
-            Harotas s.r.o. · Praha
+            ARBIQ · Bartoloměj Rota
           </div>
           <div
             style={{

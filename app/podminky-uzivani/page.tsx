@@ -19,7 +19,7 @@ export default function PodminkyUzivaniPage() {
         <section>
           <h2 className="font-display italic font-black text-moonlight text-2xl mb-3">1. Provozovatel</h2>
           <p>
-            Provozovatelem webu <strong className="text-moonlight">arbiq.cz</strong> je společnost <strong className="text-moonlight">Harotas s.r.o.</strong>, IČO 21402027, se sídlem Školská 689/20, 110 00 Praha 1.
+            Provozovatelem webu <strong className="text-moonlight">arbiq.cz</strong> je <strong className="text-moonlight">Bartoloměj Rota</strong>, IČO 21875570, se sídlem Běleč 30, 391 43 Běleč, fyzická osoba podnikající dle živnostenského zákona pod značkou ARBIQ.
           </p>
           <p className="mt-3">Tyto podmínky upravují užívání webu, AI chatbotu, klientského portálu a všech souvisejících nástrojů.</p>
         </section>
@@ -94,7 +94,7 @@ export default function PodminkyUzivaniPage() {
             <li>Upravovat nebo používat ke komerčním účelům.</li>
             <li>Trénovat na něm AI modely bez souhlasu.</li>
           </ul>
-          <p className="mt-3">Logo ARBIQ a název Harotas s.r.o. jsou chráněny.</p>
+          <p className="mt-3">Logo a značka ARBIQ jsou chráněny.</p>
         </section>
 
         <section>

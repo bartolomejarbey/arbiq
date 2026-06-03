@@ -74,8 +74,8 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><a href="mailto:info@arbiq.cz" className="text-sepia hover:text-caramel text-sm transition-colors">info@arbiq.cz</a></li>
               <li><a href="tel:+420725932729" className="text-sepia hover:text-caramel text-sm transition-colors">+420 725 932 729</a></li>
-              <li className="text-sepia text-sm">Školská 689/20</li>
-              <li className="text-sepia text-sm">110 00 Praha 1</li>
+              <li className="text-sepia text-sm">Běleč 30</li>
+              <li className="text-sepia text-sm">391 43 Běleč</li>
             </ul>
             <div className="lg:hidden mt-8">
               <WaxSeal text="UZAVŘEN" />
@@ -85,7 +85,7 @@ export default function Footer() {
 
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-caramel/10 gap-4">
           <p className="font-mono text-[10px] tracking-widest text-sepia/40 uppercase text-center md:text-left">
-            © 2026 ARBIQ • Harotas s.r.o. • IČO: 21402027 • Školská 689/20, 110 00 Praha 1
+            © 2026 ARBIQ • Bartoloměj Rota • IČO: 21875570 • Běleč 30, 391 43 Běleč
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-[10px] font-mono uppercase tracking-widest justify-center">
             <Link href="/gdpr" className="text-sepia/40 hover:text-caramel transition-colors">GDPR</Link>

@@ -2,7 +2,7 @@
  * Centrální zdroj Schema.org JSON-LD struktur pro ARBIQ.
  *
  * Hlavní entity:
- *  - Organization (#organization)            — ARBIQ, provozované Harotas s.r.o.
+ *  - Organization (#organization)            — ARBIQ, provozuje Bartoloměj Rota (FO)
  *  - WebSite     (#website)                  — kořen webu, sitelinks search box
  *  - LocalBusiness / ProfessionalService     — pro Google Local Pack
  *  - Person      (#person/<slug>)            — autor / člen týmu
@@ -27,23 +27,19 @@ type WithContext<T> = T & { '@context': 'https://schema.org' };
 
 const PROVIDER = {
   name: 'ARBIQ',
-  legalName: 'Harotas s.r.o.',
+  legalName: 'Bartoloměj Rota',
   email: 'info@arbiq.cz',
   phone: '+420725932729',
   phoneTel: '+420 725 932 729',
-  taxID: '21402027',
-  vatID: 'CZ21402027',
+  taxID: '21875570',
   foundingDate: '2024',
   description:
     'Detektivní agentura pro digitální business. Web, audit, nástroje, konzultace. Jeden detektiv, jeden případ, jeden výsledek.',
-  street: 'Školská 689/20',
-  city: 'Praha',
-  district: 'Nové Město',
-  postalCode: '11000',
+  street: 'Běleč 30',
+  city: 'Běleč',
+  district: 'Jihočeský kraj',
+  postalCode: '39143',
   country: 'CZ',
-  // GPS Školská 20, Praha 1 — Nové Město (ověřit na produkci přes Mapy.cz).
-  latitude: 50.0834,
-  longitude: 14.4232,
   linkedin: 'https://www.linkedin.com/company/arbiq',
 } as const;
 
@@ -65,7 +61,6 @@ export const organizationSchema: WithContext<Record<string, unknown>> = {
   email: PROVIDER.email,
   telephone: PROVIDER.phone,
   taxID: PROVIDER.taxID,
-  vatID: PROVIDER.vatID,
   foundingDate: PROVIDER.foundingDate,
   founder: {
     '@type': 'Person',
@@ -132,14 +127,8 @@ export const localBusinessSchema: WithContext<Record<string, unknown>> = {
     postalCode: PROVIDER.postalCode,
     addressCountry: PROVIDER.country,
   },
-  geo: {
-    '@type': 'GeoCoordinates',
-    latitude: PROVIDER.latitude,
-    longitude: PROVIDER.longitude,
-  },
   areaServed: [
     { '@type': 'Country', name: 'Czech Republic' },
-    { '@type': 'City', name: 'Praha' },
   ],
   openingHoursSpecification: [
     {

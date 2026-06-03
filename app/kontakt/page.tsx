@@ -123,9 +123,8 @@ export default function KontaktPage() {
                   <MapPin size={20} className="text-caramel mt-1 shrink-0" strokeWidth={1.5} />
                   <div>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone block mb-1">Adresa</span>
-                    <p className="text-moonlight">Školská 689/20</p>
-                    <p className="text-moonlight">Nové Město</p>
-                    <p className="text-moonlight">110 00 Praha</p>
+                    <p className="text-moonlight">Běleč 30</p>
+                    <p className="text-moonlight">391 43 Běleč</p>
                   </div>
                 </div>
 
@@ -133,8 +132,8 @@ export default function KontaktPage() {
                   <Building size={20} className="text-caramel mt-1 shrink-0" strokeWidth={1.5} />
                   <div>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-sandstone block mb-1">Fakturační údaje</span>
-                    <p className="text-moonlight">Harotas s.r.o.</p>
-                    <p className="text-sepia/60 text-sm">IČO: 21402027</p>
+                    <p className="text-moonlight">Bartoloměj Rota</p>
+                    <p className="text-sepia/60 text-sm">IČO: 21875570 · neplátce DPH</p>
                   </div>
                 </div>
 

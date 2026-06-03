@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "GDPR — Ochrana osobních údajů",
-  description: "Jak ARBIQ (Harotas s.r.o.) zpracovává osobní údaje návštěvníků webu, klientů a zájemců o služby.",
+  description: "Jak ARBIQ (Bartoloměj Rota) zpracovává osobní údaje návštěvníků webu, klientů a zájemců o služby.",
   alternates: { canonical: "/gdpr" },
 };
 
@@ -19,8 +19,8 @@ export default function GDPRPage() {
         <section>
           <h2 className="font-display italic font-black text-moonlight text-2xl mb-3">1. Správce osobních údajů</h2>
           <p>
-            Správcem osobních údajů je společnost <strong className="text-moonlight">Harotas s.r.o.</strong>, IČO 21402027, se sídlem
-            Školská 689/20, 110 00 Praha 1, zapsaná v obchodním rejstříku vedeném Městským soudem v Praze (dále jen „Správce" nebo „ARBIQ").
+            Správcem osobních údajů je <strong className="text-moonlight">Bartoloměj Rota</strong>, IČO 21875570, se sídlem
+            Běleč 30, 391 43 Běleč, fyzická osoba podnikající dle živnostenského zákona pod značkou ARBIQ (dále jen „Správce" nebo „ARBIQ").
           </p>
           <p className="mt-3">Kontaktní e-mail pro otázky GDPR: <a href="mailto:info@arbiq.cz" className="text-caramel hover:text-caramel-light">info@arbiq.cz</a></p>
         </section>

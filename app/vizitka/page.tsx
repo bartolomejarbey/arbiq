@@ -50,14 +50,14 @@ const personSchema = {
   worksFor: {
     "@type": "Organization",
     name: "ARBIQ",
-    legalName: "Harotas s.r.o.",
-    taxID: "21402027",
+    legalName: "Bartoloměj Rota",
+    taxID: "21875570",
     url: "https://arbiq.cz",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "Školská 689/20",
-      addressLocality: "Praha 1",
-      postalCode: "110 00",
+      streetAddress: "Běleč 30",
+      addressLocality: "Běleč",
+      postalCode: "391 43",
       addressCountry: "CZ",
     },
   },
@@ -170,10 +170,10 @@ export default function VizitkaPage() {
         {/* MINI FOOTER */}
         <footer className="pt-8 border-t border-tobacco/40 text-center space-y-2">
           <div className="font-mono text-[10px] uppercase tracking-widest text-sandstone">
-            Harotas s.r.o. · IČO 21402027
+            Bartoloměj Rota · IČO 21875570
           </div>
           <div className="font-mono text-[10px] tracking-widest text-sandstone/60">
-            Školská 689/20, 110 00 Praha 1
+            Běleč 30, 391 43 Běleč
           </div>
           <div className="font-mono text-[9px] tracking-widest text-sandstone/40 pt-2">
             © 2026 ARBIQ

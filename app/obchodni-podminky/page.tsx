@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Obchodní podmínky",
-  description: "Obchodní podmínky pro objednávku služeb ARBIQ (Harotas s.r.o.) — vývoj webů, audit, konzultace, aplikace na míru.",
+  description: "Obchodní podmínky pro objednávku služeb ARBIQ (Bartoloměj Rota) — vývoj webů, audit, konzultace, aplikace na míru.",
   alternates: { canonical: "/obchodni-podminky" },
 };
 
@@ -19,7 +19,7 @@ export default function ObchodniPodminkyPage() {
         <section>
           <h2 className="font-display italic font-black text-moonlight text-2xl mb-3">1. Smluvní strany</h2>
           <p>
-            <strong className="text-moonlight">Poskytovatelem</strong> je společnost Harotas s.r.o., IČO 21402027, se sídlem Školská 689/20, 110 00 Praha 1, zapsaná v obchodním rejstříku vedeném Městským soudem v Praze, podnikající pod značkou <strong className="text-moonlight">ARBIQ</strong> (dále jen „Poskytovatel").
+            <strong className="text-moonlight">Poskytovatelem</strong> je Bartoloměj Rota, IČO 21875570, se sídlem Běleč 30, 391 43 Běleč, fyzická osoba podnikající dle živnostenského zákona (neplátce DPH), podnikající pod značkou <strong className="text-moonlight">ARBIQ</strong> (dále jen „Poskytovatel").
           </p>
           <p className="mt-3">
             <strong className="text-moonlight">Klientem</strong> je fyzická nebo právnická osoba, která si u Poskytovatele objedná službu (dále jen „Klient").

@@ -76,8 +76,8 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: "ARBIQ",
   authors: [{ name: "Bartoloměj Rota", url: `${SITE_URL}/tym` }],
-  creator: "ARBIQ (Harotas s.r.o.)",
-  publisher: "ARBIQ (Harotas s.r.o.)",
+  creator: "ARBIQ (Bartoloměj Rota)",
+  publisher: "ARBIQ (Bartoloměj Rota)",
   keywords: [
     "digitální agentura Praha",
     "weby na míru",

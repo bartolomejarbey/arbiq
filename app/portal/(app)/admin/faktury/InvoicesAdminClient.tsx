@@ -271,7 +271,7 @@ export default function InvoicesAdminClient({
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end">
                   <div>
                     <label className={labelClass} htmlFor="sup_ico">IČO</label>
-                    <input id="sup_ico" name="sup_ico" value={sup.ico} onChange={(e) => setSup((s) => ({ ...s, ico: e.target.value }))} placeholder="21402027" className={inputClass} />
+                    <input id="sup_ico" name="sup_ico" value={sup.ico} onChange={(e) => setSup((s) => ({ ...s, ico: e.target.value }))} placeholder="12345678" className={inputClass} />
                   </div>
                   <IcoLookup
                     ico={sup.ico}
@@ -289,7 +289,7 @@ export default function InvoicesAdminClient({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className={labelClass} htmlFor="sup_name">Jméno / Firma</label>
-                    <input id="sup_name" name="sup_name" value={sup.name} onChange={(e) => setSup((s) => ({ ...s, name: e.target.value }))} placeholder="např. Harotas s.r.o." className={inputClass} />
+                    <input id="sup_name" name="sup_name" value={sup.name} onChange={(e) => setSup((s) => ({ ...s, name: e.target.value }))} placeholder="např. Jan Novák / Firma s.r.o." className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="sup_dic">DIČ (pokud plátce)</label>
@@ -303,11 +303,11 @@ export default function InvoicesAdminClient({
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="sup_street">Ulice</label>
-                    <input id="sup_street" name="sup_street" value={sup.street} onChange={(e) => setSup((s) => ({ ...s, street: e.target.value }))} placeholder="Školská 689/20" className={inputClass} />
+                    <input id="sup_street" name="sup_street" value={sup.street} onChange={(e) => setSup((s) => ({ ...s, street: e.target.value }))} placeholder="Ulice 123" className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="sup_city">Město + PSČ</label>
-                    <input id="sup_city" name="sup_city" value={sup.city} onChange={(e) => setSup((s) => ({ ...s, city: e.target.value }))} placeholder="110 00 Praha" className={inputClass} />
+                    <input id="sup_city" name="sup_city" value={sup.city} onChange={(e) => setSup((s) => ({ ...s, city: e.target.value }))} placeholder="100 00 Praha" className={inputClass} />
                   </div>
                   <div>
                     <label className={labelClass} htmlFor="sup_bank_account">Číslo účtu</label>

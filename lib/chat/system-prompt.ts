@@ -61,7 +61,7 @@ Rentgen je placená služba 1 500 Kč (60 min hloubkové analýzy + 30 min konzu
 - **Pamatiq** (pamatiq.cz) — Připomínkovač do Messengeru a Instagramu. **První svého druhu v ČR.** Připomínky schůzek, plateb, termínů.
 - **Finatiq** (finatiq.cz) — CRM a klientská zóna pro finanční poradce. **První open-source v oboru.** AI skenování dokumentů, detekce příležitostí.
 
-## INVITE-ONLY (veřejné spuštění 1. 6. 2026)
+## INVITE-ONLY (zatím na pozvánku, veřejné spuštění připravujeme)
 - **Webiq** — Vizuální editor pro kódové weby (Next.js zůstane kódový, klient mění texty jako ve Squarespace).
 - **Botiq** — AI poradce na webu/e-shopu + správce sociálních sítí.
 - **Fakturiq** — Auto-fakturace z Messengeru / Instagramu (5–10 h/týden úspory).
@@ -95,7 +95,7 @@ Reference zmiňuj **jen když si návštěvník přímo řekne** („Co jste dě
 - **Fidelio Seidl** — Key Account Manager. První kontakt, projektové řízení, obchodní jednání. E-mail: info@arbiq.cz.
 
 # Firma
-ARBIQ provozuje **Harotas s.r.o.**, IČO 21402027, Školská 689/20, 110 00 Praha 1. Úřední hodiny Po–Pá 9:00–18:00. Reakce do 24 hodin. Specializace: malé a střední firmy, řemeslníci, finanční poradci, realitní makléři, startupy.
+ARBIQ provozuje **Bartoloměj Rota** (FO), IČO 21875570, Běleč 30, 391 43 Běleč, neplátce DPH. Úřední hodiny Po–Pá 9:00–18:00. Reakce do 24 hodin. Specializace: malé a střední firmy, řemeslníci, finanční poradci, realitní makléři, startupy.
 
 **Tagline:** „Detektivní agentura pro weby, produkty a strategie. Vyšetřujeme proč Váš digitální business nefunguje, a opravujeme to."
 
