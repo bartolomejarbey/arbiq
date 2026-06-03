@@ -5,17 +5,24 @@ import { createClient } from '@/lib/supabase/server';
 import { untyped } from '@/lib/supabase/untyped';
 import { clientAssignedTo } from '@/lib/actions/ownership';
 import { createQuote } from '@/lib/actions/quotes';
-import { createInvoice, sendInvoiceToClient } from '@/lib/actions/invoices';
+import { createInvoice, sendInvoiceToClient, markInvoicePaid, cancelInvoice } from '@/lib/actions/invoices';
 import { createContract, sendContractToClient } from '@/lib/actions/contracts';
-import { createPortalUser } from '@/lib/actions/users';
+import { createPortalUser, updateClientProfile } from '@/lib/actions/users';
 import { createTask } from '@/lib/actions/tasks';
 import { upsertRecurringInvoice } from '@/lib/actions/recurring';
+import { updateProject } from '@/lib/actions/projects';
+import { addClientNote } from '@/lib/actions/notes';
+import { addCrmContact } from '@/lib/actions/contacts';
+import { createRecommendation } from '@/lib/actions/admin-recommendations';
 
 export type AssistantRole = 'admin' | 'obchodnik';
 export type ToolCtx = { role: AssistantRole; viewerId: string };
 
 /** Nástroje vyhrazené jen adminovi (finanční doklady / správa účtů). */
-const ADMIN_ONLY = new Set(['create_client', 'create_invoice']);
+const ADMIN_ONLY = new Set([
+  'create_client', 'create_invoice', 'update_client',
+  'mark_invoice_paid', 'cancel_invoice', 'send_recommendation',
+]);
 
 /** FormData z prostého objektu (vynechá undefined/null). */
 function fd(obj: Record<string, unknown>): FormData {
@@ -154,6 +161,108 @@ export const ASSISTANT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
+      name: 'update_client',
+      description: 'Upraví existujícího klienta. Jen admin. Stačí poslat jen měněná pole — zbytek se zachová. Lze měnit i parent_client_id (firma patří pod jinou osobu) a assigned_obchodnik.',
+      parameters: {
+        type: 'object',
+        properties: {
+          client_id: { type: 'string' }, full_name: { type: 'string' }, email: { type: 'string' }, phone: { type: 'string' },
+          company: { type: 'string' }, ico: { type: 'string' }, dic: { type: 'string' }, street: { type: 'string' }, city: { type: 'string' },
+          assigned_obchodnik: { type: 'string' }, parent_client_id: { type: 'string' },
+        },
+        required: ['client_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_invoices',
+      description: 'Vypíše faktury (max 50), volitelně filtr podle stavu nebo klienta. Pro dotazy typu „kdo nezaplatil / faktury po splatnosti". Stavy: ceka (čeká na úhradu), po_splatnosti, zaplaceno, zruseno.',
+      parameters: {
+        type: 'object',
+        properties: {
+          status: { type: 'string', enum: ['ceka', 'po_splatnosti', 'zaplaceno', 'zruseno'] },
+          client_id: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'mark_invoice_paid',
+      description: 'Označí fakturu jako zaplacenou. Jen admin.',
+      parameters: { type: 'object', properties: { invoice_id: { type: 'string' } }, required: ['invoice_id'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'cancel_invoice',
+      description: 'Stornuje fakturu. Jen admin.',
+      parameters: { type: 'object', properties: { invoice_id: { type: 'string' } }, required: ['invoice_id'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_project',
+      description: 'Aktualizuje projekt klienta: stav, % hotovo, popis, odhad dokončení a hlavně client_update — text „v jaké fázi jsme", který uvidí klient ve své zóně. project_id zjistíš z get_client_overview.',
+      parameters: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string' },
+          status: { type: 'string', enum: ['novy', 'v_priprave', 've_vyvoji', 'k_revizi', 'dokoncen', 'pozastaven', 'zruseny'] },
+          progress: { type: 'number', description: '0–100' },
+          client_update: { type: 'string', description: 'text pro klienta — v jaké fázi jsme, co zbývá' },
+          estimated_end_date: { type: 'string', description: 'YYYY-MM-DD' },
+        },
+        required: ['project_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_recommendation',
+      description: 'Vytvoří doporučení služby pro klienta (zobrazí se mu v klientské zóně + e-mail). Jen admin.',
+      parameters: {
+        type: 'object',
+        properties: {
+          client_id: { type: 'string' }, service_name: { type: 'string' }, description: { type: 'string' },
+          estimated_price: { type: 'string', description: 'volitelně, např. „od 15 000 Kč"' },
+        },
+        required: ['client_id', 'service_name', 'description'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_client_note',
+      description: 'Přidá interní poznámku ke klientovi (vidí jen tým, ne klient).',
+      parameters: { type: 'object', properties: { client_id: { type: 'string' }, content: { type: 'string' } }, required: ['client_id', 'content'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'log_contact',
+      description: 'Zapíše do historie komunikace s klientem (telefon/e-mail/schůzka/zpráva) + volitelně follow-up.',
+      parameters: {
+        type: 'object',
+        properties: {
+          client_id: { type: 'string' }, type: { type: 'string', enum: ['telefon', 'email', 'schuzka', 'zprava', 'jine'] },
+          note: { type: 'string' }, next_followup: { type: 'string', description: 'YYYY-MM-DD' },
+        },
+        required: ['client_id', 'type', 'note'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'send_invoice',
       description: 'Připraví ODESLÁNÍ faktury klientovi. NEODešle hned — vrátí shrnutí k potvrzení; skutečné odeslání proběhne až po výslovném potvrzení uživatele.',
       parameters: { type: 'object', properties: { invoice_id: { type: 'string' } }, required: ['invoice_id'] },
@@ -259,6 +368,59 @@ export async function executeAssistantTool(name: string, args: Record<string, un
         return out(await upsertRecurringInvoice(String(args.client_id), fd({ amount: args.amount, description: args.description, interval_months: args.interval_months ?? 1, day_of_month: args.day_of_month ?? 1, due_days: args.due_days ?? 14, auto_send: args.auto_send === false ? undefined : 'on' })));
       case 'create_task':
         return out(await createTask(fd({ title: args.title, description: args.description, client_id: args.client_id, due_date: args.due_date, priority: args.priority ?? 'normal' })));
+      case 'update_client': {
+        const cid = String(args.client_id ?? '');
+        if (!cid) return out({ ok: false, error: 'Chybí client_id.' });
+        // Načti současné hodnoty a překryj jen tím, co model poslal (partial update).
+        const supabase = await createClient();
+        const { data: cur } = await untyped(supabase)
+          .from('profiles')
+          .select('full_name, email, phone, company, ico, dic, street, city, assigned_obchodnik, parent_client_id')
+          .eq('id', cid)
+          .single();
+        const c = (cur ?? {}) as Record<string, unknown>;
+        const pick = (k: string) => (args[k] !== undefined && args[k] !== null ? args[k] : c[k]);
+        return out(await updateClientProfile(cid, fd({
+          full_name: pick('full_name'), email: pick('email'), phone: pick('phone'),
+          company: pick('company'), ico: pick('ico'), dic: pick('dic'), street: pick('street'), city: pick('city'),
+          assigned_obchodnik: pick('assigned_obchodnik'), parent_client_id: pick('parent_client_id'),
+        })));
+      }
+      case 'list_invoices': {
+        const supabase = await createClient();
+        let q = untyped(supabase)
+          .from('invoices')
+          .select('id, invoice_number, amount, status, due_date, kind, client_id, client:profiles!invoices_client_id_fkey(full_name, company)')
+          .order('issued_at', { ascending: false })
+          .limit(50);
+        if (args.status) q = q.eq('status', String(args.status));
+        if (args.client_id) q = q.eq('client_id', String(args.client_id));
+        const { data } = await q;
+        return out({ invoices: data ?? [] });
+      }
+      case 'mark_invoice_paid':
+        return out(await markInvoicePaid(String(args.invoice_id ?? '')));
+      case 'cancel_invoice':
+        return out(await cancelInvoice(String(args.invoice_id ?? '')));
+      case 'update_project': {
+        const pid = String(args.project_id ?? '');
+        if (!pid) return out({ ok: false, error: 'Chybí project_id.' });
+        try {
+          await updateProject(pid, fd({
+            status: args.status, progress: args.progress,
+            client_update: args.client_update, estimated_end_date: args.estimated_end_date,
+          }));
+          return out({ ok: true, project_id: pid });
+        } catch (e) {
+          return out({ ok: false, error: e instanceof Error ? e.message : 'Update projektu selhal.' });
+        }
+      }
+      case 'send_recommendation':
+        return out(await createRecommendation(fd({ client_id: args.client_id, service_name: args.service_name, description: args.description, estimated_price: args.estimated_price })));
+      case 'add_client_note':
+        return out(await addClientNote(fd({ client_id: args.client_id, content: args.content })));
+      case 'log_contact':
+        return out(await addCrmContact(fd({ client_id: args.client_id, type: args.type, note: args.note, next_followup: args.next_followup })));
       case 'send_invoice':
       case 'send_contract': {
         // HARD-GATE: neprováděj odeslání zde. Vrať shrnutí k potvrzení uživatelem.

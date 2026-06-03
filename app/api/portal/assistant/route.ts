@@ -27,7 +27,7 @@ const BodySchema = z.object({
   }).optional(),
 });
 
-const MODEL = 'gpt-4o';
+const MODEL = 'gpt-4o-mini';
 const MAX_STEPS = 10;
 
 function systemPrompt(): string {
