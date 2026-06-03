@@ -15,12 +15,16 @@ export function extractEmail(raw: string | null | undefined): string | null {
 export async function findClientByEmail(rawEmail: string | null | undefined): Promise<string | null> {
   const addr = extractEmail(rawEmail);
   if (!addr) return null;
+  // Anti filter-injection: ponech jen znaky platné v e-mailu (odeber , ( ) * apod.),
+  // než hodnotu vložíme do PostgREST .or() filtru.
+  const safe = addr.replace(/[^a-z0-9@._+-]/g, '');
+  if (!safe) return null;
   const admin = createAdminClient();
   const { data } = await untyped(admin)
     .from('profiles')
     .select('id')
     .eq('role', 'klient')
-    .or(`email.eq.${addr},billing_email.eq.${addr},contract_email.eq.${addr}`)
+    .or(`email.eq.${safe},billing_email.eq.${safe},contract_email.eq.${safe}`)
     .limit(1)
     .maybeSingle();
   return (data as { id?: string } | null)?.id ?? null;

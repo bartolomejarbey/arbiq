@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Loader2, Wrench } from 'lucide-react';
 
-type Msg = { role: 'user' | 'assistant'; content: string; actions?: Array<{ name: string; ok: boolean }> };
+type Pending = { tool: string; id: string; summary: string };
+type Msg = { role: 'user' | 'assistant'; content: string; actions?: Array<{ name: string; ok: boolean }>; pending?: Pending[] };
 
 const SUGGESTIONS = [
   'Udělej nabídku pro klienta …',
@@ -52,8 +53,29 @@ export default function AssistantChat() {
       if (!res.ok) {
         setError(data.error ?? 'Chyba asistenta.');
       } else {
-        setMessages((xs) => [...xs, { role: 'assistant', content: data.reply || '(bez odpovědi)', actions: data.actions }]);
+        setMessages((xs) => [...xs, { role: 'assistant', content: data.reply || '(bez odpovědi)', actions: data.actions, pending: data.pendingConfirmations }]);
       }
+    } catch {
+      setError('Síťová chyba.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function confirmSend(p: Pending) {
+    if (loading) return;
+    setError(null);
+    setLoading(true);
+    // Odeber pending (zabraň dvojímu kliknutí).
+    setMessages((xs) => xs.map((m) => (m.pending ? { ...m, pending: m.pending.filter((x) => !(x.tool === p.tool && x.id === p.id)) } : m)));
+    try {
+      const res = await fetch('/api/portal/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: messages.map((m) => ({ role: m.role, content: m.content })), confirm: { tool: p.tool, id: p.id } }),
+      });
+      const data = await res.json();
+      setMessages((xs) => [...xs, { role: 'assistant', content: data.reply || (res.ok ? 'Hotovo.' : (data.error ?? 'Chyba.')), actions: data.actions }]);
     } catch {
       setError('Síťová chyba.');
     } finally {
@@ -92,6 +114,22 @@ export default function AssistantChat() {
                     <span key={j} className={`inline-flex items-center gap-1 font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 ${a.ok ? 'text-olive bg-olive/10' : 'text-rust bg-rust/10'}`}>
                       <Wrench size={9} /> {ACTION_LABEL[a.name] ?? a.name}
                     </span>
+                  ))}
+                </div>
+              )}
+              {m.pending && m.pending.length > 0 && (
+                <div className="mt-3 flex flex-col gap-2 border-t border-tobacco/50 pt-3">
+                  {m.pending.map((p) => (
+                    <div key={p.tool + p.id} className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-sandstone">Odeslat {p.summary}?</span>
+                      <button
+                        onClick={() => confirmSend(p)}
+                        disabled={loading}
+                        className="bg-caramel text-espresso px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest font-bold hover:bg-caramel-light transition-all disabled:opacity-50"
+                      >
+                        Potvrdit odeslání
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
