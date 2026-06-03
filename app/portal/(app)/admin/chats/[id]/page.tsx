@@ -26,6 +26,10 @@ type Session = {
   started_at: string;
   last_message_at: string | null;
   message_count: number;
+  captured_email: string | null;
+  captured_phone: string | null;
+  captured_name: string | null;
+  converted_at: string | null;
 };
 
 export default async function ChatDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -67,6 +71,23 @@ export default async function ChatDetailPage({ params }: { params: Promise<{ id:
         <Link href="/portal/admin/chats" className="inline-flex items-center gap-2 text-sandstone hover:text-caramel text-sm">
           <ArrowLeft size={14} /> Zpět na seznam
         </Link>
+
+        {(s.captured_email || s.captured_phone || s.captured_name) ? (
+          <section className="bg-coffee border-l-2 border-olive p-6">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-olive mb-2">
+              ● Lead zachycen{s.converted_at ? ` · ${formatDate(s.converted_at)}` : ''}
+            </div>
+            <div className="flex flex-col gap-1 text-sm">
+              {s.captured_name && <div className="text-moonlight">{s.captured_name}</div>}
+              {s.captured_email && <a href={`mailto:${s.captured_email}`} className="text-caramel hover:text-caramel-light">{s.captured_email}</a>}
+              {s.captured_phone && <a href={`tel:${s.captured_phone.replace(/\s/g, '')}`} className="text-sepia">{s.captured_phone}</a>}
+            </div>
+          </section>
+        ) : (
+          <p className="text-sandstone text-sm bg-coffee p-4 border-l-2 border-tobacco/60">
+            Návštěvník zatím nenechal kontakt.
+          </p>
+        )}
 
         <section className="bg-coffee p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>

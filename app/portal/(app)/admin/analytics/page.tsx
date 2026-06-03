@@ -92,12 +92,15 @@ export default async function AnalyticsPage() {
   const supabase = await createClient();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: rows } = await supabase
+  const { data: rows, error: rowsErr } = await supabase
     .from('analytics_events')
     .select('visitor_id, session_id, event, page, referrer, utm_source, utm_medium, utm_campaign, created_at')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(10000);
+
+  // Nikdy tiše neschovávat chybu dotazu za „prázdná data".
+  if (rowsErr) console.error('[admin/analytics] načtení událostí selhalo:', rowsErr.message);
 
   const events = ((rows ?? []) as unknown as Row[]);
   const pageviews = events.filter((e) => e.event === 'pageview');

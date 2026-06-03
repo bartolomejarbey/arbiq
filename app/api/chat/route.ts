@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { untyped } from '@/lib/supabase/untyped';
+import { notifyAdmins } from '@/lib/notifications';
 import { createHash } from 'crypto';
 import { rateLimit } from '@/lib/rate-limit';
 import { ARBIQ_SYSTEM_PROMPT } from '@/lib/chat/system-prompt';
@@ -31,6 +34,19 @@ function hashIp(req: Request): string | null {
   return createHash('sha256').update(`${ip}|${day}|arbiq-chat`).digest('hex').slice(0, 16);
 }
 
+/** Vytáhne kontakt (e-mail / telefon) ze zprávy návštěvníka — ať víme, KDO psal. */
+function extractContact(text: string): { email: string | null; phone: string | null } {
+  const email = text.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/)?.[0] ?? null;
+  let phone: string | null = null;
+  const phoneRaw = text.match(/\+?\d[\d\s().-]{7,}\d/)?.[0] ?? null;
+  if (phoneRaw) {
+    const digits = phoneRaw.replace(/\D/g, '');
+    // CZ číslo = 9 číslic, s předvolbou 12; tolerujeme 9–13.
+    if (digits.length >= 9 && digits.length <= 13) phone = phoneRaw.trim();
+  }
+  return { email, phone };
+}
+
 export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: 'Chatbot není nakonfigurován.' }, { status: 503 });
@@ -55,16 +71,20 @@ export async function POST(request: Request) {
     );
   }
 
+  // Pokud chat píše přihlášený uživatel (např. z portálu), zachyť jeho identitu.
+  const { data: { user: authedUser } } = await supabase.auth.getUser();
+
   // Resolve / create session (sessionId may be undefined or null on first message)
   let sessionId: string | null = parsed.session_id ?? null;
   if (!sessionId) {
-    const { data: created, error: sessErr } = await supabase
+    const { data: created, error: sessErr } = await untyped(supabase)
       .from('chat_sessions')
       .insert({
         visitor_id: parsed.visitor_id,
         page_path: parsed.page_path ?? null,
         user_agent: request.headers.get('user-agent')?.slice(0, 400) ?? null,
         ip_hash: ipHash,
+        user_id: authedUser?.id ?? null,
       })
       .select('id')
       .single();
@@ -82,6 +102,37 @@ export async function POST(request: Request) {
       role: 'user',
       content: parsed.message,
     });
+
+    // Lead capture: zachyť kontakt z konverzace → admin uvidí KDO psal a lead
+    // se neztratí. Update jde přes admin client (RLS by anon UPDATE nepustila).
+    const contact = extractContact(parsed.message);
+    if (contact.email || contact.phone) {
+      try {
+        const adminDb = createAdminClient();
+        const upd: Record<string, string> = {};
+        if (contact.email) upd.captured_email = contact.email;
+        if (contact.phone) upd.captured_phone = contact.phone;
+        await untyped(adminDb).from('chat_sessions').update(upd).eq('id', sessionId);
+        // Jen PRVNÍ zachycení označí konverzi a upozorní tým (žádné spamování).
+        const { data: firstConv } = await untyped(adminDb)
+          .from('chat_sessions')
+          .update({ converted_at: new Date().toISOString(), conversion_kind: 'kontakt' })
+          .eq('id', sessionId)
+          .is('converted_at', null)
+          .select('id')
+          .maybeSingle();
+        if (firstConv) {
+          await notifyAdmins({
+            type: 'chat_lead',
+            title: 'Nový kontakt z chatu',
+            body: `${contact.email ?? ''} ${contact.phone ?? ''} — ${parsed.page_path ?? 'web'}`.trim(),
+            link: `/portal/admin/chats/${sessionId}`,
+          });
+        }
+      } catch (err) {
+        console.error('chat lead capture failed', err);
+      }
+    }
   }
 
   // Build OpenAI messages

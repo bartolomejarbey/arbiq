@@ -15,6 +15,9 @@ type Session = {
   started_at: string;
   last_message_at: string | null;
   message_count: number;
+  captured_email: string | null;
+  captured_phone: string | null;
+  converted_at: string | null;
 };
 
 type FirstMessage = { session_id: string; content: string };
@@ -44,17 +47,21 @@ export default async function AdminChatsPage() {
   const supabase = await createClient();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [{ data: sessions, count: totalSessions }, { count: totalMessages }] = await Promise.all([
+  const [{ data: sessions, count: totalSessions, error: sessErr }, { count: totalMessages }] = await Promise.all([
     supabase
       .from('chat_sessions')
-      .select('id, visitor_id, page_path, user_agent, started_at, last_message_at, message_count', { count: 'exact' })
+      .select('id, visitor_id, page_path, user_agent, started_at, last_message_at, message_count, captured_email, captured_phone, converted_at', { count: 'exact' })
       .gte('started_at', since)
       .order('last_message_at', { ascending: false, nullsFirst: false })
       .limit(100),
     supabase.from('chat_messages').select('id', { count: 'exact', head: true }).gte('created_at', since),
   ]);
 
+  // Nikdy tiše neschovávat chybu dotazu za „prázdno".
+  if (sessErr) console.error('[admin/chats] načtení sessions selhalo:', sessErr.message);
+
   const list = ((sessions ?? []) as unknown as Session[]);
+  const leadCount = list.filter((s) => s.converted_at || s.captured_email || s.captured_phone).length;
   const sessCount = totalSessions ?? 0;
   const msgCount = totalMessages ?? 0;
   const avgMsgs = sessCount > 0 ? (msgCount / sessCount).toFixed(1) : '0';
@@ -85,23 +92,36 @@ export default async function AdminChatsPage() {
           <StatsCard label="Sessions (30 d)" value={sessCount.toLocaleString('cs')} tone="accent" />
           <StatsCard label="Zpráv celkem" value={msgCount.toLocaleString('cs')} />
           <StatsCard label="Průměr zpráv / session" value={avgMsgs} />
-          <StatsCard label="Aktivní (s 3+ zprávami)" value={list.filter((s) => s.message_count >= 3).length} tone="success" />
+          <StatsCard label="Zachycené leady (kontakt)" value={leadCount} tone="success" />
         </section>
 
         <section className="bg-coffee">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-tobacco">
-                <Th>Začátek</Th><Th>Visitor</Th><Th>Stránka</Th><Th>Zpráv</Th><Th>První dotaz</Th>
+                <Th>Začátek</Th><Th>Kontakt</Th><Th>Visitor</Th><Th>Stránka</Th><Th>Zpráv</Th><Th>První dotaz</Th>
               </tr>
             </thead>
             <tbody>
               {list.length === 0 && (
-                <tr><td colSpan={5} className="text-center text-sandstone py-12">Zatím žádné konverzace.</td></tr>
+                <tr><td colSpan={6} className="text-center text-sandstone py-12">Zatím žádné konverzace.</td></tr>
               )}
               {list.map((s, i) => (
                 <tr key={s.id} className={`border-b border-tobacco/50 ${i % 2 === 1 ? 'bg-coffee/40' : ''} hover:bg-tobacco/20`}>
                   <td className="px-4 py-3 text-sandstone whitespace-nowrap">{formatDate(s.started_at)}</td>
+                  <td className="px-4 py-3">
+                    {(s.captured_email || s.captured_phone) ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-olive">
+                          ● Lead zachycen
+                        </span>
+                        {s.captured_email && <span className="text-sepia text-xs truncate max-w-[180px]">{s.captured_email}</span>}
+                        {s.captured_phone && <span className="text-sandstone text-xs">{s.captured_phone}</span>}
+                      </div>
+                    ) : (
+                      <span className="text-sandstone/50 text-xs">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono text-xs text-sepia truncate max-w-[140px]">{s.visitor_id}</td>
                   <td className="px-4 py-3 font-mono text-xs text-sepia">{s.page_path ?? '—'}</td>
                   <td className="px-4 py-3 text-moonlight">{s.message_count}</td>

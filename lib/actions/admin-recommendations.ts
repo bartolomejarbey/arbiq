@@ -36,13 +36,16 @@ export async function createRecommendation(formData: FormData): Promise<Recommen
     };
   }
 
+  // POZOR: rovnou 'zobrazena'. Status 'nova' je přes RLS skrytý před klientem,
+  // takže se klientovi NIKDY nezobrazí (a stránka /doporuceni ho ani neumí
+  // přepnout — flip dotaz 'nova' RLS taky skryje). 'zobrazena' = klient vidí.
   const { error } = await supabase.from('recommendations').insert({
     client_id: parsed.client_id,
     created_by: user.id,
     service_name: parsed.service_name,
     description: parsed.description,
     estimated_price: parsed.estimated_price || null,
-    status: 'nova',
+    status: 'zobrazena',
   });
   if (error) return { ok: false, error: error.message };
 

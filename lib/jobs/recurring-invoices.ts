@@ -74,20 +74,27 @@ export async function runRecurringInvoices(): Promise<{ generated: number; sent:
   let errors = 0;
 
   for (const cfg of configs) {
+    let invoiceId: string;
+    let invoiceNumber: string;
+    let amount: number;
+    let dueDate: string;
+    let variableSymbol: string;
+    let items: InvoiceItem[];
+    let p: Record<string, string | null> | null;
     try {
       const { data: prof } = await untyped(admin)
         .from('profiles')
         .select('full_name, email, phone, company, ico, dic, street, city, billing_email')
         .eq('id', cfg.client_id)
         .single();
-      const p = prof as Record<string, string | null> | null;
+      p = prof as Record<string, string | null> | null;
 
       const { data: numData } = await untyped(admin).rpc('next_invoice_number');
-      const invoiceNumber = typeof numData === 'string' ? numData : `F${Date.now()}`;
-      const variableSymbol = invoiceNumber.replace(/\D/g, '');
-      const amount = Number(cfg.amount);
-      const dueDate = addDays(today, cfg.due_days);
-      const items: InvoiceItem[] = [{ label: cfg.description, description: null, quantity: 1, unit: 'ks', unit_price: amount }];
+      invoiceNumber = typeof numData === 'string' ? numData : `F${Date.now()}`;
+      variableSymbol = invoiceNumber.replace(/\D/g, '');
+      amount = Number(cfg.amount);
+      dueDate = addDays(today, cfg.due_days);
+      items = [{ label: cfg.description, description: null, quantity: 1, unit: 'ks', unit_price: amount }];
 
       const { data: ins, error: insErr } = await untyped(admin)
         .from('invoices')
@@ -108,8 +115,29 @@ export async function runRecurringInvoices(): Promise<{ generated: number; sent:
         .select('id')
         .single();
       if (insErr || !ins) throw new Error(insErr?.message ?? 'invoice insert failed');
-      const invoiceId = (ins as { id: string }).id;
+      invoiceId = (ins as { id: string }).id;
 
+      // KRITICKÉ: období „zaber" HNED po insertu. Dřív se next_run posouval až
+      // na konci, takže když PDF/odeslání níže selhalo, catch ho přeskočil a
+      // další den se faktura vygenerovala ZNOVU (duplicitní doklady). Teď je
+      // období uzavřené okamžitě a chyba PDF/e-mailu už dofakturaci nespustí.
+      await untyped(admin)
+        .from('recurring_invoices')
+        .update({
+          last_run: today,
+          next_run: computeNextRun(cfg.next_run, cfg.interval_months, cfg.day_of_month, today),
+          last_invoice_id: invoiceId,
+        })
+        .eq('id', cfg.id);
+      generated++;
+    } catch (err) {
+      errors++;
+      console.error('[RECURRING] insert faktury selhal pro config', cfg.id, err);
+      continue;
+    }
+
+    // PDF + odeslání ve VLASTNÍM try — selhání už neopakuje fakturaci.
+    try {
       const customer: InvoiceCustomer = {
         full_name: p?.full_name ?? 'Klient',
         email: p?.email ?? null,
@@ -154,7 +182,6 @@ export async function runRecurringInvoices(): Promise<{ generated: number; sent:
         title: filename,
       });
       await untyped(admin).from('invoices').update({ pdf_url: up.path, qr_payload: qrPayload }).eq('id', invoiceId);
-      generated++;
 
       const recipient = p?.billing_email || p?.email || null;
       const kindLabel = KIND_LABEL[cfg.kind] ?? 'Faktura';
@@ -190,18 +217,15 @@ export async function runRecurringInvoices(): Promise<{ generated: number; sent:
           link: '/portal/admin/faktury',
         });
       }
-
-      await untyped(admin)
-        .from('recurring_invoices')
-        .update({
-          last_run: today,
-          next_run: computeNextRun(cfg.next_run, cfg.interval_months, cfg.day_of_month, today),
-          last_invoice_id: invoiceId,
-        })
-        .eq('id', cfg.id);
     } catch (err) {
       errors++;
-      console.error('[RECURRING] failed for config', cfg.id, err);
+      console.error('[RECURRING] PDF/odeslání selhalo pro fakturu', invoiceId, err);
+      await notifyAdmins({
+        type: 'recurring_invoice',
+        title: `Pravidelná faktura ${invoiceNumber} — PDF/odeslání selhalo`,
+        body: 'Faktura byla vytvořena, ale PDF nebo odeslání selhalo. Zkontrolujte ji a případně regenerujte PDF.',
+        link: '/portal/admin/faktury',
+      });
     }
   }
 

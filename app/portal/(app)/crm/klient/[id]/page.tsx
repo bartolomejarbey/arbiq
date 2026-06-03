@@ -558,6 +558,20 @@ export default async function KlientDetailPage({
                   <div className="text-sepia">{profile.ico}</div>
                 </div>
               )}
+              {profile.dic && (
+                <div>
+                  <div className="text-sandstone text-xs">DIČ</div>
+                  <div className="text-sepia">{profile.dic}</div>
+                </div>
+              )}
+              {(profile.street || profile.city) && (
+                <div>
+                  <div className="text-sandstone text-xs">Adresa</div>
+                  <div className="text-sepia">
+                    {profile.street}{profile.street && profile.city ? ', ' : ''}{profile.city}
+                  </div>
+                </div>
+              )}
               {profile.company && (
                 <div>
                   <div className="text-sandstone text-xs">Firma</div>
