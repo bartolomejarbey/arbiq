@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { BLOG_POSTS as POSTS } from '@/lib/blog/posts';
 
 const BASE = 'https://arbiq.cz';
 
@@ -25,11 +26,7 @@ const SLUZBY = [
   'grafika',
 ];
 
-const BLOG_POSTS = [
-  'proc-hledat-budoucnost-v-chatgpt',
-  'princeton-studie-male-firmy-v-ai-vyhledavani',
-  'jak-zjistit-zda-vas-chatgpt-doporucuje',
-];
+const BLOG_POSTS = POSTS.map((p) => p.slug);
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -44,6 +41,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/kariera`,         priority: 0.75, changeFrequency: 'weekly', lastModified: now },
     { url: `${BASE}/kontakt`,         priority: 0.8, changeFrequency: 'yearly',  lastModified: now },
     { url: `${BASE}/specializace`,    priority: 0.7, changeFrequency: 'monthly', lastModified: now },
+    { url: `${BASE}/blog`,            priority: 0.7, changeFrequency: 'weekly',  lastModified: now },
     ...SLUZBY.map((s) => ({
       url: `${BASE}/sluzby/${s}`,
       priority: 0.8,
