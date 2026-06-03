@@ -12,14 +12,14 @@ export default function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="px-8 py-8 border-b border-tobacco bg-espresso flex items-start justify-between gap-6 flex-wrap">
+    <header className="px-4 md:px-8 py-8 border-b border-tobacco bg-espresso flex items-start justify-between gap-6 flex-wrap">
       <div>
         {eyebrow && (
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-sandstone mb-3">
             {eyebrow}
           </div>
         )}
-        <h1 className="font-display italic font-black text-moonlight text-3xl md:text-4xl leading-tight">
+        <h1 className="font-body font-semibold text-moonlight text-3xl md:text-4xl leading-tight">
           {title}
         </h1>
         {subtitle && (

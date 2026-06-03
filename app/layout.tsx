@@ -17,7 +17,7 @@ const playfair = Playfair_Display({
   subsets: ["latin", "latin-ext"],
   variable: "--font-playfair",
   display: "swap",
-  style: ["normal"],
+  style: ["normal", "italic"],
   weight: ["400", "700", "900"],
 });
 
@@ -43,7 +43,9 @@ const newsreader = Newsreader({
   weight: ["400", "700"],
 });
 
-const SITE_URL = process.env.APP_URL ?? "https://arbiq.cz";
+// SEO base URL — ZÁMĚRNĚ oddělené od APP_URL (to slouží OAuth/runtime a v devu
+// je localhost). NEXT_PUBLIC_SITE_URL umožní override, default je produkční doména.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://arbiq.cz";
 const SITE_DESCRIPTION =
   "Vyšetřujeme, proč váš digitální business nefunguje, a opravujeme to. Web, audit, nástroje, konzultace. Jeden detektiv, jeden případ, jeden výsledek.";
 
@@ -135,10 +137,13 @@ export default function RootLayout({
       className={`${playfair.variable} ${inter.variable} ${ibmPlexMono.variable} ${newsreader.variable}`}
     >
       <body className="flex flex-col min-h-screen grain-overlay">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-caramel focus:text-espresso focus:px-4 focus:py-2 focus:font-mono focus:text-xs focus:uppercase focus:tracking-widest">
+          Přeskočit na obsah
+        </a>
         <JsonLd data={[organizationSchema, websiteSchema, localBusinessSchema]} />
         <IntroContextProvider>
           <ChromeGate target="header"><Header /></ChromeGate>
-          <main className="flex-1">{children}</main>
+          <main id="main-content" className="flex-1">{children}</main>
           <ChromeGate target="footer"><Footer /></ChromeGate>
           <ChromeGate target="cookies"><CookieBanner /></ChromeGate>
           <Suspense fallback={null}><AnalyticsTracker /></Suspense>

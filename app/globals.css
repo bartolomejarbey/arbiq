@@ -122,3 +122,20 @@ body {
   height: 12px;
   background: #514538;
 }
+
+/* === Pristupnost (a11y) === */
+/* Viditelny fokus pro klavesovou navigaci (drive zadny globalni styl) */
+*:focus-visible {
+  outline: 2px solid var(--color-caramel);
+  outline-offset: 3px;
+}
+
+/* Respektuj prefers-reduced-motion (rotace, animate-bounce, framer-motion) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

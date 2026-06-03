@@ -16,7 +16,8 @@
  *   - JSONLd komponentu importuj z @/components/seo/JsonLd
  */
 
-export const SITE_URL = process.env.APP_URL ?? 'https://arbiq.cz';
+// SEO/JSON-LD base — oddělené od APP_URL (OAuth/runtime, v devu localhost).
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://arbiq.cz';
 
 export const ORG_ID = `${SITE_URL}/#organization`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;
