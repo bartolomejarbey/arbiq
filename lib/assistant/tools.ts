@@ -27,9 +27,14 @@ function fd(obj: Record<string, unknown>): FormData {
   return f;
 }
 
-/** Očistí vstup pro PostgREST .or()/.ilike() filtr (anti filter-injection). */
+/**
+ * Očistí vstup pro PostgREST .or()/.ilike() filtr (anti filter-injection).
+ * POZOR: zachovává `. @ - _ +` — jinak by se rozbilo hledání podle e-mailu
+ * (dřív se tečka stripovala → e-mail nikdy nematchoval). Odstraní jen znaky,
+ * které rozbíjejí .or() syntaxi (`% , ( ) *`).
+ */
 function sanitizeQuery(raw: unknown): string {
-  return String(raw ?? '').replace(/[%,()*.]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+  return String(raw ?? '').replace(/[%,()*]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
 }
 
 export const ASSISTANT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
@@ -37,8 +42,8 @@ export const ASSISTANT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'search_clients',
-      description: 'Najde klienty podle jména, firmy nebo e-mailu (max 10). Použij vždy, než pracuješ s konkrétním klientem, abys získal client_id.',
-      parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+      description: 'Najde klienty podle jména, firmy, e-mailu NEBO IČO (max 10). Zvládá i celý e-mail nebo IČO s mezerami. Použij vždy nejdřív, abys získal client_id. Zkus víc variant (e-mail, IČO, název firmy), než řekneš že klient neexistuje.',
+      parameters: { type: 'object', properties: { query: { type: 'string', description: 'jméno, firma, e-mail nebo IČO' } }, required: ['query'] },
     },
   },
   {
@@ -53,12 +58,12 @@ export const ASSISTANT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'create_client',
-      description: 'Vytvoří nového klienta (role klient). Jen admin.',
+      description: 'Vytvoří nového klienta (role klient). Jen admin. IDEMPOTENTNÍ: když klient s daným e-mailem už existuje, vrátí ho (existing:true, client_id) místo chyby — pak rovnou pokračuj s tímto client_id. Firma NENÍ povinná.',
       parameters: {
         type: 'object',
         properties: {
           full_name: { type: 'string' }, email: { type: 'string' }, phone: { type: 'string' },
-          company: { type: 'string' }, ico: { type: 'string' },
+          company: { type: 'string' }, ico: { type: 'string' }, dic: { type: 'string' },
           send_invite: { type: 'boolean', description: 'poslat přístupové údaje e-mailem' },
         },
         required: ['full_name', 'email'],
@@ -85,14 +90,20 @@ export const ASSISTANT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'create_invoice',
-      description: 'Vystaví fakturu klientovi (PDF). Jen admin. NEODesílá — to udělej send_invoice po potvrzení.',
+      description: 'Vystaví fakturu klientovi (PDF). Jen admin. NEODesílá — to udělej send_invoice po potvrzení. Když uživatel uvede rozpis (např. web 6000, doména 1200, e-mail 800), zadej ho do items — částka se spočítá z položek. Jinak použij amount + description. Když due_date nezadá uživatel, použij dnešek + 14 dní.',
       parameters: {
         type: 'object',
         properties: {
-          client_id: { type: 'string' }, amount: { type: 'number' }, description: { type: 'string' },
+          client_id: { type: 'string' }, amount: { type: 'number', description: 'celková částka, pokud nezadáváš items' },
+          description: { type: 'string' },
+          items: {
+            type: 'array',
+            description: 'rozpis položek; pokud je zadán, amount se ignoruje a spočítá z položek',
+            items: { type: 'object', properties: { label: { type: 'string' }, quantity: { type: 'number' }, unit: { type: 'string' }, unit_price: { type: 'number' } }, required: ['label', 'unit_price'] },
+          },
           due_date: { type: 'string', description: 'YYYY-MM-DD' }, kind: { type: 'string', enum: ['zaloha', 'konecna', 'dobropis', 'paushal'] },
         },
-        required: ['client_id', 'amount', 'due_date', 'description'],
+        required: ['client_id', 'due_date'],
       },
     },
   },
@@ -179,9 +190,16 @@ export async function executeAssistantTool(name: string, args: Record<string, un
         const supabase = await createClient();
         const q = sanitizeQuery(args.query);
         if (!q) return out({ clients: [] });
-        let query = untyped(supabase).from('profiles').select('id, full_name, company, email').eq('role', 'klient');
+        // Hledá podle jména, firmy, e-mailu I IČO (číslice se normalizují bez mezer).
+        const digits = q.replace(/\D/g, '');
+        const orParts = [`full_name.ilike.%${q}%`, `company.ilike.%${q}%`, `email.ilike.%${q}%`];
+        if (digits.length >= 6) orParts.push(`ico.ilike.%${digits}%`);
+        let query = untyped(supabase)
+          .from('profiles')
+          .select('id, full_name, company, email, ico, phone, parent_client_id, is_active')
+          .eq('role', 'klient');
         if (ctx.role === 'obchodnik') query = query.eq('assigned_obchodnik', ctx.viewerId);
-        const { data } = await query.or(`full_name.ilike.%${q}%,company.ilike.%${q}%,email.ilike.%${q}%`).limit(10);
+        const { data } = await query.or(orParts.join(',')).limit(10);
         return out({ clients: data ?? [] });
       }
       case 'get_client_overview': {
@@ -199,15 +217,39 @@ export async function executeAssistantTool(name: string, args: Record<string, un
         ]);
         return out({ profile: prof.data, projects: projects.data, quotes: quotes.data, contracts: contracts.data, invoices: invoices.data });
       }
-      case 'create_client':
-        return out(await createPortalUser(fd({ full_name: args.full_name, email: args.email, role: 'klient', phone: args.phone, company: args.company, ico: args.ico, send_invite: args.send_invite ? 'on' : undefined })));
+      case 'create_client': {
+        const supabase = await createClient();
+        const email = String(args.email ?? '').trim();
+        // Idempotence: když klient s tímto e-mailem už existuje, vrať ho (nezakládej
+        // duplicitně a nepadej na „e-mail už registrován"). Tohle byl hlavní důvod,
+        // proč se asistent zacyklil.
+        if (email) {
+          const { data: existRows } = await untyped(supabase)
+            .from('profiles')
+            .select('id, full_name, company, email')
+            .ilike('email', email)
+            .limit(1);
+          const ex = (existRows?.[0]) as { id?: string; full_name?: string; company?: string; email?: string } | undefined;
+          if (ex?.id) {
+            return out({ ok: true, existing: true, client_id: ex.id, full_name: ex.full_name, company: ex.company, email: ex.email, note: 'Klient s tímto e-mailem už existuje — použij toto client_id a pokračuj.' });
+          }
+        }
+        const res = await createPortalUser(fd({ full_name: args.full_name, email: args.email, role: 'klient', phone: args.phone, company: args.company, ico: args.ico, dic: args.dic, send_invite: args.send_invite ? 'on' : undefined }));
+        const r = res as { ok?: boolean; userId?: string; error?: string };
+        if (r.ok && r.userId) return out({ ok: true, existing: false, client_id: r.userId });
+        return out(res);
+      }
       case 'create_quote': {
         const f = fd({ client_id: args.client_id, title: args.title, intro_text: args.intro_text, valid_days: args.valid_days, deadline_days: args.deadline_days });
         f.set('items', JSON.stringify(args.items ?? []));
         return out(await createQuote(f));
       }
-      case 'create_invoice':
-        return out(await createInvoice(fd({ client_id: args.client_id, amount: args.amount, description: args.description, due_date: args.due_date, kind: args.kind ?? 'konecna' })));
+      case 'create_invoice': {
+        const f = fd({ client_id: args.client_id, amount: args.amount, description: args.description, due_date: args.due_date, kind: args.kind ?? 'konecna' });
+        // Rozpis na položky → faktura je má jako řádky a částku spočítá z nich.
+        if (Array.isArray(args.items) && args.items.length > 0) f.set('items', JSON.stringify(args.items));
+        return out(await createInvoice(f));
+      }
       case 'create_contract': {
         const f = fd({ client_id: args.client_id, title: args.title, subject: args.subject, total_price: args.total_price, deposit_percent: args.deposit_percent, deadline_days: args.deadline_days });
         if (Array.isArray(args.scope_bullets)) f.set('scope_bullets', (args.scope_bullets as string[]).join('\n'));
