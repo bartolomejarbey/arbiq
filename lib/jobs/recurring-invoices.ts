@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { untyped } from '@/lib/supabase/untyped';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { renderInvoicePdf, type InvoiceDoc, type InvoiceCustomer, type InvoiceItem } from '@/lib/pdf/invoice';
-import { buildSpaydPayload } from '@/lib/payments/spayd';
+import { buildSpaydPayload, spaydQrDataUrlFromPayload } from '@/lib/payments/spayd';
 import { uploadDocument } from '@/lib/storage/documents';
 import { sendEmail } from '@/lib/email/send';
 import { InvoiceDeliveryEmail } from '@/lib/email/templates/invoice-delivery';
@@ -185,6 +185,7 @@ export async function runRecurringInvoices(): Promise<{ generated: number; sent:
 
       const recipient = p?.billing_email || p?.email || null;
       const kindLabel = KIND_LABEL[cfg.kind] ?? 'Faktura';
+      const qrDataUrl = qrPayload ? await spaydQrDataUrlFromPayload(qrPayload).catch(() => null) : null;
       if (cfg.auto_send && recipient && process.env.RESEND_API_KEY) {
         await sendEmail({
           to: recipient,
@@ -196,6 +197,9 @@ export async function runRecurringInvoices(): Promise<{ generated: number; sent:
             amount: formatMoney(amount),
             dueDate: formatDate(dueDate),
             kindLabel,
+            qrDataUrl,
+            iban: dodavatel.iban,
+            variableSymbol,
           }),
           attachments: [{ filename, content: pdf }],
         });

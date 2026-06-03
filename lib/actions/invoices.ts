@@ -14,7 +14,7 @@ import { InvoiceDeliveryEmail } from '@/lib/email/templates/invoice-delivery';
 import { getDodavatel } from '@/lib/config/dodavatel';
 import { uploadDocument, downloadDocument } from '@/lib/storage/documents';
 import { renderInvoicePdf, type InvoiceDoc, type InvoiceCustomer, type InvoiceItem } from '@/lib/pdf/invoice';
-import { buildSpaydPayload } from '@/lib/payments/spayd';
+import { buildSpaydPayload, spaydQrDataUrlFromPayload } from '@/lib/payments/spayd';
 import type { Dodavatel } from '@/lib/config/dodavatel';
 
 /** Slije případný supplier_override JSON přes výchozí dodavatel hodnoty. */
@@ -538,7 +538,7 @@ export async function sendInvoiceToClient(
   const admin = createAdminClient();
   const { data: invRow } = await untyped(admin)
     .from('invoices')
-    .select('id, invoice_number, kind, amount, due_date, pdf_url, client_id, customer_override')
+    .select('id, invoice_number, kind, amount, due_date, pdf_url, client_id, customer_override, qr_payload, variable_symbol, payment_method')
     .eq('id', invoiceId)
     .single();
   if (!invRow) return { ok: false, error: 'Faktura nenalezena.' };
@@ -550,6 +550,9 @@ export async function sendInvoiceToClient(
     pdf_url: string | null;
     client_id: string | null;
     customer_override: { full_name?: string | null; email?: string | null } | null;
+    qr_payload: string | null;
+    variable_symbol: string | null;
+    payment_method: string | null;
   };
 
   // Jednorázová faktura (bez klienta) = jen admin (obchodník k ní nemá vztah).
@@ -607,6 +610,18 @@ export async function sendInvoiceToClient(
   const safeNum = inv.invoice_number.replace(/[^A-Za-z0-9-]/g, '_');
   const filename = inv.kind === 'zaloha' ? `Zalohova-faktura-${safeNum}.pdf` : `Faktura-${safeNum}.pdf`;
 
+  // QR platba přímo do e-mailu (nejen v PDF). Dobropis/hotovost → bez QR.
+  let qrDataUrl: string | null = null;
+  let qrIban: string | null = null;
+  if (inv.qr_payload && inv.payment_method !== 'cash' && inv.kind !== 'dobropis') {
+    try {
+      qrDataUrl = await spaydQrDataUrlFromPayload(inv.qr_payload);
+      qrIban = inv.qr_payload.match(/ACC:([^*+]+)/)?.[1] ?? null;
+    } catch (err) {
+      console.error('[INVOICE SEND] QR render failed', err);
+    }
+  }
+
   try {
     await sendEmail({
       to: recipientEmail,
@@ -618,6 +633,9 @@ export async function sendInvoiceToClient(
         amount: formatMoney(Number(inv.amount)),
         dueDate: formatDate(inv.due_date),
         kindLabel,
+        qrDataUrl,
+        iban: qrIban,
+        variableSymbol: inv.variable_symbol,
       }),
       attachments: [{ filename, content: pdfBuffer }],
     });

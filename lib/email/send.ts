@@ -34,6 +34,9 @@ export type EmailPayload = {
  *  tiše v Promise.allSettled. */
 const DEFAULT_FROM = 'ARBIQ <noreply@arbiq.cz>';
 const DEFAULT_BCC_ADMIN = 'bartolomej@arbiq.cz,info@arbiq.cz';
+/** Kopie KAŽDÉHO odeslaného e-mailu do této schránky (Seznam), ať je vidíš jako „odeslané".
+ *  Nastav RESEND_SENT_COPY='' pro vypnutí, nebo na jinou/více adres (čárkou). */
+const DEFAULT_SENT_COPY = 'bartolomej@arbiq.cz';
 
 export async function sendEmail(payload: EmailPayload) {
   const fromAddress = process.env.RESEND_FROM || DEFAULT_FROM;
@@ -46,21 +49,32 @@ export async function sendEmail(payload: EmailPayload) {
   const adminBccRaw = process.env.RESEND_BCC_ADMIN || DEFAULT_BCC_ADMIN;
   const adminBccList = adminBccRaw.split(',').map((s) => s.trim()).filter(Boolean);
 
-  const bcc = [
-    ...(payload.bcc ?? []),
-    ...(payload.bccAdmin ? adminBccList : []),
-  ];
+  // Kopie všech odeslaných do schránky (Seznam). Lze přepsat/vypnout přes env.
+  const sentCopyRaw = process.env.RESEND_SENT_COPY ?? DEFAULT_SENT_COPY;
+  const sentCopyList = sentCopyRaw.split(',').map((s) => s.trim()).filter(Boolean);
 
+  const toList = Array.isArray(payload.to) ? payload.to : [payload.to];
+  const toSet = new Set(toList.map((e) => e.toLowerCase()));
+  const bcc = [
+    ...new Set([
+      ...(payload.bcc ?? []),
+      ...(payload.bccAdmin ? adminBccList : []),
+      ...sentCopyList,
+    ].map((e) => e.trim()).filter(Boolean)),
+  ].filter((e) => !toSet.has(e.toLowerCase())); // neBCCovat příjemce (duplicita)
+
+  // Reply-To: ať odpovědi klientů míří do schránky (Seznam), ne do prázdna.
+  const replyToResolved = payload.replyTo ?? process.env.RESEND_REPLY_TO ?? DEFAULT_SENT_COPY;
   // Allow comma-separated reply-to (e.g. RESEND_REPLY_TO=a@x.cz,b@x.cz) — split into array.
-  const replyToList = Array.isArray(payload.replyTo)
-    ? payload.replyTo
-    : typeof payload.replyTo === 'string' && payload.replyTo.includes(',')
-      ? payload.replyTo.split(',').map((s) => s.trim()).filter(Boolean)
-      : payload.replyTo;
+  const replyToList = Array.isArray(replyToResolved)
+    ? replyToResolved
+    : typeof replyToResolved === 'string' && replyToResolved.includes(',')
+      ? replyToResolved.split(',').map((s) => s.trim()).filter(Boolean)
+      : replyToResolved || undefined;
 
   const result = await client().emails.send({
     from: fromAddress,
-    to: Array.isArray(payload.to) ? payload.to : [payload.to],
+    to: toList,
     bcc: bcc.length ? bcc : undefined,
     cc: payload.cc,
     replyTo: replyToList,
@@ -105,7 +119,7 @@ function wrapInShell(innerHtml: string): string {
           ${innerHtml}
         </td></tr>
         <tr><td style="padding:20px 32px;border-top:1px solid #3A2D22;color:#8B7B65;font-size:12px;line-height:1.5;">
-          ARBIQ &middot; Praha &middot; <a href="https://arbiq.cz" style="color:#C9986A;text-decoration:none;">arbiq.cz</a>
+          ARBIQ &middot; Bartoloměj Rota &middot; <a href="https://arbiq.cz" style="color:#C9986A;text-decoration:none;">arbiq.cz</a>
         </td></tr>
       </table>
     </td></tr>

@@ -68,7 +68,11 @@ export function buildSpaydPayload(input: SpaydInput): string {
 
 /** Vrací data URL (PNG) QR kódu — vhodné pro @react-pdf/renderer <Image src>. */
 export async function buildSpaydQrDataUrl(input: SpaydInput): Promise<string> {
-  const payload = buildSpaydPayload(input);
+  return spaydQrDataUrlFromPayload(buildSpaydPayload(input));
+}
+
+/** Stejné jako buildSpaydQrDataUrl, ale z hotového SPAYD payloadu (uloženého na faktuře). */
+export async function spaydQrDataUrlFromPayload(payload: string): Promise<string> {
   return QRCode.toDataURL(payload, {
     errorCorrectionLevel: 'M',
     margin: 1,
