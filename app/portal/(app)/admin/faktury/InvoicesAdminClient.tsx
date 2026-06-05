@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useEffect } from 'react';
 import { Plus, Check, Ban, FileText, FileMinus, RefreshCw, ChevronDown, ChevronRight, Send, Download, Loader2, CheckSquare, Square, MinusSquare } from 'lucide-react';
 import StatusBadge from '@/components/portal/StatusBadge';
 import { formatDate, formatMoney } from '@/lib/formatters';
@@ -29,6 +29,7 @@ type PersonGroup = { personId: string; personName: string; firmy: Firma[]; total
 
 type ClientOpt = { id: string; full_name: string };
 type ProjectOpt = { id: string; name: string; client_id: string };
+type FirmaOpt = { id: string; client_id: string; nazev: string; ico: string | null; is_primary: boolean };
 
 const inputClass =
   'w-full bg-espresso border border-tobacco px-3 py-2 text-moonlight focus:border-caramel focus:outline-none transition-colors';
@@ -38,16 +39,19 @@ export default function InvoicesAdminClient({
   invoices,
   clients,
   projects,
+  firmy = [],
 }: {
   invoices: Row[];
   clients: ClientOpt[];
   projects: ProjectOpt[];
+  firmy?: FirmaOpt[];
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string>('');
+  const [selectedFirma, setSelectedFirma] = useState<string>('');
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [noClient, setNoClient] = useState(false);
   const [cust, setCust] = useState({
@@ -62,9 +66,23 @@ export default function InvoicesAdminClient({
     [projects, selectedClient],
   );
 
+  const firmyForClient = useMemo(
+    () => firmy.filter((f) => f.client_id === selectedClient),
+    [firmy, selectedClient],
+  );
+
+  // Po výběru klienta předvyber jeho primární (nebo první) firmu.
+  useEffect(() => {
+    if (!selectedClient) { setSelectedFirma(''); return; }
+    const list = firmy.filter((f) => f.client_id === selectedClient);
+    const primary = list.find((f) => f.is_primary) ?? list[0];
+    setSelectedFirma(primary?.id ?? '');
+  }, [selectedClient, firmy]);
+
   function resetAll() {
     setOpen(false);
     setSelectedClient('');
+    setSelectedFirma('');
     setNoClient(false);
     setCust({ full_name: '', company: '', ico: '', dic: '', street: '', city: '', email: '', phone: '' });
     setSup({ name: '', ico: '', dic: '', vat_payer: false, street: '', city: '' });
@@ -279,12 +297,30 @@ export default function InvoicesAdminClient({
           </div>
 
           {!noClient ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className={labelClass} htmlFor="i_client_id">Klient</label>
                 <select id="i_client_id" name="client_id" required={!noClient} className={inputClass} value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
                   <option value="" disabled>— vyberte —</option>
                   {clients.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="i_firma_id">Firma (odběratel)</label>
+                <select
+                  id="i_firma_id"
+                  name="firma_id"
+                  className={inputClass}
+                  value={selectedFirma}
+                  onChange={(e) => setSelectedFirma(e.target.value)}
+                  disabled={!selectedClient}
+                >
+                  <option value="">{firmyForClient.length ? '— bez firmy —' : '— klient nemá firmu —'}</option>
+                  {firmyForClient.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.nazev}{f.ico ? ` (IČO ${f.ico})` : ''}{f.is_primary ? ' ★' : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>

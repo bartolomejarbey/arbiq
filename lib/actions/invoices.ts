@@ -67,6 +67,7 @@ const CustomerOverrideSchema = z.object({
 
 const CreateInvoiceSchema = z.object({
   client_id: z.string().uuid().optional(),
+  firma_id: z.string().uuid().optional(),
   customer_override: CustomerOverrideSchema.optional(),
   project_id: z.string().uuid().optional(),
   contract_id: z.string().uuid().optional(),
@@ -137,6 +138,7 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
   try {
     parsed = CreateInvoiceSchema.parse({
       client_id: String(formData.get('client_id') ?? '') || undefined,
+      firma_id: String(formData.get('firma_id') ?? '') || undefined,
       customer_override: customerOverrideRaw,
       project_id: String(formData.get('project_id') ?? '') || undefined,
       contract_id: String(formData.get('contract_id') ?? '') || undefined,
@@ -214,30 +216,35 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
   const isOneOff = !parsed.client_id;
 
   // 1) INSERT záznamu (zatím bez pdf_url)
+  const invoiceInsert: Record<string, unknown> = {
+    client_id: parsed.client_id ?? null,
+    project_id: parsed.project_id ?? null,
+    contract_id: parsed.contract_id ?? null,
+    invoice_number: invoiceNumber,
+    kind: parsed.kind,
+    amount,
+    description: parsed.description || null,
+    issued_at: parsed.issued_at ?? new Date().toISOString().slice(0, 10),
+    due_date: parsed.due_date,
+    // Dobropis se neinkasuje → rovnou vyrovnaný, ať nesedí v „čeká"/po splatnosti.
+    status: isDobropis ? 'zaplaceno' : 'ceka',
+    paid_at: isDobropis ? (parsed.issued_at ?? new Date().toISOString().slice(0, 10)) : null,
+    corrected_invoice_id: parsed.corrected_invoice_id ?? null,
+    variable_symbol: variableSymbol,
+    constant_symbol: parsed.constant_symbol ?? null,
+    payment_method: parsed.payment_method,
+    currency: 'CZK',
+    items: finalItems as unknown as object,
+    supplier_override: supplierOverride,
+    customer_override: parsed.customer_override ?? null,
+  };
+  // firma_id přidáme jen když je vyplněné — sloupec existuje až po migraci 0028,
+  // takže před migrací (kdy firma_id nepřijde) zůstane fakturace funkční.
+  if (parsed.firma_id) invoiceInsert.firma_id = parsed.firma_id;
+
   const { data: insRow, error: insErr } = await untyped(supabase)
     .from('invoices')
-    .insert({
-      client_id: parsed.client_id ?? null,
-      project_id: parsed.project_id ?? null,
-      contract_id: parsed.contract_id ?? null,
-      invoice_number: invoiceNumber,
-      kind: parsed.kind,
-      amount,
-      description: parsed.description || null,
-      issued_at: parsed.issued_at ?? new Date().toISOString().slice(0, 10),
-      due_date: parsed.due_date,
-      // Dobropis se neinkasuje → rovnou vyrovnaný, ať nesedí v „čeká"/po splatnosti.
-      status: isDobropis ? 'zaplaceno' : 'ceka',
-      paid_at: isDobropis ? (parsed.issued_at ?? new Date().toISOString().slice(0, 10)) : null,
-      corrected_invoice_id: parsed.corrected_invoice_id ?? null,
-      variable_symbol: variableSymbol,
-      constant_symbol: parsed.constant_symbol ?? null,
-      payment_method: parsed.payment_method,
-      currency: 'CZK',
-      items: finalItems as unknown as object,
-      supplier_override: supplierOverride,
-      customer_override: parsed.customer_override ?? null,
-    })
+    .insert(invoiceInsert)
     .select('id, issued_at')
     .single();
 
@@ -281,6 +288,32 @@ export async function createInvoice(formData: FormData): Promise<InvoiceActionRe
       street: (clientRow as { street?: string | null } | null)?.street ?? null,
       city: (clientRow as { city?: string | null } | null)?.city ?? null,
     };
+
+    // Pokud je zvolená firma, odběratel = firma (název, IČO, DIČ, adresa,
+    // fakturační e-mail). Osoba (full_name) zůstává jako kontakt.
+    if (parsed.firma_id) {
+      const { data: firmaRow } = await untyped(admin)
+        .from('firmy')
+        .select('nazev, ico, dic, street, city, billing_email, phone')
+        .eq('id', parsed.firma_id)
+        .maybeSingle();
+      const f = firmaRow as {
+        nazev?: string | null; ico?: string | null; dic?: string | null;
+        street?: string | null; city?: string | null; billing_email?: string | null; phone?: string | null;
+      } | null;
+      if (f) {
+        customer = {
+          ...customer,
+          company: f.nazev ?? customer.company,
+          ico: f.ico ?? customer.ico,
+          dic: f.dic ?? customer.dic,
+          street: f.street ?? customer.street,
+          city: f.city ?? customer.city,
+          email: f.billing_email ?? customer.email,
+          phone: f.phone ?? customer.phone,
+        };
+      }
+    }
   }
 
   // 3) Vygeneruj PDF + SPAYD.

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { Download } from 'lucide-react';
 import { createClient } from "@/lib/supabase/server";
+import { untyped } from "@/lib/supabase/untyped";
 import { requireViewer } from "@/lib/supabase/viewer";
 import PageHeader from '@/components/portal/PageHeader';
 import StatsCard from '@/components/portal/StatsCard';
@@ -30,19 +31,25 @@ type ClientOpt = { id: string; full_name: string };
 
 type ProjectOpt = { id: string; name: string; client_id: string };
 
+type FirmaOpt = { id: string; client_id: string; nazev: string; ico: string | null; is_primary: boolean };
+
 export default async function FakturyAdminPage() {
   const viewer = await requireViewer();
   const supabase = await createClient();
   const user = viewer;
 
-  const [{ data: invRows }, { data: clients }, { data: projects }] = await Promise.all([
+  const [{ data: invRows }, { data: clients }, { data: projects }, firmyResp] = await Promise.all([
     supabase
       .from('invoices')
       .select('id, invoice_number, kind, amount, description, issued_at, due_date, status, pdf_url, shared_at, client_id, customer_override, client:profiles!invoices_client_id_fkey(full_name, email, billing_email, company, ico, parent_client_id), project:projects(id, name)')
       .order('issued_at', { ascending: false }),
     supabase.from('profiles').select('id, full_name').eq('role', 'klient').order('full_name'),
     supabase.from('projects').select('id, name, client_id').order('name'),
+    untyped(supabase).from('firmy').select('id, client_id, nazev, ico, is_primary').is('archived_at', null).order('nazev'),
   ]);
+
+  // firmy načítáme defenzivně — tabulka existuje až po migraci 0028.
+  const firmy = firmyResp.error ? [] : ((firmyResp.data ?? []) as unknown as FirmaOpt[]);
 
   const invoices = ((invRows ?? []) as unknown as Row[]);
   const totals = {
@@ -76,6 +83,7 @@ export default async function FakturyAdminPage() {
           invoices={invoices}
           clients={((clients ?? []) as unknown as ClientOpt[])}
           projects={((projects ?? []) as unknown as ProjectOpt[])}
+          firmy={firmy}
         />
       </div>
     </div>

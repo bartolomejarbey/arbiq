@@ -2,10 +2,12 @@
 
 Spec: `docs/superpowers/specs/2026-06-05-klient-firma-operacni-centrum-design.md`
 
-## Fáze 1 — Datový základ (migrace)
-- [ ] `supabase/migrations/0028_firmy.sql` — tabulka `firmy`, `firma_id` na invoices/contracts/quotes/projects, backfill, RLS, `is_my_firma()`.
-- [ ] `supabase/migrations/0029_client_archive.sql` — `profiles.archived_at`.
-- [ ] `supabase/migrations/0030_notification_channels.sql` — `profiles.sms_notifications_enabled`, tabulka `notification_prefs`.
+## Stav: Fáze 1–6 hotové (kód), zbývá napojení firma_id do smluv/nabídek a aplikace migrací na prod.
+
+## Fáze 1 — Datový základ (migrace) ✅ HOTOVO (commit 326d378)
+- [x] `supabase/migrations/0028_firmy.sql` — tabulka `firmy`, `firma_id` na invoices/contracts/quotes/projects, backfill, RLS, `is_my_firma()`.
+- [x] `supabase/migrations/0029_client_archive.sql` — `profiles.archived_at`.
+- [x] `supabase/migrations/0030_notification_channels.sql` — `profiles.sms_notifications_enabled`, tabulka `notification_prefs`.
 - [ ] (Aplikace na prod `supabase db push` — AŽ po potvrzení uživatele.)
 
 ## Fáze 2 — Firmy: actions + UI + napojení do formulářů
