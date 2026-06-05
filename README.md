@@ -41,6 +41,8 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 `/portal/crm/kalendar` poskytuje obousměrně synchronizovaný kalendář napojený na primární Google Calendar každého obchodníka/admina. Spec a plán: `docs/superpowers/specs/2026-05-12-google-calendar-crm-design.md`, `docs/superpowers/plans/2026-05-12-google-calendar-crm.md`.
 
+> **Zprovoznění (Google Cloud Console + `.env`):** krok-za-krokem návod je v [`docs/navody/google-calendar-setup.md`](docs/navody/google-calendar-setup.md). Pozor: `GOOGLE_OAUTH_CLIENT_ID` a `GOOGLE_OAUTH_CLIENT_SECRET` jsou zatím prázdné — dokud je nevyplníš podle návodu, kalendář se k Googlu nepřipojí.
+
 ### Google Cloud Console setup (jednou per environment)
 
 1. https://console.cloud.google.com → vytvořit projekt `ARBIQ Calendar` (nebo použít existující).
