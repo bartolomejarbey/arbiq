@@ -1,137 +1,121 @@
-import Link from 'next/link';
-import { createClient } from "@/lib/supabase/server";
-import { requireViewer } from "@/lib/supabase/viewer";
+import { createClient } from '@/lib/supabase/server';
+import { requireViewer } from '@/lib/supabase/viewer';
+import { untyped } from '@/lib/supabase/untyped';
 import { PREVIEW_KLIENTI_FOR_CRM } from '@/lib/preview-data';
 import PageHeader from '@/components/portal/PageHeader';
 import EmptyState from '@/components/portal/EmptyState';
 import CreateClientDialog, { type ObchodnikOption, type ExistingClientOption } from '@/components/portal/CreateClientDialog';
-import { formatDate, formatMoney } from '@/lib/formatters';
+import ClientTree, { type TreeClient, type TreeFirma } from '@/components/portal/ClientTree';
 
 export const dynamic = 'force-dynamic';
 
-type ClientRow = {
+type RawClient = {
   id: string;
   full_name: string;
   email: string;
   company: string | null;
-  is_active: boolean;
   created_at: string;
   parent_client_id: string | null;
-  parent: { full_name: string; company: string | null } | null;
-  projects: { id: string; total_value: number | null; status: string }[] | null;
+  archived_at: string | null;
+  projects: { id: string; name: string; status: string; total_value: number | null }[] | null;
 };
 
 export default async function KlientiPage() {
   const viewer = await requireViewer();
 
-  let clients: ClientRow[];
+  let treeClients: TreeClient[] = [];
   let obchodnici: ObchodnikOption[] = [];
   let existingClients: ExistingClientOption[] = [];
   let isAdmin = false;
+
   if (viewer.isPreview) {
-    clients = PREVIEW_KLIENTI_FOR_CRM as unknown as ClientRow[];
+    const raw = PREVIEW_KLIENTI_FOR_CRM as unknown as RawClient[];
+    treeClients = raw
+      .filter((c) => !c.parent_client_id)
+      .map((c) => ({
+        id: c.id,
+        full_name: c.full_name,
+        email: c.email,
+        created_at: c.created_at,
+        firmy: [],
+        projects: (c.projects ?? []).map((p) => ({ id: p.id, name: p.name, status: p.status, total_value: p.total_value })),
+      }));
   } else {
     const supabase = await createClient();
-    const [clientsResp, viewerProfileResp, obchResp] = await Promise.all([
-      supabase
+    const [clientsResp, viewerProfileResp] = await Promise.all([
+      untyped(supabase)
         .from('profiles')
-        // POZOR: žádný self-referenční embed (parent:profiles!…) — PostgREST ho zde
-        // neumí přeložit (PGRST200) a shodil by CELÝ dotaz → prázdný seznam klientů.
-        // projects musí mít explicitní FK hint, protože projects má 2 FK na profiles.
-        .select('id, full_name, email, company, is_active, created_at, parent_client_id, projects:projects!projects_client_id_fkey(id, total_value, status)')
+        .select('id, full_name, email, company, created_at, parent_client_id, archived_at, projects:projects!projects_client_id_fkey(id, name, status, total_value)')
         .eq('role', 'klient')
         .order('full_name', { ascending: true }),
       supabase.from('profiles').select('role').eq('id', viewer.id).single(),
-      supabase
+    ]);
+
+    if (clientsResp.error) {
+      console.error('[crm/klienti] načtení klientů selhalo:', clientsResp.error.message);
+    }
+
+    const all = ((clientsResp.data ?? []) as unknown as RawClient[]);
+    // Strom: jen top-level osoby, bez archivovaných.
+    const topLevel = all.filter((c) => !c.parent_client_id && !c.archived_at);
+
+    // Firmy (defenzivně — tabulka nemusí existovat před aplikací migrace 0028).
+    const firmyByClient = new Map<string, TreeFirma[]>();
+    if (topLevel.length > 0) {
+      const ids = topLevel.map((c) => c.id);
+      const firmyResp = await untyped(supabase)
+        .from('firmy')
+        .select('id, client_id, nazev, ico, is_primary')
+        .in('client_id', ids)
+        .is('archived_at', null)
+        .order('is_primary', { ascending: false })
+        .order('nazev', { ascending: true });
+      if (firmyResp.error) {
+        console.warn('[crm/klienti] firmy nenačteny (migrace 0028 zřejmě ještě neaplikována):', firmyResp.error.message);
+      } else {
+        for (const f of (firmyResp.data ?? []) as Array<TreeFirma & { client_id: string }>) {
+          const arr = firmyByClient.get(f.client_id) ?? [];
+          arr.push({ id: f.id, nazev: f.nazev, ico: f.ico, is_primary: f.is_primary });
+          firmyByClient.set(f.client_id, arr);
+        }
+      }
+    }
+
+    treeClients = topLevel.map((c) => ({
+      id: c.id,
+      full_name: c.full_name,
+      email: c.email,
+      created_at: c.created_at,
+      firmy: firmyByClient.get(c.id) ?? [],
+      projects: (c.projects ?? []).map((p) => ({ id: p.id, name: p.name, status: p.status, total_value: p.total_value })),
+    }));
+
+    isAdmin = (viewerProfileResp.data as { role?: string } | null)?.role === 'admin';
+    if (isAdmin) {
+      const { data: obchData } = await supabase
         .from('profiles')
         .select('id, full_name, email')
         .in('role', ['obchodnik', 'admin'])
         .eq('is_active', true)
-        .order('full_name'),
-    ]);
-    if (clientsResp.error) {
-      // Nikdy tiše neskrývat chybu dotazu za „prázdný seznam" — to nás stálo 5 kol ladění.
-      console.error('[crm/klienti] načtení klientů selhalo:', clientsResp.error.message);
-    }
-    clients = ((clientsResp.data ?? []) as unknown as ClientRow[]);
-
-    // Jména „mateřských" klientů načteme zvlášť (viz pozn. výše o self-embed).
-    const parentIds = [...new Set(clients.map((c) => c.parent_client_id).filter((x): x is string => !!x))];
-    if (parentIds.length > 0) {
-      const { data: parentRows } = await supabase
-        .from('profiles')
-        .select('id, full_name, company')
-        .in('id', parentIds);
-      const pmap = new Map(
-        ((parentRows ?? []) as Array<{ id: string; full_name: string; company: string | null }>)
-          .map((p) => [p.id, { full_name: p.full_name, company: p.company }]),
-      );
-      clients = clients.map((c) => ({
-        ...c,
-        parent: c.parent_client_id ? pmap.get(c.parent_client_id) ?? null : null,
-      }));
-    }
-
-    isAdmin = (viewerProfileResp.data as { role?: string } | null)?.role === 'admin';
-    if (isAdmin) {
-      obchodnici = ((obchResp.data ?? []) as unknown as ObchodnikOption[]);
-      // Existující "top-level" osoby pro propojení další firmy.
-      existingClients = clients
-        .filter((c) => c.parent_client_id === null)
-        .map((c) => ({ id: c.id, full_name: c.full_name, company: c.company }));
+        .order('full_name');
+      obchodnici = ((obchData ?? []) as unknown as ObchodnikOption[]);
+      existingClients = topLevel.map((c) => ({ id: c.id, full_name: c.full_name, company: c.company }));
     }
   }
 
   return (
     <div>
       <PageHeader
-        eyebrow={viewer.isPreview ? "CRM · DEMO" : "CRM"}
+        eyebrow={viewer.isPreview ? 'CRM · DEMO' : 'CRM'}
         title="Klienti"
-        subtitle={viewer.isPreview ? "Vaši přiřazení klienti — fiktivní krimi-univerzum." : "Vaši přiřazení klienti a jejich projekty."}
+        subtitle="Osoby a jejich firmy. Rozbal klienta pro firmy a projekty, otevři pro celý přehled."
         actions={isAdmin ? <CreateClientDialog obchodnici={obchodnici} existingClients={existingClients} /> : undefined}
       />
       <div className="px-4 md:px-8 py-8">
-        {clients.length === 0 ? (
+        {treeClients.length === 0 ? (
           <EmptyState title="Zatím nemáte přiřazené klienty" description="Konvertujte lead nebo si nechte přiřadit klienta administrátorem." />
         ) : (
-          <div className="bg-coffee overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-tobacco">
-                  <th className="text-left font-mono text-[10px] uppercase tracking-widest text-sandstone px-6 py-3">Jméno</th>
-                  <th className="text-left font-mono text-[10px] uppercase tracking-widest text-sandstone px-6 py-3">Firma</th>
-                  <th className="text-left font-mono text-[10px] uppercase tracking-widest text-sandstone px-6 py-3">Projekty</th>
-                  <th className="text-right font-mono text-[10px] uppercase tracking-widest text-sandstone px-6 py-3">Hodnota</th>
-                  <th className="text-left font-mono text-[10px] uppercase tracking-widest text-sandstone px-6 py-3">Klient od</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clients.map((c, i) => {
-                  const projectCount = c.projects?.length ?? 0;
-                  const value = c.projects?.reduce((s, p) => s + Number(p.total_value ?? 0), 0) ?? 0;
-                  return (
-                    <tr key={c.id} className={`border-b border-tobacco/50 hover:bg-tobacco/30 ${i % 2 === 1 ? 'bg-coffee/40' : ''}`}>
-                      <td className="px-6 py-4">
-                        <Link href={`/portal/crm/klient/${c.id}`} className="text-moonlight hover:text-caramel">
-                          {c.full_name}
-                        </Link>
-                        {c.parent && (
-                          <div className="font-mono text-[10px] uppercase tracking-widest text-caramel/80 mt-0.5">
-                            ↳ patří k {c.parent.full_name}
-                          </div>
-                        )}
-                        <div className="text-sandstone text-xs">{c.email}</div>
-                      </td>
-                      <td className="px-6 py-4 text-sepia">{c.company ?? '—'}</td>
-                      <td className="px-6 py-4 text-sepia">{projectCount}</td>
-                      <td className="px-6 py-4 text-right text-moonlight">{formatMoney(value)}</td>
-                      <td className="px-6 py-4 text-sandstone">{formatDate(c.created_at)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ClientTree clients={treeClients} isAdmin={isAdmin} />
         )}
       </div>
     </div>

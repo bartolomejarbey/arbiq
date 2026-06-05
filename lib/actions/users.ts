@@ -452,6 +452,77 @@ export async function updateClientEmails(
   return { ok: true };
 }
 
+/**
+ * "Smazání" klienta s volbou režimu:
+ *  - 'archive': soft delete (profiles.archived_at) — data zůstanou, lze obnovit.
+ *  - 'hard': tvrdé smazání i auth účtu, JEN pokud klient nemá žádné doklady
+ *    (faktury/smlouvy/nabídky/projekty); jinak vrátí chybu a doporučí archiv.
+ * Admin only. Firmy klienta se při hard delete smažou kaskádou (FK on delete cascade).
+ */
+export async function deleteClient(
+  clientId: string,
+  mode: 'archive' | 'hard',
+): Promise<{ ok: true; mode: 'archive' | 'hard' } | { ok: false; error: string }> {
+  let caller: { user: { id: string } };
+  try {
+    caller = await requireAdmin();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
+  }
+  if (clientId === caller.user.id) {
+    return { ok: false, error: 'Nemůžete smazat sami sebe.' };
+  }
+
+  const admin = createAdminClient();
+
+  if (mode === 'archive') {
+    const { error } = await untyped(admin)
+      .from('profiles')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', clientId);
+    if (error) return { ok: false, error: error.message };
+    await admin.auth.admin.signOut(clientId, 'global').catch(() => undefined);
+    await logAdminAction({ actorId: caller.user.id, action: 'client.archive', targetId: clientId, targetType: 'profile' });
+    revalidatePath('/portal/crm/klienti');
+    revalidatePath(`/portal/crm/klient/${clientId}`);
+    return { ok: true, mode };
+  }
+
+  // hard delete — pojistka na doklady (DB navíc blokuje on delete restrict u invoices/projects)
+  for (const table of ['invoices', 'contracts', 'quotes', 'projects'] as const) {
+    const { count } = await untyped(admin).from(table).select('id', { count: 'exact', head: true }).eq('client_id', clientId);
+    if ((count ?? 0) > 0) {
+      return {
+        ok: false,
+        error: `Klient má navázané doklady (${table}) — tvrdé smazání není možné. Použij archivaci.`,
+      };
+    }
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(clientId);
+  if (error) return { ok: false, error: `Smazání selhalo: ${error.message}` };
+  await logAdminAction({ actorId: caller.user.id, action: 'client.delete', targetId: clientId, targetType: 'profile' });
+  revalidatePath('/portal/crm/klienti');
+  return { ok: true, mode };
+}
+
+/** Obnoví archivovaného klienta (archived_at = null). Admin only. */
+export async function restoreClient(clientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  let caller: { user: { id: string } };
+  try {
+    caller = await requireAdmin();
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Nemáte oprávnění.' };
+  }
+  const admin = createAdminClient();
+  const { error } = await untyped(admin).from('profiles').update({ archived_at: null }).eq('id', clientId);
+  if (error) return { ok: false, error: error.message };
+  await logAdminAction({ actorId: caller.user.id, action: 'client.restore', targetId: clientId, targetType: 'profile' });
+  revalidatePath('/portal/crm/klienti');
+  revalidatePath(`/portal/crm/klient/${clientId}`);
+  return { ok: true };
+}
+
 function generatePassword(length = 14): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
   const arr = new Uint8Array(length);
