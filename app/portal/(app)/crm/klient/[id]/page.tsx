@@ -14,7 +14,11 @@ import ClientReplyForm from './ClientReplyForm';
 import GdprActions from './GdprActions';
 import RecurringInvoiceForm, { type RecurringRow } from './RecurringInvoiceForm';
 import EditClientForm, { type EditClientData } from '@/components/portal/EditClientForm';
-import CreateClientDialog from '@/components/portal/CreateClientDialog';
+import DeleteClientDialog from '@/components/portal/DeleteClientDialog';
+import FirmyPanel from '@/components/portal/klient/FirmyPanel';
+import DeadlinesPanel from '@/components/portal/klient/DeadlinesPanel';
+import { getFirmyForClient } from '@/lib/data/firmy';
+import { getClientDeadlines } from '@/lib/data/client-overview';
 import { formatDate, formatMoney } from '@/lib/formatters';
 
 export const dynamic = 'force-dynamic';
@@ -144,6 +148,12 @@ export default async function KlientDetailPage({
   const profile = profileRow as unknown as ClientProfile | null;
   if (!profile) notFound();
 
+  const canManageFirmy = isAdmin || profile.assigned_obchodnik === viewer.id;
+  const [firmy, deadlines] = await Promise.all([
+    getFirmyForClient(profile.id),
+    getClientDeadlines(profile.id),
+  ]);
+
   const projects = ((projectRows ?? []) as unknown as ProjectRow[]);
   const invoices = ((invoiceRows ?? []) as unknown as InvoiceRow[]);
   const contacts = ((contactRows ?? []) as unknown as ContactRow[]);
@@ -226,18 +236,23 @@ export default async function KlientDetailPage({
           <div className="flex items-center gap-2">
             {!profile.is_active && <StatusBadge kind="task" value="cancelled" />}
             {isAdmin && <EditClientForm client={editData} obchodnici={obchodnici} parents={parentOptions} />}
-            {isAdmin && profile.parent_client_id === null && (
-              <CreateClientDialog
-                obchodnici={obchodnici}
-                presetParent={{ id: profile.id, full_name: profile.full_name }}
-                triggerLabel="Přidat firmu"
-              />
+            {isAdmin && (
+              <DeleteClientDialog clientId={profile.id} clientName={profile.full_name} redirectAfter="/portal/crm/klienti" />
             )}
           </div>
         }
       />
       <div className="px-4 md:px-8 py-8 grid grid-cols-1 md:grid-cols-[1fr_220px] lg:grid-cols-3 gap-8 md:gap-12">
         <div className="lg:col-span-2 space-y-12">
+          <DeadlinesPanel items={deadlines} />
+
+          <FirmyPanel
+            firmy={firmy}
+            clientId={profile.id}
+            clientName={profile.full_name}
+            canManage={canManageFirmy}
+          />
+
           <ClientEmailsForm
             clientId={profile.id}
             mainEmail={profile.email}
@@ -249,11 +264,11 @@ export default async function KlientDetailPage({
 
           <GdprActions clientId={profile.id} />
 
-          {(isAdmin || childFirms.length > 0 || profile.parent_client_id) && (
+          {(childFirms.length > 0 || profile.parent_client_id) && (
             <section>
               <h2 className="font-display italic font-black text-2xl text-moonlight mb-4 flex items-center gap-3">
                 <FileSignature size={20} className="text-caramel" />
-                <span>Propojené firmy</span>
+                <span>Propojené profily (starší model)</span>
               </h2>
               {profile.parent_client_id && (
                 <p className="text-sandstone text-sm mb-3 bg-coffee p-4 border-l-2 border-caramel/40">
