@@ -25,6 +25,7 @@ import {
   ArrowLeft,
   ScrollText,
   Bell,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -42,6 +43,7 @@ const crmNav: NavItem[] = [
   { href: '/portal/crm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/portal/crm/pipeline',  label: 'Pipeline',  icon: KanbanSquare },
   { href: '/portal/crm/klienti',   label: 'Klienti',   icon: Users },
+  { href: '/portal/crm/firmy',     label: 'Firmy',     icon: Building2 },
   { href: '/portal/crm/leady',     label: 'Leady',     icon: Inbox },
   { href: '/portal/crm/databaze',  label: 'Databáze',  icon: Database },
   { href: '/portal/crm/ukoly',     label: 'Úkoly',     icon: CheckSquare },
