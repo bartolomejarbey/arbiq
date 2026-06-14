@@ -20,6 +20,7 @@
 - [Automatizace firem](https://arbiq.cz/sluzby/automatizace): Procesní automatizace, integrace, zero-touch workflow.
 - [SEO](https://arbiq.cz/sluzby/seo): Klasická optimalizace pro Google.
 - [GEO / AI viditelnost](https://arbiq.cz/sluzby/geo-ai-viditelnost): Optimalizace pro generativní AI vyhledávače.
+- [Grafika a branding](https://arbiq.cz/sluzby/grafika): Logo, vizuální identita, sociální sítě, tisk a reklama (sesterská značka graphiq.cz).
 
 ## Blog (GEO/AI vyhledávání)
 
@@ -29,8 +30,14 @@
 
 ## Případové studie
 
-- [Vyřešené případy](https://arbiq.cz/pripady): Přehled realizací.
-- [Aplikace](https://arbiq.cz/aplikace): Custom aplikace, které jsme postavili.
+- [Vyřešené případy](https://arbiq.cz/pripady): Přehled realizací (12+ projektů).
+- [Aplikace](https://arbiq.cz/aplikace): Custom aplikace, které jsme postavili (Pamatiq, Finatiq, Webiq a další).
+
+Vybrané realizace:
+- obchodniq.cz — web pro první provizní call centrum s AI v ČR.
+- masi-co.cz — velký custom Next.js e-shop pro rodinné řeznictví (stovky produktů, několik objednávek denně).
+- obsidio.cz — web partnerské agentury (digitální studio: web, AI, marketing).
+- fachmani.org — marketplace pro řemeslníky (Next.js, Supabase).
 
 ## Optional
 

@@ -49,12 +49,8 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://arbiq.cz";
 const SITE_DESCRIPTION =
   "Vyšetřujeme, proč váš digitální business nefunguje, a opravujeme to. Web, audit, nástroje, konzultace. Jeden detektiv, jeden případ, jeden výsledek.";
 
-const OG_IMAGE = {
-  url: `${SITE_URL}/og-default.png`,
-  width: 1200,
-  height: 630,
-  alt: "ARBIQ — Detektivní agentura pro digitální business",
-};
+// OG/Twitter obrázek řeší file-convention `app/opengraph-image.tsx` (dynamicky
+// generovaný 1200×630). NEuvádíme statický `/og-default.png` (neexistoval → 404).
 
 export const viewport: Viewport = {
   themeColor: [
@@ -99,13 +95,11 @@ export const metadata: Metadata = {
     siteName: "ARBIQ",
     title: "ARBIQ — Detektivní agentura pro digitální business",
     description: SITE_DESCRIPTION,
-    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: "ARBIQ — Detektivní agentura pro digitální business",
     description: SITE_DESCRIPTION,
-    images: [OG_IMAGE.url],
   },
   robots: {
     index: true,
