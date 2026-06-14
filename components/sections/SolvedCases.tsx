@@ -35,6 +35,33 @@ const cases = [
     tags: ["NEXT.JS", "SUPABASE", "MARKETPLACE"],
     rotation: "rotate-[2deg]",
   },
+  {
+    number: "#004",
+    domain: "obchodniq.cz",
+    url: "https://obchodniq.cz",
+    screenshot: "/ilustrace/references/obchodniq.png",
+    summary: "První provizní call centrum s AI v ČR. Lidský prodej + AI přepis a analýza hovorů, real-time CRM, vícejazyčně (CZ/EN/DE).",
+    tags: ["WEBDESIGN", "AI", "CALL CENTRUM"],
+    rotation: "rotate-[1.5deg]",
+  },
+  {
+    number: "#005",
+    domain: "masi-co.cz",
+    url: "https://masi-co.cz",
+    screenshot: "/ilustrace/references/masico.png",
+    summary: "Velký custom Next.js e-shop pro rodinné řeznictví — stovky produktů, košík, objednávky, sklady a rozvoz. Několik objednávek denně.",
+    tags: ["NEXT.JS", "E-SHOP", "ŘEZNICTVÍ"],
+    rotation: "-rotate-[1.5deg]",
+  },
+  {
+    number: "#006",
+    domain: "obsidio.cz",
+    url: "https://obsidio.cz",
+    screenshot: "/ilustrace/references/obsidio.png",
+    summary: "Web pro partnerskou agenturu — digitální studio (web, AI a marketing pod jednou střechou). Tmavý design, výrazná typografie, audit-flow.",
+    tags: ["WEBDESIGN", "AGENTURA", "PARTNER"],
+    rotation: "rotate-[1deg]",
+  },
 ];
 
 export default function SolvedCases() {

@@ -85,6 +85,33 @@ const cases = [
     tags: ["WEBDESIGN", "SLUŽBY", "LEAD-GEN"],
     rotation: "rotate-[1deg]",
   },
+  {
+    number: "#010",
+    name: "obchodniq.cz",
+    url: "https://obchodniq.cz",
+    screenshot: "/ilustrace/references/obchodniq.png",
+    summary: "První provizní call centrum s AI v ČR. Web služby, kde se lidský prodej potkává s AI — přepis a analýza hovorů, real-time CRM, vícejazyčně (CZ/EN/DE), s ceníkem a poptávkovým flow.",
+    tags: ["WEBDESIGN", "AI", "CALL CENTRUM"],
+    rotation: "rotate-[1.5deg]",
+  },
+  {
+    number: "#011",
+    name: "masi-co.cz",
+    url: "https://masi-co.cz",
+    screenshot: "/ilustrace/references/masico.png",
+    summary: "Velký custom Next.js e-shop pro rodinné řeznictví — stovky produktů napříč kategoriemi, košík, objednávky, sklady a rozvoz. Několik objednávek denně. Výrazná řeznická estetika.",
+    tags: ["NEXT.JS", "E-SHOP", "ŘEZNICTVÍ"],
+    rotation: "-rotate-[1.5deg]",
+  },
+  {
+    number: "#012",
+    name: "obsidio.cz",
+    url: "https://obsidio.cz",
+    screenshot: "/ilustrace/references/obsidio.png",
+    summary: "Web pro partnerskou agenturu — digitální studio (web, AI a marketing pod jednou střechou). Tmavý design, výrazná typografie, audit-flow a prezentace služeb.",
+    tags: ["WEBDESIGN", "AGENTURA", "PARTNER"],
+    rotation: "rotate-[1deg]",
+  },
 ];
 
 export default function PripadyPage() {
